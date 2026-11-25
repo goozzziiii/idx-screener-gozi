@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IDX Pro Screener & Charting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #131722; }
+    ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #434651; }
+  </style>
+</head>
+<body class="bg-[#131722] text-[#d1d4dc] font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+  <!-- TOP NAVBAR -->
+  <header class="h-14 border-b border-[#2a2e39] bg-[#1e222d] px-4 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-bold text-white text-sm">
+        IDX
+      </div>
+      <div>
+        <h1 class="font-semibold text-white text-base leading-tight">IDX Technical Screener</h1>
+        <p id="last-updated" class="text-[11px] text-gray-400">Memuat jadwal pembaruan...</p>
+      </div>
+    </div>
+
+    <div class="hidden md:flex items-center gap-5 text-xs">
+      <div class="flex items-center gap-1.5">
+        <span class="w-3 h-0.5 bg-[#2962FF] inline-block"></span>
+        <span>MA 20</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-3 h-0.5 bg-[#FF6D00] inline-block"></span>
+        <span>MA 50</span>
+      </div>
+      <span class="text-gray-500">|</span>
+      <span class="text-gray-400">Data: Yahoo Finance (EOD)</span>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- LEFT PANEL: INTERACTIVE CHART -->
+    <section class="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-[#2a2e39] min-h-[50%] lg:min-h-full">
+      <div class="px-4 py-2.5 bg-[#131722] border-b border-[#2a2e39] flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-baseline gap-3">
+          <h2 id="chart-ticker" class="text-xl font-bold text-white tracking-wide">BBCA</h2>
+          <span class="text-xs px-1.5 py-0.5 rounded bg-[#2a2e39] text-gray-300">IDX • 1D</span>
+          <span id="chart-price" class="text-lg font-semibold text-white">-</span>
+          <span id="chart-change" class="text-sm font-medium">-</span>
+        </div>
+
+        <div id="ohlc-legend" class="flex flex-wrap items-center gap-3 text-xs font-mono text-gray-300">
+          <span>O: <b id="leg-o" class="text-white">-</b></span>
+          <span>H: <b id="leg-h" class="text-white">-</b></span>
+          <span>L: <b id="leg-l" class="text-white">-</b></span>
+          <span>C: <b id="leg-c" class="text-white">-</b></span>
+          <span class="text-[#2962FF]">MA20: <b id="leg-ma20">-</b></span>
+          <span class="text-[#FF6D00]">MA50: <b id="leg-ma50">-</b></span>
+        </div>
+      </div>
+
+      <div id="chart-container" class="flex-1 w-full relative">
+        <div id="chart-loading" class="absolute inset-0 flex items-center justify-center bg-[#131722]/80 z-10 hidden">
+          <span class="text-sm text-blue-400 animate-pulse">Memuat grafik saham...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: SCREENER TABS & TABLE -->
+    <aside class="w-full lg:w-[440px] xl:w-[480px] flex flex-col bg-[#1e222d] h-[50%] lg:h-full">
+      <div class="p-3 border-b border-[#2a2e39]">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Cari kode emiten (misal: BBCA, DEWA, ADRO)..." 
+          class="w-full bg-[#131722] border border-[#2a2e39] focus:border-blue-500 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 outline-none transition"
+        />
+      </div>
+
+      <div class="flex border-b border-[#2a2e39] text-xs font-medium overflow-x-auto shrink-0">
+        <button data-tab="all" class="tab-btn active px-3.5 py-2.5 border-b-2 border-blue-500 text-white whitespace-nowrap transition">
+          Semua (<span id="count-all">0</span>)
+        </button>
+        <button data-tab="above_ma20" class="tab-btn px-3.5 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition">
+          Above MA20 (<span id="count-ma20">0</span>)
+        </button>
+        <button data-tab="above_ma50" class="tab-btn px-3.5 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition">
+          Above MA50 (<span id="count-ma50">0</span>)
+        </button>
+        <button data-tab="stoch_golden_cross" class="tab-btn px-3.5 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition">
+          Stoch Cross (<span id="count-stoch">0</span>)
+        </button>
+      </div>
+
+      <div class="grid grid-cols-12 px-3 py-2 text-[11px] font-semibold text-gray-400 border-b border-[#2a2e39] bg-[#181c27] shrink-0">
+        <div class="col-span-3">EMITEN</div>
+        <div class="col-span-3 text-right">HARGA</div>
+        <div class="col-span-3 text-right">MA20 / MA50</div>
+        <div class="col-span-3 text-right">STOCH %K/%D</div>
+      </div>
+
+      <div id="stock-list" class="flex-1 overflow-y-auto divide-y divide-[#2a2e39]/60">
+        <div class="p-6 text-center text-sm text-gray-400">Memuat data screener...</div>
+      </div>
+    </aside>
+
+  </main>
+
+  <script>
+    const DATA_BASE_URL = './data';
+
+    let screenerData = null;
+    let currentTab = 'all';
+    let selectedTicker = null;
+    let chart, candleSeries, volumeSeries, ma20Series, ma50Series;
+
+    function initChart() {
+      const container = document.getElementById('chart-container');
+      chart = LightweightCharts.createChart(container, {
+        layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
+        grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: '#2a2e39' },
+        timeScale: { borderColor: '#2a2e39', timeVisible: true },
+        autoSize: true
+      });
+
+      candleSeries = chart.addCandlestickSeries({
+        upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+        wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+      });
+
+      volumeSeries = chart.addHistogramSeries({
+        priceFormat: { type: 'volume' },
+        priceScaleId: '',
+      });
+      volumeSeries.priceScale().applyOptions({
+        scaleMargins: { top: 0.8, bottom: 0 },
+      });
+
+      ma20Series = chart.addLineSeries({ color: '#2962FF', lineWidth: 2, priceLineVisible: false });
+      ma50Series = chart.addLineSeries({ color: '#FF6D00', lineWidth: 2, priceLineVisible: false });
+
+      chart.subscribeCrosshairMove((param) => {
+        if (!param.time || !param.seriesData) return;
+        const candle = param.seriesData.get(candleSeries);
+        const ma20 = param.seriesData.get(ma20Series);
+        const ma50 = param.seriesData.get(ma50Series);
+
+        if (candle) {
+          document.getElementById('leg-o').textContent = candle.open.toLocaleString('id-ID');
+          document.getElementById('leg-h').textContent = candle.high.toLocaleString('id-ID');
+          document.getElementById('leg-l').textContent = candle.low.toLocaleString('id-ID');
+          document.getElementById('leg-c').textContent = candle.close.toLocaleString('id-ID');
+        }
+        document.getElementById('leg-ma20').textContent = ma20 ? ma20.value.toLocaleString('id-ID') : '-';
+        document.getElementById('leg-ma50').textContent = ma50 ? ma50.value.toLocaleString('id-ID') : '-';
+      });
+    }
+
+    async function loadStockChart(ticker) {
+      selectedTicker = ticker;
+      const loader = document.getElementById('chart-loading');
+      loader.classList.remove('hidden');
+      renderStockList();
+
+      try {
+        const response = await fetch(`${DATA_BASE_URL}/charts/${ticker}.json`);
+        if (!response.ok) throw new Error('File chart tidak ditemukan');
+        const data = await response.json();
+
+        candleSeries.setData(data.candles);
+        volumeSeries.setData(data.volume);
+        ma20Series.setData(data.ma20);
+        ma50Series.setData(data.ma50);
+        chart.timeScale().fitContent();
+
+        const summary = screenerData.all_data[ticker];
+        document.getElementById('chart-ticker').textContent = ticker;
+        if (summary) {
+          document.getElementById('chart-price').textContent = `Rp ${summary.close.toLocaleString('id-ID')}`;
+          const changeEl = document.getElementById('chart-change');
+          const sign = summary.change_pct >= 0 ? '+' : '';
+          changeEl.textContent = `${sign}${summary.change_pct}%`;
+          changeEl.className = `text-sm font-medium ${summary.change_pct >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}`;
+
+          const lastCandle = data.candles[data.candles.length - 1];
+          if (lastCandle) {
+            document.getElementById('leg-o').textContent = lastCandle.open.toLocaleString('id-ID');
+            document.getElementById('leg-h').textContent = lastCandle.high.toLocaleString('id-ID');
+            document.getElementById('leg-l').textContent = lastCandle.low.toLocaleString('id-ID');
+            document.getElementById('leg-c').textContent = lastCandle.close.toLocaleString('id-ID');
+          }
+          document.getElementById('leg-ma20').textContent = summary.ma20.toLocaleString('id-ID');
+          document.getElementById('leg-ma50').textContent = summary.ma50.toLocaleString('id-ID');
+        }
+      } catch (err) {
+        console.error(err);
+        alert(`Gagal memuat grafik untuk ${ticker}. Pastikan file JSON tersedia.`);
+      } finally {
+        loader.classList.add('hidden');
+      }
+    }
+
+    function renderStockList() {
+      if (!screenerData) return;
+      const listContainer = document.getElementById('stock-list');
+      const query = document.getElementById('search-input').value.trim().toUpperCase();
+
+      let items = currentTab === 'all' ? Object.values(screenerData.all_data) : (screenerData[currentTab] || []);
+      if (query) items = items.filter(item => item.ticker.includes(query));
+
+      if (items.length === 0) {
+        listContainer.innerHTML = `<div class="p-6 text-center text-sm text-gray-500">Tidak ada emiten yang memenuhi kriteria filter ini.</div>`;
+        return;
+      }
+
+      listContainer.innerHTML = items.map(stock => {
+        const isSelected = stock.ticker === selectedTicker;
+        const isPositive = stock.change_pct >= 0;
+        const changeColor = isPositive ? 'text-[#26a69a]' : 'text-[#ef5350]';
+        const sign = isPositive ? '+' : '';
+
+        return `
+          <div 
+            onclick="loadStockChart('${stock.ticker}')" 
+            class="grid grid-cols-12 items-center px-3 py-2.5 cursor-pointer transition text-xs ${isSelected ? 'bg-blue-600/20 border-l-2 border-blue-500' : 'hover:bg-[#2a2e39]/60'}"
+          >
+            <div class="col-span-3">
+              <div class="font-bold text-white text-sm">${stock.ticker}</div>
+              <div class="text-[10px] text-gray-400">IDX</div>
+            </div>
+            <div class="col-span-3 text-right">
+              <div class="font-semibold text-white">${stock.close.toLocaleString('id-ID')}</div>
+              <div class="${changeColor} text-[11px] font-medium">${sign}${stock.change_pct}%</div>
+            </div>
+            <div class="col-span-3 text-right font-mono text-[11px]">
+              <div class="text-[#2962FF]">${stock.ma20.toLocaleString('id-ID')}</div>
+              <div class="text-[#FF6D00]">${stock.ma50.toLocaleString('id-ID')}</div>
+            </div>
+            <div class="col-span-3 text-right font-mono text-[11px]">
+              <div class="text-gray-200">K: ${stock.stoch_k}</div>
+              <div class="text-gray-400">D: ${stock.stoch_d}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function initApp() {
+      initChart();
+      try {
+        const res = await fetch(`${DATA_BASE_URL}/screener_idx.json`);
+        if (!res.ok) throw new Error('Gagal memuat screener_idx.json');
+        screenerData = await res.json();
+
+        document.getElementById('last-updated').textContent = `Update: ${screenerData.last_updated}`;
+        const allList = Object.values(screenerData.all_data);
+        document.getElementById('count-all').textContent = allList.length;
+        document.getElementById('count-ma20').textContent = screenerData.above_ma20.length;
+        document.getElementById('count-ma50').textContent = screenerData.above_ma50.length;
+        document.getElementById('count-stoch').textContent = screenerData.stoch_golden_cross.length;
+
+        renderStockList();
+        const defaultTicker = screenerData.all_data['BBCA'] ? 'BBCA' : (allList[0]?.ticker || null);
+        if (defaultTicker) loadStockChart(defaultTicker);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('stock-list').innerHTML = `
+          <div class="p-4 m-3 rounded bg-red-500/10 border border-red-500/30 text-xs text-red-300">
+            <b>Gagal memuat data JSON.</b><br/>
+            Pastikan sudah menjalankan <code>python screener.py</code> dan membuka lewat <code>http://localhost:8000</code>.
+          </div>
+        `;
+      }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('border-blue-500', 'text-white');
+          b.classList.add('border-transparent', 'text-gray-400');
+        });
+        btn.classList.remove('border-transparent', 'text-gray-400');
+        btn.classList.add('border-blue-500', 'text-white');
+        currentTab = btn.dataset.tab;
+        renderStockList();
+      });
+    });
+
+    document.getElementById('search-input').addEventListener('input', renderStockList);
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
