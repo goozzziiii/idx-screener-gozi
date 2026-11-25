@@ -1,343 +1,331 @@
-<!DOCTYPE html>
-<html lang="id" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IDX Technical Screener & Chart</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-    <style>
-        body {
-            background-color: #131722;
-            color: #d1d4dc;
-            font-family: -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
-            overflow-x: hidden;
-        }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #131722; }
-        ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #434651; }
-        .tv-panel { background-color: #1e222d; border: 1px solid #2a2e39; }
-        .tv-hover:hover { background-color: #2a2e39; }
-        .tv-active { background-color: #2962ff26; border-left: 3px solid #2962ff; }
-    </style>
-</head>
-<body class="h-screen flex flex-col">
+import yfinance as yf
+import pandas as pd
+import json
+import os
+import time
+from datetime import datetime
 
-    <!-- Header -->
-    <header class="h-12 bg-[#1e222d] border-b border-[#2a2e39] px-4 flex items-center justify-between shrink-0">
-        <div class="flex items-center space-x-3">
-            <div class="bg-[#2962ff] text-white font-bold px-2 py-0.5 rounded text-sm tracking-wide">IDX</div>
-            <div>
-                <h1 class="text-sm font-semibold text-white leading-tight">IDX Technical Screener</h1>
-                <p id="last-updated" class="text-[11px] text-gray-400">Memuat jadwal pembaruan...</p>
-            </div>
-        </div>
-        <div class="flex items-center space-x-4 text-xs">
-            <div class="hidden sm:flex items-center space-x-3">
-                <span class="flex items-center"><span class="w-2.5 h-0.5 bg-[#2962ff] mr-1.5"></span>MA 20</span>
-                <span class="flex items-center"><span class="w-2.5 h-0.5 bg-[#ff6d00] mr-1.5"></span>MA 50</span>
-                <span class="flex items-center"><span class="w-2.5 h-0.5 bg-[#00e676] mr-1.5"></span>CRT Active</span>
-            </div>
-            <span class="text-gray-500">|</span>
-            <span class="text-gray-400">Data: Yahoo Finance (EOD)</span>
-        </div>
-    </header>
+OUTPUT_DIR = "data"
+CHARTS_DIR = os.path.join(OUTPUT_DIR, "charts")
+os.makedirs(CHARTS_DIR, exist_ok=True)
 
-    <!-- Main Workspace -->
-    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
 
-        <!-- Left Chart Area -->
-        <div class="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-[#2a2e39] min-h-[380px]">
-            <div class="h-12 px-4 bg-[#131722] border-b border-[#2a2e39] flex items-center justify-between shrink-0">
-                <div class="flex items-center space-x-3">
-                    <span id="chart-ticker" class="text-lg font-bold text-white">BBCA</span>
-                    <span class="text-xs px-1.5 py-0.5 rounded bg-[#2a2e39] text-gray-300">IDX • 1D</span>
-                    <span id="chart-price" class="text-base font-semibold text-white">-</span>
-                    <span id="chart-change" class="text-xs font-medium">-</span>
-                    <span id="chart-crt-badge" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded bg-[#00e676]/20 text-[#00e676]">-</span>
-                </div>
-                <div id="ohlc-legend" class="hidden md:flex items-center space-x-3 text-xs text-gray-400">
-                    <span>O: <b id="leg-o" class="text-gray-200 font-normal">-</b></span>
-                    <span>H: <b id="leg-h" class="text-gray-200 font-normal">-</b></span>
-                    <span>L: <b id="leg-l" class="text-gray-200 font-normal">-</b></span>
-                    <span>C: <b id="leg-c" class="text-gray-200 font-normal">-</b></span>
-                    <span class="text-[#2962ff]">MA20: <b id="leg-ma20" class="font-normal">-</b></span>
-                    <span class="text-[#ff6d00]">MA50: <b id="leg-ma50" class="font-normal">-</b></span>
-                </div>
-            </div>
+def get_all_idx_tickers():
+    """Mencari otomatis file Excel/CSV IDX di folder dan mengambil semua kode 4 huruf"""
+    files = [f for f in os.listdir(".") if f.endswith((".xlsx", ".xls", ".csv"))]
+    if not files:
+        print("PERINGATAN: Tidak ada file .xlsx atau .csv ditemukan!")
+        return ["BBCA.JK", "BBRI.JK", "BMRI.JK", "BBNI.JK", "TLKM.JK"]
 
-            <div id="tv-chart-container" class="flex-1 w-full relative bg-[#131722]"></div>
-        </div>
+    target_file = files[0]
+    print(f"Membaca daftar emiten dari file: {target_file}...")
 
-        <!-- Right Screener Panel -->
-        <div class="w-full lg:w-[440px] bg-[#1e222d] flex flex-col h-[50vh] lg:h-full shrink-0">
+    try:
+        df_list = pd.read_excel(target_file) if target_file.endswith((".xlsx", ".xls")) else pd.read_csv(target_file)
+        tickers = []
+        for col in df_list.columns:
+            for val in df_list[col].dropna():
+                clean = str(val).strip().upper()
+                if len(clean) == 4 and clean.isalpha() and clean not in ["KODE", "CODE", "NAMA", "NAME"]:
+                    tickers.append(f"{clean}.JK")
+            if len(set(tickers)) > 500:
+                break
 
-            <div class="p-3 border-b border-[#2a2e39]">
-                <div class="relative">
-                    <input type="text" id="search-input" placeholder="Cari kode emiten (misal: BBCA, DEWA, ADRO)..."
-                        class="w-full bg-[#131722] text-sm text-white placeholder-gray-500 px-3 py-1.5 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff]">
-                </div>
-            </div>
+        unique_tickers = sorted(list(set(tickers)))
+        print(f"Sukses! Ditemukan {len(unique_tickers)} emiten aktif BEI.")
+        return unique_tickers
+    except Exception as e:
+        print(f"Detail error saat membaca {target_file}: {e}")
+        return ["BBCA.JK", "BBRI.JK", "BMRI.JK", "BBNI.JK", "TLKM.JK"]
 
-            <!-- Filter Tabs -->
-            <div class="flex border-b border-[#2a2e39] text-xs font-medium bg-[#131722] overflow-x-auto shrink-0">
-                <button onclick="setTab('all')" id="tab-all" class="tab-btn px-3 py-2.5 text-white border-b-2 border-[#2962ff] whitespace-nowrap">
-                    Semua (<span id="count-all">0</span>)
-                </button>
-                <button onclick="setTab('crt')" id="tab-crt" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
-                    CRT Bull (<span id="count-crt">0</span>)
-                </button>
-                <button onclick="setTab('stoch')" id="tab-stoch" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
-                    StochRSI OS (<span id="count-stoch">0</span>)
-                </button>
-                <button onclick="setTab('ma20')" id="tab-ma20" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
-                    > MA20 (<span id="count-ma20">0</span>)
-                </button>
-                <button onclick="setTab('ma50')" id="tab-ma50" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
-                    > MA50 (<span id="count-ma50">0</span>)
-                </button>
-            </div>
 
-            <!-- Table Column Headers -->
-            <div class="grid grid-cols-12 px-3 py-2 text-[11px] font-semibold text-gray-400 border-b border-[#2a2e39] bg-[#1e222d] shrink-0">
-                <div class="col-span-4">EMITEN</div>
-                <div class="col-span-3 text-right">HARGA</div>
-                <div class="col-span-3 text-right">MA20 / MA50</div>
-                <div class="col-span-2 text-right">STOCH RSI</div>
-            </div>
+def calculate_stoch_rsi(close_series, rsi_len=10, stoch_len=10, smooth_k=5, smooth_d=5):
+    """Menghitung Stochastic RSI (10, 10, 5, 5) sesuai standar TradingView"""
+    delta = close_series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
 
-            <!-- Stock List -->
-            <div id="stock-list" class="flex-1 overflow-y-auto divide-y divide-[#2a2e39]/50">
-                <div class="p-8 text-center text-sm text-gray-500">Memuat data screener...</div>
-            </div>
-        </div>
-    </div>
+    avg_gain = gain.ewm(alpha=1 / rsi_len, min_periods=rsi_len, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / rsi_len, min_periods=rsi_len, adjust=False).mean()
 
-    <script>
-        let screenerData = null;
-        let currentTab = 'all';
-        let selectedTicker = 'BBCA';
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
 
-        let chart, candleSeries, volumeSeries, ma20Series, ma50Series;
-        let crtPriceLines = [];
+    rsi_min = rsi.rolling(window=stoch_len).min()
+    rsi_max = rsi.rolling(window=stoch_len).max()
+    denom = (rsi_max - rsi_min).replace(0, float("nan"))
 
-        function initChart() {
-            const container = document.getElementById('tv-chart-container');
-            chart = LightweightCharts.createChart(container, {
-                layout: {
-                    background: { type: 'solid', color: '#131722' },
-                    textColor: '#d1d4dc',
-                },
-                grid: {
-                    vertLines: { color: '#1e222d' },
-                    horzLines: { color: '#1e222d' },
-                },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: '#2a2e39' },
-                timeScale: { borderColor: '#2a2e39', timeVisible: true },
-            });
+    raw_stoch_rsi = 100 * ((rsi - rsi_min) / denom)
+    stoch_rsi_k = raw_stoch_rsi.rolling(window=smooth_k).mean()
+    stoch_rsi_d = stoch_rsi_k.rolling(window=smooth_d).mean()
 
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#26a69a',
-                downColor: '#ef5350',
-                borderVisible: false,
-                wickUpColor: '#26a69a',
-                wickDownColor: '#ef5350',
-            });
+    return stoch_rsi_k, stoch_rsi_d
 
-            volumeSeries = chart.addHistogramSeries({
-                priceFormat: { type: 'volume' },
-                priceScaleId: '',
-            });
-            volumeSeries.priceScale().applyOptions({
-                scaleMargins: { top: 0.82, bottom: 0 },
-            });
 
-            ma20Series = chart.addLineSeries({ color: '#2962ff', lineWidth: 1.5, priceLineVisible: false });
-            ma50Series = chart.addLineSeries({ color: '#ff6d00', lineWidth: 1.5, priceLineVisible: false });
+def analyze_crt(df, scan_bars=60, min_ticks_ratio=0.001, block_opposite=True):
+    """Logika CRT V12 Dynamic (Wick-Only Sweep + Block Opposite + Dynamic Break)"""
+    if len(df) < 10:
+        return None
 
-            chart.subscribeCrosshairMove((param) => {
-                if (!param.time || !param.seriesData) return;
-                const c = param.seriesData.get(candleSeries);
-                const m20 = param.seriesData.get(ma20Series);
-                const m50 = param.seriesData.get(ma50Series);
-                if (c) {
-                    document.getElementById('leg-o').textContent = c.open.toLocaleString('id-ID');
-                    document.getElementById('leg-h').textContent = c.high.toLocaleString('id-ID');
-                    document.getElementById('leg-l').textContent = c.low.toLocaleString('id-ID');
-                    document.getElementById('leg-c').textContent = c.close.toLocaleString('id-ID');
+    sub = df.tail(scan_bars + 2).reset_index()
+    date_col = sub.columns[0]
+    open_dir = 0
+    open_high = None
+    open_low = None
+
+    active_setup = None
+    markers = []
+
+    for i in range(1, len(sub)):
+        c1 = sub.iloc[i - 1]
+        c2 = sub.iloc[i]
+
+        o1, h1, l1, cl1 = float(c1["Open"]), float(c1["High"]), float(c1["Low"]), float(c1["Close"])
+        o2, h2, l2, cl2 = float(c2["Open"]), float(c2["High"]), float(c2["Low"]), float(c2["Close"])
+        t2 = pd.to_datetime(c2[date_col]).strftime("%Y-%m-%d")
+
+        if open_dir != 0:
+            if h2 > open_high or l2 < open_low:
+                open_dir = 0
+                open_high = None
+                open_low = None
+                if active_setup:
+                    active_setup["is_broken"] = True
+
+        c1_range = h1 - l1
+        if c1_range <= 0:
+            continue
+        c1_mid = l1 + (c1_range * 0.5)
+        buf = max(1.0, l1 * min_ticks_ratio)
+
+        c2_body_top = max(o2, cl2)
+        c2_body_bot = min(o2, cl2)
+        body_inside = (c2_body_top <= h1) and (c2_body_bot >= l1)
+
+        bull_base = body_inside and (l2 <= l1 - buf) and (h2 <= h1)
+        bear_base = body_inside and (h2 >= h1 + buf) and (l2 >= l1)
+        dbl = body_inside and (l2 <= l1 - buf) and (h2 >= h1 + buf)
+
+        sig = 0
+        if dbl:
+            sig = 3
+        elif bull_base:
+            sig = 2 if (h2 > c1_mid) else 1
+        elif bear_base:
+            sig = -2 if (l2 < c1_mid) else -1
+
+        if sig != 0:
+            new_dir = 1 if sig in (1, 2) else (-1 if sig in (-1, -2) else 0)
+            is_blocked = block_opposite and (open_dir != 0) and (new_dir != 0) and (new_dir != open_dir)
+
+            if not is_blocked:
+                if new_dir != 0:
+                    open_dir = new_dir
+                    open_high = h1
+                    open_low = l1
+
+                sig_map = {
+                    1: "BULL CRT",
+                    2: "BULL (>50%)",
+                    -1: "BEAR CRT",
+                    -2: "BEAR (>50%)",
+                    3: "DBL SWEEP",
                 }
-                if (m20) document.getElementById('leg-ma20').textContent = m20.value.toLocaleString('id-ID');
-                if (m50) document.getElementById('leg-ma50').textContent = m50.value.toLocaleString('id-ID');
-            });
+                sig_name = sig_map[sig]
 
-            window.addEventListener('resize', () => {
-                chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
-            });
-        }
-
-        async function loadStockChart(ticker) {
-            selectedTicker = ticker;
-            renderStockList();
-
-            const summary = screenerData.all_data[ticker];
-            if (summary) {
-                document.getElementById('chart-ticker').textContent = ticker;
-                document.getElementById('chart-price').textContent = 'Rp ' + summary.close.toLocaleString('id-ID');
-                const chgEl = document.getElementById('chart-change');
-                const sign = summary.change_pct > 0 ? '+' : '';
-                chgEl.textContent = `${sign}${summary.change_pct}%`;
-                chgEl.className = `text-xs font-medium ${summary.change_pct >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}`;
-            }
-
-            try {
-                const res = await fetch(`data/charts/${ticker}.json`);
-                const data = await res.json();
-
-                candleSeries.setData(data.candles);
-                volumeSeries.setData(data.volume);
-                ma20Series.setData(data.ma20);
-                ma50Series.setData(data.ma50);
-
-                // Hapus garis CRT lama
-                crtPriceLines.forEach(line => candleSeries.removePriceLine(line));
-                crtPriceLines = [];
-                candleSeries.setMarkers([]);
-
-                const crtBadge = document.getElementById('chart-crt-badge');
-                crtBadge.classList.add('hidden');
-
-                // Gambar panah & garis CRT jika tersedia
-                if (data.crt) {
-                    if (data.crt.markers && data.crt.markers.length > 0) {
-                        candleSeries.setMarkers(data.crt.markers);
-                    }
-
-                    const setup = data.crt.latest_setup;
-                    if (setup && !setup.is_broken) {
-                        const isBull = setup.dir === 1;
-                        const col = isBull ? '#00e676' : (setup.dir === -1 ? '#ff5252' : '#ff9800');
-
-                        crtBadge.textContent = `${setup.signal} (${setup.date_c2})`;
-                        crtBadge.className = `text-[11px] font-semibold px-2 py-0.5 rounded ${
-                            isBull ? 'bg-[#00e676]/20 text-[#00e676]' : 'bg-[#ff5252]/20 text-[#ff5252]'
-                        }`;
-
-                        crtPriceLines.push(candleSeries.createPriceLine({
-                            price: setup.crth, color: col, lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'CRTH'
-                        }));
-                        crtPriceLines.push(candleSeries.createPriceLine({
-                            price: setup.mid50, color: col, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '50%'
-                        }));
-                        crtPriceLines.push(candleSeries.createPriceLine({
-                            price: setup.crtl, color: col, lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'CRTL'
-                        }));
-                    }
+                active_setup = {
+                    "signal": sig_name,
+                    "dir": new_dir,
+                    "crth": round(h1, 2),
+                    "crtl": round(l1, 2),
+                    "mid50": round(c1_mid, 2),
+                    "date_c2": t2,
+                    "is_latest": (i == len(sub) - 1),
+                    "is_broken": False,
                 }
 
-                if (data.candles.length > 0) {
-                    const last = data.candles[data.candles.length - 1];
-                    document.getElementById('leg-o').textContent = last.open.toLocaleString('id-ID');
-                    document.getElementById('leg-h').textContent = last.high.toLocaleString('id-ID');
-                    document.getElementById('leg-l').textContent = last.low.toLocaleString('id-ID');
-                    document.getElementById('leg-c').textContent = last.close.toLocaleString('id-ID');
+                if new_dir == 1:
+                    markers.append({
+                        "time": t2,
+                        "position": "belowBar",
+                        "color": "#00e676",
+                        "shape": "arrowUp",
+                        "text": sig_name,
+                    })
+                elif new_dir == -1:
+                    markers.append({
+                        "time": t2,
+                        "position": "aboveBar",
+                        "color": "#ff5252",
+                        "shape": "arrowDown",
+                        "text": sig_name,
+                    })
+
+    return {
+        "active_bias": "BULLISH OPEN" if open_dir == 1 else ("BEARISH OPEN" if open_dir == -1 else "NEUTRAL"),
+        "latest_setup": active_setup,
+        "markers": markers[-10:],
+    }
+
+
+def run_screener():
+    all_tickers = get_all_idx_tickers()
+
+    results = {
+        "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "above_ma20": [],
+        "above_ma50": [],
+        "stoch_golden_cross": [],
+        "crt_bull_active": [],
+        "all_data": {},
+    }
+
+    batch_size = 100
+    total_batches = (len(all_tickers) + batch_size - 1) // batch_size
+
+    for i in range(0, len(all_tickers), batch_size):
+        batch = all_tickers[i : i + batch_size]
+        current_batch_num = (i // batch_size) + 1
+        print(f"\n[Batch {current_batch_num}/{total_batches}] Mengunduh {len(batch)} saham...")
+
+        try:
+            data = yf.download(batch, period="1y", interval="1d", group_by="ticker", threads=True, progress=False)
+        except Exception as e:
+            print(f"Gagal mengunduh batch {current_batch_num}: {e}")
+            continue
+
+        for ticker in batch:
+            try:
+                if ticker not in data.columns.levels[0]:
+                    continue
+                df = data[ticker].dropna().copy()
+                if len(df) < 50:
+                    continue
+
+                df["MA20"] = df["Close"].rolling(window=20).mean()
+                df["MA50"] = df["Close"].rolling(window=50).mean()
+                df["STOCH_K"], df["STOCH_D"] = calculate_stoch_rsi(
+                    df["Close"], rsi_len=10, stoch_len=10, smooth_k=5, smooth_d=5
+                )
+
+                clean_ticker = ticker.replace(".JK", "")
+
+                candles = []
+                ma20_series = []
+                ma50_series = []
+                volumes = []
+
+                for index, row in df.iterrows():
+                    date_str = index.strftime("%Y-%m-%d")
+                    open_p = round(float(row["Open"]), 2)
+                    high_p = round(float(row["High"]), 2)
+                    low_p = round(float(row["Low"]), 2)
+                    close_p = round(float(row["Close"]), 2)
+                    vol_p = int(row["Volume"])
+
+                    candles.append({
+                        "time": date_str,
+                        "open": open_p,
+                        "high": high_p,
+                        "low": low_p,
+                        "close": close_p,
+                    })
+
+                    vol_color = "rgba(38, 166, 154, 0.5)" if close_p >= open_p else "rgba(239, 83, 80, 0.5)"
+                    volumes.append({
+                        "time": date_str,
+                        "value": vol_p,
+                        "color": vol_color,
+                    })
+
+                    if pd.notna(row["MA20"]):
+                        ma20_series.append({"time": date_str, "value": round(float(row["MA20"]), 2)})
+                    if pd.notna(row["MA50"]):
+                        ma50_series.append({"time": date_str, "value": round(float(row["MA50"]), 2)})
+
+                crt_info = analyze_crt(df)
+
+                chart_payload = {
+                    "ticker": clean_ticker,
+                    "candles": candles,
+                    "volume": volumes,
+                    "ma20": ma20_series,
+                    "ma50": ma50_series,
+                    "crt": crt_info,
                 }
-                if (data.ma20.length > 0) document.getElementById('leg-ma20').textContent = data.ma20[data.ma20.length - 1].value.toLocaleString('id-ID');
-                if (data.ma50.length > 0) document.getElementById('leg-ma50').textContent = data.ma50[data.ma50.length - 1].value.toLocaleString('id-ID');
+                with open(os.path.join(CHARTS_DIR, f"{clean_ticker}.json"), "w") as cf:
+                    json.dump(chart_payload, cf)
 
-                chart.timeScale().fitContent();
-            } catch (err) {
-                console.error("Gagal memuat chart:", err);
-            }
-        }
+                today = df.iloc[-1]
+                yesterday = df.iloc[-2]
 
-        function setTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'border-b-2', 'border-[#2962ff]');
-                btn.classList.add('text-gray-400');
-            });
-            const activeBtn = document.getElementById(`tab-${tab}`);
-            activeBtn.classList.remove('text-gray-400');
-            activeBtn.classList.add('text-white', 'border-b-2', 'border-[#2962ff]');
-            renderStockList();
-        }
+                if (
+                    pd.isna(today["MA50"])
+                    or pd.isna(today["STOCH_K"])
+                    or pd.isna(today["STOCH_D"])
+                    or pd.isna(yesterday["STOCH_K"])
+                    or pd.isna(yesterday["STOCH_D"])
+                ):
+                    continue
 
-        function renderStockList() {
-            if (!screenerData) return;
-            const query = document.getElementById('search-input').value.trim().toUpperCase();
+                close_price = round(float(today["Close"]), 2)
+                prev_close = round(float(yesterday["Close"]), 2)
+                change_pct = round(((close_price - prev_close) / prev_close) * 100, 2) if prev_close != 0 else 0
 
-            let list = [];
-            if (currentTab === 'all') list = Object.values(screenerData.all_data);
-            else if (currentTab === 'crt') list = screenerData.crt_bull_active || [];
-            else if (currentTab === 'stoch') list = screenerData.stoch_golden_cross || [];
-            else if (currentTab === 'ma20') list = screenerData.above_ma20 || [];
-            else if (currentTab === 'ma50') list = screenerData.above_ma50 || [];
+                ma20_val = round(float(today["MA20"]), 2)
+                ma50_val = round(float(today["MA50"]), 2)
+                k_now = round(float(today["STOCH_K"]), 2)
+                d_now = round(float(today["STOCH_D"]), 2)
+                k_prev = round(float(yesterday["STOCH_K"]), 2)
+                d_prev = round(float(yesterday["STOCH_D"]), 2)
 
-            if (query) {
-                list = list.filter(item => item.ticker.includes(query));
-            }
+                stock_summary = {
+                    "ticker": clean_ticker,
+                    "close": close_price,
+                    "change_pct": change_pct,
+                    "ma20": ma20_val,
+                    "ma50": ma50_val,
+                    "stoch_k": k_now,
+                    "stoch_d": d_now,
+                }
+                results["all_data"][clean_ticker] = stock_summary
 
-            const container = document.getElementById('stock-list');
-            if (list.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-gray-500">Tidak ada emiten yang memenuhi kriteria.</div>`;
-                return;
-            }
+                if close_price > ma20_val:
+                    results["above_ma20"].append(stock_summary)
+                if close_price > ma50_val:
+                    results["above_ma50"].append(stock_summary)
 
-            container.innerHTML = list.map(item => {
-                const isSelected = item.ticker === selectedTicker;
-                const chgColor = item.change_pct >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]';
-                const sign = item.change_pct > 0 ? '+' : '';
-                const crtTag = item.crt_sig ? `<span class="ml-1 text-[9px] px-1 rounded bg-[#00e676]/20 text-[#00e676]">${item.crt_sig}</span>` : '';
+                # StochRSI (10,10,5,5) Wajib Golden Cross DI AREA OVERSOLD (<= 20)
+                is_golden_cross = (k_prev <= d_prev) and (k_now > d_now)
+                is_oversold = (k_prev <= 20 or d_prev <= 20) and (k_now <= 25)
+                if is_golden_cross and is_oversold:
+                    results["stoch_golden_cross"].append(stock_summary)
 
-                return `
-                <div onclick="loadStockChart('${item.ticker}')"
-                     class="grid grid-cols-12 items-center px-3 py-2.5 cursor-pointer tv-hover transition-colors ${isSelected ? 'tv-active' : ''}">
-                    <div class="col-span-4">
-                        <div class="font-bold text-sm text-white flex items-center">${item.ticker}${crtTag}</div>
-                        <div class="text-[10px] text-gray-500">IDX</div>
-                    </div>
-                    <div class="col-span-3 text-right">
-                        <div class="text-xs font-semibold text-white">${item.close.toLocaleString('id-ID')}</div>
-                        <div class="text-[11px] ${chgColor}">${sign}${item.change_pct}%</div>
-                    </div>
-                    <div class="col-span-3 text-right text-[11px]">
-                        <div class="text-[#2962ff]">${item.ma20.toLocaleString('id-ID')}</div>
-                        <div class="text-[#ff6d00]">${item.ma50.toLocaleString('id-ID')}</div>
-                    </div>
-                    <div class="col-span-2 text-right text-[11px]">
-                        <div class="text-gray-200">K: ${item.stoch_k}</div>
-                        <div class="text-gray-500">D: ${item.stoch_d}</div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
+                # CRT Bullish Aktif (Belum tertembus harga)
+                if crt_info and crt_info["active_bias"] == "BULLISH OPEN":
+                    stock_summary["crt_sig"] = crt_info["latest_setup"]["signal"]
+                    results["crt_bull_active"].append(stock_summary)
 
-        async function initApp() {
-            initChart();
-            try {
-                const res = await fetch('data/screener_idx.json?t=' + Date.now());
-                screenerData = await res.json();
+            except Exception:
+                continue
 
-                document.getElementById('last-updated').textContent = `Update: ${screenerData.last_updated}`;
-                document.getElementById('count-all').textContent = Object.keys(screenerData.all_data).length;
-                document.getElementById('count-crt').textContent = (screenerData.crt_bull_active || []).length;
-                document.getElementById('count-stoch').textContent = (screenerData.stoch_golden_cross || []).length;
-                document.getElementById('count-ma20').textContent = (screenerData.above_ma20 || []).length;
-                document.getElementById('count-ma50').textContent = (screenerData.above_ma50 || []).length;
+        time.sleep(2)
 
-                renderStockList();
-                const initialTicker = screenerData.all_data['BBCA'] ? 'BBCA' : Object.keys(screenerData.all_data)[0];
-                if (initialTicker) loadStockChart(initialTicker);
-            } catch (err) {
-                document.getElementById('stock-list').innerHTML =
-                    `<div class="p-6 text-center text-xs text-red-400">Gagal memuat data JSON.</div>`;
-            }
-        }
+    results["all_data"] = dict(sorted(results["all_data"].items()))
+    results["above_ma20"].sort(key=lambda x: x["ticker"])
+    results["above_ma50"].sort(key=lambda x: x["ticker"])
+    results["stoch_golden_cross"].sort(key=lambda x: x["ticker"])
+    results["crt_bull_active"].sort(key=lambda x: x["ticker"])
 
-        document.getElementById('search-input').addEventListener('input', renderStockList);
-        initApp();
-    </script>
-</body>
-</html>
+    with open(os.path.join(OUTPUT_DIR, "screener_idx.json"), "w") as f:
+        json.dump(results, f)
+
+    print(f"\nSELESAI TOTAL! Berhasil memindai {len(results['all_data'])} emiten aktif IDX.")
+    print(f"- Above MA20: {len(results['above_ma20'])} saham")
+    print(f"- Above MA50: {len(results['above_ma50'])} saham")
+    print(f"- StochRSI Oversold Cross: {len(results['stoch_golden_cross'])} saham")
+    print(f"- CRT Bullish Active: {len(results['crt_bull_active'])} saham")
+
+
+if __name__ == "__main__":
+    run_screener()
