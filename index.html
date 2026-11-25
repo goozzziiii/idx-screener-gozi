@@ -3,264 +3,382 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IDX Terminal | Charting & Screener</title>
+<title>GOZI TERMINAL | IDX Market & Technical Workspace</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none}
-.tabular-nums{font-variant-numeric:tabular-nums}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#2a2e39;border-radius:3px}
-input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-.tool-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:#848e9c;transition:all .15s}
-.tool-btn:hover{background-color:rgba(255,255,255,.06);color:#f0f3fa}
-.tool-btn.active{background-color:#2962ff;color:#fff}
+  :root {
+    --bg-main: #000000;
+    --bg-panel: #0a0d12;
+    --bg-sub: #11161f;
+    --bg-hover: #1a2230;
+    --border-main: #222936;
+    --text-main: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #ff8000;
+    --accent-hover: #e67300;
+    --accent-soft: rgba(255, 128, 0, 0.15);
+    --bull: #00c853;
+    --bear: #ff3d00;
+  }
+  html.light {
+    --bg-main: #f4f6f9;
+    --bg-panel: #ffffff;
+    --bg-sub: #edf1f5;
+    --bg-hover: #e2e8f0;
+    --border-main: #cbd5e1;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --accent: #d96b00;
+    --accent-hover: #b85b00;
+    --accent-soft: rgba(217, 107, 0, 0.12);
+    --bull: #059669;
+    --bear: #dc2626;
+  }
+  body {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    overflow: hidden;
+    user-select: none;
+  }
+  .t-bg-main { background-color: var(--bg-main); }
+  .t-bg-panel { background-color: var(--bg-panel); }
+  .t-bg-sub { background-color: var(--bg-sub); }
+  .t-border { border-color: var(--border-main); }
+  .t-text-main { color: var(--text-main); }
+  .t-text-muted { color: var(--text-muted); }
+  .t-accent-bg { background-color: var(--accent); color: #000000; }
+  .t-accent-text { color: var(--accent); }
+  .t-row:hover { background-color: var(--bg-hover); }
+  .t-row-active { background-color: var(--accent-soft); border-left: 2px solid var(--accent); }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 2px; }
+  input, select {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    border: 1px solid var(--border-main);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .tool-btn {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; color: var(--text-muted); transition: all 0.12s;
+  }
+  .tool-btn:hover { background-color: var(--bg-hover); color: var(--text-main); }
+  .tool-btn.active { background-color: var(--accent); color: #000000; }
 </style>
 </head>
-<body class="h-screen flex flex-col bg-[#0b0e14] text-[#d1d4dc]">
+<body class="h-screen flex flex-col">
 
-<header id="top-bar" class="h-11 bg-[#131722] border-b border-[#1e232d] px-3 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
+<!-- TOP BLOOMBERG HEADER -->
+<header class="h-10 t-bg-panel border-b t-border px-3 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
   <div class="flex items-center space-x-2.5 shrink-0">
-    <div class="flex items-center space-x-1.5 pr-1">
-      <span class="w-2 h-2 rounded-full bg-[#2962ff]"></span>
-      <span class="font-bold text-xs tracking-widest text-white uppercase">IDX Terminal</span>
+    <div class="flex items-center space-x-2 pr-1">
+      <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider t-accent-bg rounded-xs">IDX</span>
+      <span class="font-bold text-xs tracking-widest t-text-main uppercase">GOZI TERMINAL</span>
     </div>
-    <span class="text-[#2a2e39]">|</span>
+    <span class="t-text-muted opacity-40">|</span>
+
+    <!-- Ticker Search -->
     <div class="relative flex items-center">
-      <svg class="w-3.5 h-3.5 text-[#848e9c] absolute left-2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" id="top-ticker-input" value="BBCA" maxlength="6" class="w-24 bg-[#0b0e14] text-white font-bold text-xs uppercase pl-7 pr-2 py-1 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff] tracking-wide" title="Ketik kode emiten lalu tekan Enter">
+      <svg class="w-3.5 h-3.5 t-text-muted absolute left-2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="top-ticker-input" value="BBCA" maxlength="6" class="w-24 font-bold text-xs uppercase pl-7 pr-2 py-1 rounded-xs tracking-wider" title="Ketik kode saham lalu Enter">
     </div>
-    <div class="flex items-center bg-[#0b0e14] p-0.5 rounded border border-[#1e232d]">
-      <button onclick="selectTimeframe('1d')" id="btn-tf-1d" class="tf-btn px-2.5 py-0.5 text-[11px] font-semibold rounded bg-[#2962ff] text-white">1D</button>
-      <button onclick="selectTimeframe('1w')" id="btn-tf-1w" class="tf-btn px-2.5 py-0.5 text-[11px] font-semibold rounded text-[#848e9c] hover:text-white">1W</button>
-      <button onclick="selectTimeframe('1m')" id="btn-tf-1m" class="tf-btn px-2.5 py-0.5 text-[11px] font-semibold rounded text-[#848e9c] hover:text-white">1M</button>
+
+    <!-- Timeframe -->
+    <div class="flex items-center t-bg-main p-0.5 rounded-xs border t-border">
+      <button onclick="selectTimeframe('1d')" id="btn-tf-1d" class="tf-btn px-2 py-0.5 text-[11px] font-bold rounded-xs t-accent-bg">1D</button>
+      <button onclick="selectTimeframe('1w')" id="btn-tf-1w" class="tf-btn px-2 py-0.5 text-[11px] font-semibold rounded-xs t-text-muted">1W</button>
+      <button onclick="selectTimeframe('1m')" id="btn-tf-1m" class="tf-btn px-2 py-0.5 text-[11px] font-semibold rounded-xs t-text-muted">1M</button>
     </div>
-    <span class="text-[#2a2e39] hidden sm:inline">|</span>
+
+    <span class="t-text-muted opacity-40 hidden sm:inline">|</span>
     <div class="hidden sm:flex items-center space-x-1">
-      <button onclick="zoomChart(85)" class="px-2 py-1 text-[11px] font-medium text-[#848e9c] hover:text-white hover:bg-[#1e232d] rounded">Focus</button>
-      <button onclick="fitAllChart()" class="px-2 py-1 text-[11px] font-medium text-[#848e9c] hover:text-white hover:bg-[#1e232d] rounded">Fit All</button>
+      <button onclick="zoomChart(85)" class="px-2 py-1 text-[11px] font-medium t-text-muted hover:opacity-100 rounded-xs t-row">Focus</button>
+      <button onclick="fitAllChart()" class="px-2 py-1 text-[11px] font-medium t-text-muted hover:opacity-100 rounded-xs t-row">Fit All</button>
     </div>
   </div>
 
+  <!-- Right Controls -->
   <div class="flex items-center space-x-2 shrink-0">
-    <button onclick="toggleAppearanceModal()" class="px-2.5 py-1 text-[11px] font-medium rounded border border-[#2a2e39] bg-[#131722] hover:bg-[#1e232d] text-[#d1d4dc] flex items-center space-x-1.5">
-      <svg class="w-3.5 h-3.5 text-[#848e9c]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-      <span>Appearance</span>
+    <button onclick="toggleAppearanceModal()" class="px-2.5 py-1 text-[11px] font-medium rounded-xs border t-border t-bg-sub t-text-main t-row flex items-center space-x-1.5">
+      <svg class="w-3.5 h-3.5 t-accent-text" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+      <span>Style</span>
     </button>
-    <button onclick="toggleTheme()" id="btn-theme" class="px-2.5 py-1 text-[11px] font-medium rounded border border-[#2a2e39] bg-[#131722] hover:bg-[#1e232d] text-[#d1d4dc] flex items-center space-x-1.5">
-      <svg class="w-3.5 h-3.5 text-[#848e9c]" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-17.07 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg>
+
+    <button onclick="toggleTheme()" class="px-2.5 py-1 text-[11px] font-medium rounded-xs border t-border t-bg-sub t-text-main t-row flex items-center space-x-1.5">
+      <svg class="w-3.5 h-3.5 t-accent-text" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-17.07 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg>
       <span id="theme-lbl">Light</span>
     </button>
-    <button onclick="toggleScreenerDrawer()" id="btn-screener-menu" class="px-3 py-1 text-[11px] font-semibold rounded bg-[#2962ff] hover:bg-[#1e53e5] text-white flex items-center space-x-1.5">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10m-7 6h4"/></svg>
+
+    <button onclick="toggleScreenerDrawer()" class="px-3 py-1 text-[11px] font-bold rounded-xs t-accent-bg flex items-center space-x-1.5">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10m-7 6h4"/></svg>
       <span>Screener</span>
-      <span id="top-scr-count" class="px-1.5 py-0.2 rounded bg-black/25 text-[10px] tabular-nums">0</span>
+      <span id="top-scr-count" class="px-1.5 py-0.2 rounded-xs bg-black/20 text-[10px] tabular-nums">0</span>
     </button>
   </div>
 </header>
 
+<!-- MAIN WORKSPACE -->
 <div class="flex-1 flex relative overflow-hidden">
-  <aside id="left-toolbar" class="w-10 bg-[#131722] border-r border-[#1e232d] flex flex-col items-center py-2 space-y-1 shrink-0 z-10">
-    <button onclick="setDrawTool('cursor')" id="tool-cursor" class="tool-btn active" title="Crosshair"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg></button>
-    <button onclick="setDrawTool('trendline')" id="tool-trendline" class="tool-btn" title="Trendline"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M6.5 17.5 17.5 6.5"/></svg></button>
-    <button onclick="setDrawTool('extline')" id="tool-extline" class="tool-btn" title="Extended Line"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 21 21 3"/><circle cx="8" cy="16" r="1.5"/><circle cx="14" cy="10" r="1.5"/></svg></button>
-    <button onclick="setDrawTool('hline')" id="tool-hline" class="tool-btn" title="Horizontal Line"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="2"/></svg></button>
-    <button onclick="setDrawTool('vline')" id="tool-vline" class="tool-btn" title="Vertical Line"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 3v18"/><circle cx="12" cy="12" r="2"/></svg></button>
-    <button onclick="setDrawTool('rect')" id="tool-rect" class="tool-btn" title="Rectangle"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
-    <button onclick="setDrawTool('fib')" id="tool-fib" class="tool-btn" title="Fibonacci Retracement"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h16M4 19h16"/></svg></button>
-    <button onclick="setDrawTool('rr')" id="tool-rr" class="tool-btn" title="Risk-Reward Box"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 5h16v7H4z"/><path d="M4 12h16v7H4z" stroke-dasharray="2 2"/></svg></button>
-    <button onclick="setDrawTool('text')" id="tool-text" class="tool-btn" title="Text Note"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
-    <div class="w-5 border-t border-[#1e232d] my-1"></div>
-    <label class="tool-btn cursor-pointer" title="Drawing Color"><span id="draw-color-dot" class="w-3.5 h-3.5 rounded-full border border-white/40" style="background-color:#2962ff"></span><input type="color" id="draw-color-input" value="#2962ff" class="hidden" onchange="updateDrawColor(this.value)"></label>
-    <button onclick="toggleHideDrawings()" id="tool-hide-draw" class="tool-btn" title="Hide/Show Drawings"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
-    <button onclick="undoLastDrawing()" class="tool-btn" title="Undo Last Drawing"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
-    <button onclick="clearAllDrawings()" class="tool-btn hover:text-red-400" title="Clear All Drawings"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+
+  <!-- LEFT DRAWING TOOLBAR (TRADINGVIEW STYLE) -->
+  <aside class="w-10 t-bg-panel border-r t-border flex flex-col items-center py-2 space-y-1 shrink-0 z-20">
+    <button onclick="setDrawTool('cursor')" id="tool-cursor" class="tool-btn active" title="Select / Crosshair (Esc)"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg></button>
+    <button onclick="setDrawTool('trendline')" id="tool-trendline" class="tool-btn" title="Trendline"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M6.5 17.5 17.5 6.5"/></svg></button>
+    <button onclick="setDrawTool('extline')" id="tool-extline" class="tool-btn" title="Extended Ray"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 21 21 3"/><circle cx="8" cy="16" r="1.5"/><circle cx="14" cy="10" r="1.5"/></svg></button>
+    <button onclick="setDrawTool('hline')" id="tool-hline" class="tool-btn" title="Horizontal Line"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="2"/></svg></button>
+    <button onclick="setDrawTool('vline')" id="tool-vline" class="tool-btn" title="Vertical Line"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v18"/><circle cx="12" cy="12" r="2"/></svg></button>
+    <button onclick="setDrawTool('rect')" id="tool-rect" class="tool-btn" title="Zone / Rectangle"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
+    <button onclick="setDrawTool('fib')" id="tool-fib" class="tool-btn" title="Fibonacci Retracement"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h16M4 19h16"/></svg></button>
+    <button onclick="setDrawTool('rr')" id="tool-rr" class="tool-btn" title="Long / Short Position Box"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16v7H4z"/><path d="M4 12h16v7H4z" stroke-dasharray="2 2"/></svg></button>
+    <button onclick="setDrawTool('text')" id="tool-text" class="tool-btn" title="Text Annotation"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
+    <div class="w-5 border-t t-border my-1"></div>
+    <label class="tool-btn cursor-pointer" title="Default Stroke Color"><span id="draw-color-dot" class="w-3.5 h-3.5 rounded-full border border-white/40" style="background-color:#ff8000"></span><input type="color" id="draw-color-input" value="#ff8000" class="hidden" onchange="updateDefaultDrawColor(this.value)"></label>
+    <button onclick="toggleHideDrawings()" id="tool-hide-draw" class="tool-btn" title="Hide/Show All Drawings"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button onclick="deleteSelectedDrawing()" id="tool-del-selected" class="tool-btn hidden text-red-500" title="Delete Selected Object (Del)"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <button onclick="clearAllDrawings()" class="tool-btn hover:text-red-500" title="Clear All Drawings"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
   </aside>
 
-  <div class="flex-1 flex flex-col relative overflow-hidden">
-    <div id="legend-bar" class="px-3 py-1.5 border-b border-[#1e232d] bg-[#0b0e14] flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+  <!-- CENTER CHART AREA -->
+  <div id="chart-section" class="flex-1 flex flex-col relative overflow-hidden">
+    <!-- Legend & Indicator Bar -->
+    <div class="px-3 py-1.5 border-b t-border t-bg-main flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
       <div class="flex items-center space-x-2.5">
-        <span id="chart-ticker-lbl" class="font-bold text-sm text-white tracking-wide">BBCA</span>
-        <span id="chart-tf-lbl" class="px-1.5 py-0.5 rounded bg-[#1e232d] text-[10px] font-semibold text-[#848e9c]">1D</span>
-        <span id="chart-price-lbl" class="font-semibold text-white tabular-nums">-</span>
-        <span id="chart-chg-lbl" class="font-medium tabular-nums">-</span>
-        <span id="chart-crt-status" class="hidden px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide">-</span>
-        <div class="hidden xl:flex items-center space-x-2.5 text-[11px] text-[#848e9c] pl-2 border-l border-[#1e232d] tabular-nums">
-          <span>O <b id="leg-o" class="font-normal text-[#d1d4dc]">-</b></span>
-          <span>H <b id="leg-h" class="font-normal text-[#d1d4dc]">-</b></span>
-          <span>L <b id="leg-l" class="font-normal text-[#d1d4dc]">-</b></span>
-          <span>C <b id="leg-c" class="font-normal text-[#d1d4dc]">-</b></span>
+        <span id="chart-ticker-lbl" class="font-bold text-sm t-accent-text tracking-wider">BBCA</span>
+        <span id="chart-tf-lbl" class="px-1.5 py-0.5 rounded-xs t-bg-sub text-[10px] font-bold t-text-muted">1D</span>
+        <span id="chart-price-lbl" class="font-bold t-text-main tabular-nums">-</span>
+        <span id="chart-chg-lbl" class="font-semibold tabular-nums">-</span>
+        <span id="chart-crt-status" class="hidden px-2 py-0.5 rounded-xs text-[10px] font-bold tracking-wide">-</span>
+        <div class="hidden xl:flex items-center space-x-2.5 text-[11px] t-text-muted pl-2 border-l t-border tabular-nums">
+          <span>O <b id="leg-o" class="font-normal t-text-main">-</b></span>
+          <span>H <b id="leg-h" class="font-normal t-text-main">-</b></span>
+          <span>L <b id="leg-l" class="font-normal t-text-main">-</b></span>
+          <span>C <b id="leg-c" class="font-normal t-text-main">-</b></span>
         </div>
       </div>
 
       <div class="flex items-center flex-wrap gap-1.5 text-[11px]">
-        <div ondblclick="openIndModal('ma1')" class="flex items-center space-x-1 px-2 py-0.5 rounded bg-[#131722] border border-[#1e232d] cursor-pointer hover:border-[#363a45]" title="Double-click to configure MA 1">
-          <span id="dot-ma1" class="w-2 h-2 rounded-full" style="background-color:#2962ff"></span>
-          <span id="lbl-ma1" class="font-medium text-[#d1d4dc]">SMA 20</span>
-          <b id="val-ma1" class="font-normal text-[#848e9c] tabular-nums">-</b>
-          <button onclick="event.stopPropagation(); toggleInd('ma1')" class="ml-1 text-[#848e9c] hover:text-white"><svg id="eye-ma1" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <div ondblclick="openIndModal('ma1')" class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border cursor-pointer" title="Double-click to configure">
+          <span id="dot-ma1" class="w-2 h-2 rounded-full" style="background-color:#ff8000"></span>
+          <span id="lbl-ma1" class="font-medium t-text-main">SMA 20</span>
+          <b id="val-ma1" class="font-normal t-text-muted tabular-nums">-</b>
+          <button onclick="event.stopPropagation(); toggleInd('ma1')" class="ml-1 t-text-muted"><svg id="eye-ma1" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
-        <div ondblclick="openIndModal('ma2')" class="flex items-center space-x-1 px-2 py-0.5 rounded bg-[#131722] border border-[#1e232d] cursor-pointer hover:border-[#363a45]" title="Double-click to configure MA 2">
-          <span id="dot-ma2" class="w-2 h-2 rounded-full" style="background-color:#ff6d00"></span>
-          <span id="lbl-ma2" class="font-medium text-[#d1d4dc]">SMA 50</span>
-          <b id="val-ma2" class="font-normal text-[#848e9c] tabular-nums">-</b>
-          <button onclick="event.stopPropagation(); toggleInd('ma2')" class="ml-1 text-[#848e9c] hover:text-white"><svg id="eye-ma2" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <div ondblclick="openIndModal('ma2')" class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border cursor-pointer" title="Double-click to configure">
+          <span id="dot-ma2" class="w-2 h-2 rounded-full" style="background-color:#00b0ff"></span>
+          <span id="lbl-ma2" class="font-medium t-text-main">SMA 50</span>
+          <b id="val-ma2" class="font-normal t-text-muted tabular-nums">-</b>
+          <button onclick="event.stopPropagation(); toggleInd('ma2')" class="ml-1 t-text-muted"><svg id="eye-ma2" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
-        <div class="flex items-center space-x-1 px-2 py-0.5 rounded bg-[#131722] border border-[#1e232d]">
-          <span class="w-2 h-2 rounded-full bg-[#10b981]"></span>
-          <span class="font-medium text-[#d1d4dc]">CRT</span>
-          <button onclick="toggleInd('crt')" class="ml-1 text-[#848e9c] hover:text-white"><svg id="eye-crt" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <div class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border">
+          <span class="w-2 h-2 rounded-full bg-[#00c853]"></span>
+          <span class="font-medium t-text-main">CRT</span>
+          <button onclick="toggleInd('crt')" class="ml-1 t-text-muted"><svg id="eye-crt" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
-        <div ondblclick="openIndModal('rsi')" class="flex items-center space-x-1 px-2 py-0.5 rounded bg-[#131722] border border-[#1e232d] cursor-pointer hover:border-[#363a45]" title="Double-click to configure RSI">
-          <span id="lbl-rsi" class="font-medium text-[#848e9c]">RSI 14</span>
-          <button onclick="event.stopPropagation(); toggleSubPane('rsi')" class="ml-1 text-[#848e9c] hover:text-white"><svg id="eye-rsi" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <div ondblclick="openIndModal('rsi')" class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border cursor-pointer" title="Double-click to configure">
+          <span id="lbl-rsi" class="font-medium t-text-muted">RSI 14</span>
+          <button onclick="event.stopPropagation(); toggleSubPane('rsi')" class="ml-1 t-text-muted"><svg id="eye-rsi" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
-        <div ondblclick="openIndModal('stoch')" class="flex items-center space-x-1 px-2 py-0.5 rounded bg-[#131722] border border-[#1e232d] cursor-pointer hover:border-[#363a45]" title="Double-click to configure StochRSI">
-          <span id="lbl-stoch" class="font-medium text-[#848e9c]">StochRSI 10,10,5,5</span>
-          <button onclick="event.stopPropagation(); toggleSubPane('stoch')" class="ml-1 text-[#848e9c] hover:text-white"><svg id="eye-stoch" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <div ondblclick="openIndModal('stoch')" class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border cursor-pointer" title="Double-click to configure">
+          <span id="lbl-stoch" class="font-medium t-text-muted">StochRSI 10,10,5,5</span>
+          <button onclick="event.stopPropagation(); toggleSubPane('stoch')" class="ml-1 t-text-muted"><svg id="eye-stoch" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
       </div>
     </div>
 
-    <div id="draw-hint-bar" class="hidden bg-[#2962ff]/15 border-b border-[#2962ff]/40 px-3 py-1 text-[11px] text-[#93c5fd] flex items-center justify-between shrink-0">
-      <span id="draw-hint-text">Click first point on chart...</span>
-      <button onclick="setDrawTool('cursor')" class="text-[10px] underline hover:text-white">Cancel (Esc)</button>
+    <!-- Draw Status Hint -->
+    <div id="draw-hint-bar" class="hidden t-bg-sub border-b t-border px-3 py-1 text-[11px] t-accent-text flex items-center justify-between shrink-0">
+      <span id="draw-hint-text">Klik titik pertama pada area chart...</span>
+      <button onclick="setDrawTool('cursor')" class="text-[10px] underline">Batal (Esc)</button>
     </div>
 
+    <!-- TRADINGVIEW FLOATING OBJECT TOOLBAR (APPEARS WHEN DRAWING SELECTED) -->
+    <div id="floating-draw-toolbar" class="hidden absolute top-14 left-1/2 -translate-x-1/2 z-30 t-bg-panel border t-border rounded-xs shadow-2xl px-2.5 py-1.5 flex items-center space-x-2 text-[11px]">
+      <span id="flt-obj-type" class="font-bold t-accent-text uppercase text-[10px] pr-1 border-r t-border">OBJECT</span>
+      <label class="flex items-center space-x-1 cursor-pointer" title="Ubah Warna">
+        <input type="color" id="sel-obj-color" onchange="updateSelectedObjProp('color', this.value)" class="w-5 h-5 border-0 p-0 bg-transparent cursor-pointer">
+      </label>
+      <select id="sel-obj-width" onchange="updateSelectedObjProp('width', parseFloat(this.value))" class="px-1.5 py-0.5 rounded-xs text-[10px]" title="Ketebalan Garis">
+        <option value="1">1px</option>
+        <option value="1.5">1.5px</option>
+        <option value="2">2px</option>
+        <option value="3">3px</option>
+      </select>
+      <select id="sel-obj-dash" onchange="updateSelectedObjProp('dash', this.value)" class="px-1.5 py-0.5 rounded-xs text-[10px]" title="Gaya Garis">
+        <option value="">Solid</option>
+        <option value="6 4">Dashed</option>
+        <option value="2 3">Dotted</option>
+      </select>
+      <button id="sel-obj-edit-text" onclick="editSelectedObjText()" class="hidden px-2 py-0.5 rounded-xs t-bg-sub border t-border hover:opacity-80">Edit Teks</button>
+      <button onclick="deleteSelectedDrawing()" class="px-2 py-0.5 rounded-xs bg-red-600/20 text-red-500 font-bold hover:bg-red-600/30" title="Hapus (Del)">Hapus</button>
+      <button onclick="deselectDrawing()" class="t-text-muted hover:opacity-100 px-1">✕</button>
+    </div>
+
+    <!-- Main Chart + Interactive SVG Layer -->
     <div id="chart-wrapper" class="flex-1 w-full relative overflow-hidden">
       <div id="htf-chart-container" class="w-full h-full"></div>
-      <svg id="drawing-svg" class="absolute inset-0 w-full h-full pointer-events-none z-10"></svg>
+      <svg id="drawing-svg" class="absolute inset-0 w-full h-full z-10"></svg>
     </div>
 
-    <div id="pane-rsi-wrap" class="hidden h-28 border-t border-[#1e232d] relative bg-[#0b0e14] shrink-0">
-      <div ondblclick="openIndModal('rsi')" class="absolute top-1 left-3 z-10 text-[10px] font-semibold text-[#848e9c] cursor-pointer hover:text-white">RSI (<span id="pane-rsi-len">14</span>): <span id="pane-rsi-val" class="text-white tabular-nums">-</span></div>
+    <!-- RSI Pane -->
+    <div id="pane-rsi-wrap" class="hidden h-28 border-t t-border relative t-bg-main shrink-0">
+      <div ondblclick="openIndModal('rsi')" class="absolute top-1 left-3 z-10 text-[10px] font-bold t-text-muted cursor-pointer">RSI (<span id="pane-rsi-len">14</span>): <span id="pane-rsi-val" class="t-text-main tabular-nums">-</span></div>
       <div id="rsi-chart-container" class="w-full h-full"></div>
     </div>
 
-    <div id="pane-stoch-wrap" class="hidden h-28 border-t border-[#1e232d] relative bg-[#0b0e14] shrink-0">
-      <div ondblclick="openIndModal('stoch')" class="absolute top-1 left-3 z-10 text-[10px] font-semibold text-[#848e9c] cursor-pointer hover:text-white">StochRSI (<span id="pane-stoch-params">10,10,5,5</span>): <span id="pane-stoch-val" class="text-white tabular-nums">-</span></div>
+    <!-- StochRSI Pane -->
+    <div id="pane-stoch-wrap" class="hidden h-28 border-t t-border relative t-bg-main shrink-0">
+      <div ondblclick="openIndModal('stoch')" class="absolute top-1 left-3 z-10 text-[10px] font-bold t-text-muted cursor-pointer">StochRSI (<span id="pane-stoch-params">10,10,5,5</span>): <span id="pane-stoch-val" class="t-text-main tabular-nums">-</span></div>
       <div id="stoch-chart-container" class="w-full h-full"></div>
     </div>
   </div>
 
-  <aside id="screener-drawer" class="hidden w-full sm:w-[470px] bg-[#131722] border-l border-[#1e232d] flex flex-col h-full z-30 shadow-2xl">
-    <div class="px-3.5 py-2.5 border-b border-[#1e232d] flex items-center justify-between shrink-0">
+  <!-- RIGHT SCREENER DRAWER (2 TABS + FULL SCREEN MODE) -->
+  <aside id="screener-drawer" class="hidden w-full sm:w-[490px] t-bg-panel border-l t-border flex flex-col h-full z-30 shadow-2xl transition-all duration-150">
+    <!-- Drawer Header -->
+    <div class="px-3.5 py-2 border-b t-border flex items-center justify-between shrink-0">
       <div>
-        <h2 class="text-xs font-bold text-white uppercase tracking-wider">IDX Multi-Factor Screener</h2>
-        <p id="last-updated" class="text-[10px] text-[#848e9c] tabular-nums">Update: -</p>
+        <h2 class="text-xs font-bold t-accent-text uppercase tracking-wider">Screener</h2>
+        <p id="last-updated" class="text-[10px] t-text-muted tabular-nums">Update: -</p>
       </div>
-      <div class="flex items-center space-x-1">
-        <button onclick="setScreenerTF('1d')" id="scr-tf-1d" class="px-2.5 py-1 text-[11px] font-semibold rounded bg-[#2962ff] text-white">Daily</button>
-        <button onclick="setScreenerTF('1w')" id="scr-tf-1w" class="px-2.5 py-1 text-[11px] font-semibold rounded bg-[#0b0e14] text-[#848e9c] hover:text-white">Weekly</button>
-        <button onclick="setScreenerTF('1m')" id="scr-tf-1m" class="px-2.5 py-1 text-[11px] font-semibold rounded bg-[#0b0e14] text-[#848e9c] hover:text-white">Monthly</button>
-        <button onclick="toggleScreenerDrawer()" class="ml-2 p-1 text-[#848e9c] hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <div class="flex items-center space-x-1.5">
+        <button onclick="setScreenerTF('1d')" id="scr-tf-1d" class="px-2 py-0.5 text-[11px] font-bold rounded-xs t-accent-bg">1D</button>
+        <button onclick="setScreenerTF('1w')" id="scr-tf-1w" class="px-2 py-0.5 text-[11px] font-semibold rounded-xs t-bg-sub t-text-muted">1W</button>
+        <button onclick="setScreenerTF('1m')" id="scr-tf-1m" class="px-2 py-0.5 text-[11px] font-semibold rounded-xs t-bg-sub t-text-muted">1M</button>
+        <span class="t-text-muted opacity-30">|</span>
+        <button onclick="toggleScreenerFullscreen()" id="btn-scr-full" class="px-2 py-0.5 text-[10px] font-semibold rounded-xs border t-border t-bg-sub t-text-main t-row flex items-center space-x-1" title="Full Screen Tabel">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <span id="lbl-scr-full">Full Screen</span>
+        </button>
+        <button onclick="toggleScreenerDrawer()" class="p-1 t-text-muted hover:opacity-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
     </div>
 
-    <div class="flex border-b border-[#1e232d] text-[11px] font-medium bg-[#0b0e14] overflow-x-auto shrink-0">
-      <button onclick="applyPreset('custom')" id="tab-custom" class="tab-btn px-3 py-2 text-white border-b-2 border-[#2962ff] whitespace-nowrap">Screener (<span id="count-result" class="tabular-nums">0</span>)</button>
-      <button onclick="applyPreset('watchlist')" id="tab-watchlist" class="tab-btn px-3 py-2 text-[#848e9c] hover:text-white whitespace-nowrap">Watchlist (<span id="count-watch" class="tabular-nums">0</span>)</button>
-      <button onclick="applyPreset('crt')" id="tab-crt" class="tab-btn px-3 py-2 text-[#848e9c] hover:text-white whitespace-nowrap">CRT Bull (<span id="count-crt" class="tabular-nums">0</span>)</button>
-      <button onclick="applyPreset('stoch')" id="tab-stoch" class="tab-btn px-3 py-2 text-[#848e9c] hover:text-white whitespace-nowrap">StochRSI OS (<span id="count-stoch" class="tabular-nums">0</span>)</button>
-      <button onclick="applyPreset('saved')" id="tab-saved" class="tab-btn px-3 py-2 text-[#848e9c] hover:text-white whitespace-nowrap">Saved Setup</button>
+    <!-- ONLY 2 TABS: SEMUA SAHAM & SCREENER -->
+    <div class="flex border-b t-border text-[11px] font-bold t-bg-sub shrink-0">
+      <button onclick="switchScreenerTab('all')" id="tab-all" class="flex-1 py-2 text-center border-b-2" style="border-color:var(--accent); color:var(--accent)">
+        Semua Saham (<span id="count-all" class="tabular-nums">0</span>)
+      </button>
+      <button onclick="switchScreenerTab('screener')" id="tab-screener" class="flex-1 py-2 text-center t-text-muted border-b-2 border-transparent">
+        Screener (<span id="count-filtered" class="tabular-nums">0</span>)
+      </button>
     </div>
 
-    <div class="p-2.5 border-b border-[#1e232d] bg-[#0f131c] space-y-2 text-[11px] shrink-0">
+    <!-- Quick Search for "Semua Saham" Tab -->
+    <div id="panel-all-search" class="p-2 border-b t-border t-bg-panel flex items-center justify-between gap-2 text-[11px] shrink-0">
+      <input type="text" id="all-quick-search" oninput="renderStockList()" placeholder="Cari kode saham di semua emiten..." class="flex-1 px-2.5 py-1 rounded-xs text-xs uppercase">
+      <select id="all-sort" onchange="renderStockList()" class="px-2 py-1 rounded-xs text-[11px]">
+        <option value="TICKER_ASC">Kode A-Z</option>
+        <option value="TX_DESC">Tx Value Desc</option>
+        <option value="CHG_DESC">% Change Desc</option>
+        <option value="PRICE_ASC">Harga Termurah</option>
+        <option value="PRICE_DESC">Harga Termahal</option>
+      </select>
+    </div>
+
+    <!-- Editable Filter Panel for "Screener" Tab -->
+    <div id="panel-screener-filters" class="hidden p-2.5 border-b t-border t-bg-panel space-y-2 text-[11px] shrink-0">
       <div class="grid grid-cols-12 gap-1.5">
-        <div class="col-span-3"><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">Ticker</label><input type="text" id="flt-ticker" oninput="renderStockList()" placeholder="BBCA" class="w-full bg-[#0b0e14] text-white px-2 py-1 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff] uppercase"></div>
-        <div class="col-span-3"><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">Min Price</label><input type="number" id="flt-min-price" oninput="renderStockList()" placeholder="50" class="w-full bg-[#0b0e14] text-white px-2 py-1 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff] tabular-nums"></div>
-        <div class="col-span-3"><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">Max Price</label><input type="number" id="flt-max-price" oninput="renderStockList()" placeholder="Any" class="w-full bg-[#0b0e14] text-white px-2 py-1 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff] tabular-nums"></div>
-        <div class="col-span-3"><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">Min Tx (M)</label><input type="number" id="flt-min-tx" oninput="renderStockList()" placeholder="0" class="w-full bg-[#0b0e14] text-white px-2 py-1 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff] tabular-nums"></div>
+        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Ticker</label><input type="text" id="flt-ticker" oninput="renderStockList()" placeholder="ALL" class="w-full px-2 py-1 rounded-xs uppercase"></div>
+        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Min Price</label><input type="number" id="flt-min-price" oninput="renderStockList()" placeholder="50" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
+        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Max Price</label><input type="number" id="flt-max-price" oninput="renderStockList()" placeholder="Any" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
+        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Min Tx (M)</label><input type="number" id="flt-min-tx" oninput="renderStockList()" placeholder="0" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
       </div>
       <div class="grid grid-cols-4 gap-1.5">
-        <div><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">CRT Setup</label><select id="flt-crt" onchange="renderStockList()" class="w-full bg-[#0b0e14] text-[#d1d4dc] px-1.5 py-1 rounded border border-[#2a2e39]"><option value="ALL">All</option><option value="BULL_ALL">CRT Bull</option><option value="CONFIRMED">Confirmed</option><option value="POTENTIAL">Potential</option></select></div>
-        <div><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">Moving Avg</label><select id="flt-ma" onchange="renderStockList()" class="w-full bg-[#0b0e14] text-[#d1d4dc] px-1.5 py-1 rounded border border-[#2a2e39]"><option value="ALL">All</option><option value="ABOVE_20">&gt; MA20</option><option value="ABOVE_50">&gt; MA50</option><option value="ABOVE_BOTH">&gt; MA20 &amp; 50</option><option value="NEAR_MA20">Near MA20</option><option value="BELOW_20">&lt; MA20</option></select></div>
-        <div><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">StochRSI</label><select id="flt-stoch" onchange="renderStockList()" class="w-full bg-[#0b0e14] text-[#d1d4dc] px-1.5 py-1 rounded border border-[#2a2e39]"><option value="ALL">All</option><option value="OS_CROSS">OS Cross</option><option value="OS_ZONE">K &le; 20</option><option value="OB_ZONE">K &ge; 80</option></select></div>
-        <div><label class="block text-[9px] text-[#848e9c] uppercase mb-0.5">RSI (14)</label><select id="flt-rsi" onchange="renderStockList()" class="w-full bg-[#0b0e14] text-[#d1d4dc] px-1.5 py-1 rounded border border-[#2a2e39]"><option value="ALL">All</option><option value="OS">&le; 30 (OS)</option><option value="MID">40 - 60</option><option value="OB">&ge; 70 (OB)</option></select></div>
+        <div><label class="block text-[9px] t-text-muted uppercase mb-0.5">CRT Setup</label><select id="flt-crt" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs"><option value="ALL">All</option><option value="BULL_ALL">CRT Bull</option><option value="CONFIRMED">Confirmed</option><option value="POTENTIAL">Potential</option></select></div>
+        <div><label class="block text-[9px] t-text-muted uppercase mb-0.5">Moving Avg</label><select id="flt-ma" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs"><option value="ALL">All</option><option value="ABOVE_20">&gt; MA20</option><option value="ABOVE_50">&gt; MA50</option><option value="ABOVE_BOTH">&gt; MA20 &amp; 50</option><option value="NEAR_MA20">Near MA20</option><option value="BELOW_20">&lt; MA20</option></select></div>
+        <div><label class="block text-[9px] t-text-muted uppercase mb-0.5">StochRSI</label><select id="flt-stoch" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs"><option value="ALL">All</option><option value="OS_CROSS">OS Cross</option><option value="OS_ZONE">K &le; 20</option><option value="OB_ZONE">K &ge; 80</option></select></div>
+        <div><label class="block text-[9px] t-text-muted uppercase mb-0.5">RSI (14)</label><select id="flt-rsi" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs"><option value="ALL">All</option><option value="OS">&le; 30 (OS)</option><option value="MID">40 - 60</option><option value="OB">&ge; 70 (OB)</option></select></div>
       </div>
       <div class="flex items-center justify-between pt-0.5">
         <div class="flex items-center space-x-1.5">
-          <span class="text-[10px] text-[#848e9c]">Sort:</span>
-          <select id="flt-sort" onchange="renderStockList()" class="bg-[#0b0e14] text-[10px] text-[#d1d4dc] px-1.5 py-0.5 rounded border border-[#2a2e39]"><option value="TICKER_ASC">Ticker A-Z</option><option value="TX_DESC">Tx Value (M) Desc</option><option value="PRICE_ASC">Price Asc</option><option value="PRICE_DESC">Price Desc</option><option value="CHG_DESC">% Change Desc</option><option value="STOCH_ASC">StochRSI Asc</option></select>
+          <span class="text-[10px] t-text-muted">Sort:</span>
+          <select id="flt-sort" onchange="renderStockList()" class="text-[10px] px-1.5 py-0.5 rounded-xs"><option value="TICKER_ASC">Kode A-Z</option><option value="TX_DESC">Tx Value Desc</option><option value="PRICE_ASC">Price Asc</option><option value="PRICE_DESC">Price Desc</option><option value="CHG_DESC">% Change Desc</option><option value="STOCH_ASC">StochRSI Asc</option></select>
         </div>
-        <div class="flex items-center space-x-3">
-          <button onclick="saveCustomPreset()" class="text-[10px] text-emerald-400 hover:underline font-medium">Save Preset</button>
-          <button onclick="resetFilters()" class="text-[10px] text-[#2962ff] hover:underline font-medium">Reset</button>
-        </div>
+        <button onclick="resetFilters()" class="text-[10px] t-accent-text hover:underline font-bold">Reset Filter</button>
       </div>
     </div>
 
-    <div class="grid grid-cols-12 px-3 py-1.5 text-[10px] font-semibold text-[#848e9c] border-b border-[#1e232d] bg-[#131722] shrink-0 uppercase">
-      <div class="col-span-5">Ticker / Status</div>
-      <div class="col-span-3 text-right">Price / Chg</div>
-      <div class="col-span-2 text-right">Tx (M)</div>
-      <div class="col-span-2 text-right">Stoch</div>
-    </div>
-    <div id="stock-list" class="flex-1 overflow-y-auto divide-y divide-[#1e232d]/70">
-      <div class="p-8 text-center text-xs text-[#848e9c]">Loading market data...</div>
+    <!-- Dynamic Table Header -->
+    <div id="table-header-row" class="grid grid-cols-12 px-3 py-1.5 text-[10px] font-bold t-text-muted border-b t-border t-bg-sub shrink-0 uppercase"></div>
+
+    <!-- Stock Rows -->
+    <div id="stock-list" class="flex-1 overflow-y-auto divide-y" style="border-color:var(--border-main)">
+      <div class="p-8 text-center text-xs t-text-muted">Loading market feed...</div>
     </div>
   </aside>
 </div>
 
+<!-- STYLE & APPEARANCE MODAL -->
 <div id="appearance-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-  <div class="bg-[#131722] border border-[#2a2e39] rounded-md w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
-    <div class="flex items-center justify-between border-b border-[#1e232d] pb-2">
-      <h3 class="font-bold text-sm text-white">Chart Appearance &amp; Candle Colors</h3>
-      <button onclick="toggleAppearanceModal()" class="text-[#848e9c] hover:text-white">✕</button>
+  <div class="t-bg-panel border t-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
+    <div class="flex items-center justify-between border-b t-border pb-2">
+      <h3 class="font-bold text-sm t-accent-text uppercase">Terminal Chart Style</h3>
+      <button onclick="toggleAppearanceModal()" class="t-text-muted">✕</button>
     </div>
-    <div class="grid grid-cols-2 gap-2.5">
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Bullish Body</span><input type="color" id="col-body-up" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Bearish Body</span><input type="color" id="col-body-down" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Bullish Wick</span><input type="color" id="col-wick-up" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Bearish Wick</span><input type="color" id="col-wick-down" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Bullish Border</span><input type="color" id="col-bdr-up" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Bearish Border</span><input type="color" id="col-bdr-down" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Chart Background</span><input type="color" id="col-bg" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>Grid Lines</span><input type="color" id="col-grid" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>CRT Confirmed</span><input type="color" id="col-crt-conf" onchange="applyAppearance()"></label>
-      <label class="flex items-center justify-between bg-[#0b0e14] px-2.5 py-1.5 rounded border border-[#1e232d]"><span>CRT Potential</span><input type="color" id="col-crt-pot" onchange="applyAppearance()"></label>
+    <div class="grid grid-cols-2 gap-2">
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>Bullish Body</span><input type="color" id="col-body-up" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>Bearish Body</span><input type="color" id="col-body-down" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>Bullish Wick</span><input type="color" id="col-wick-up" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>Bearish Wick</span><input type="color" id="col-wick-down" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>Bullish Border</span><input type="color" id="col-bdr-up" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>Bearish Border</span><input type="color" id="col-bdr-down" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>CRT Confirmed</span><input type="color" id="col-crt-conf" onchange="applyAppearance()"></label>
+      <label class="flex items-center justify-between t-bg-sub px-2.5 py-1.5 rounded-xs border t-border"><span>CRT Potential</span><input type="color" id="col-crt-pot" onchange="applyAppearance()"></label>
     </div>
-    <div class="flex items-center justify-between pt-2 border-t border-[#1e232d]">
-      <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="chk-candle-border" onchange="applyAppearance()" checked><span>Show Candle Border</span></label>
+    <div class="flex items-center justify-between pt-2 border-t t-border">
+      <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="chk-candle-border" onchange="applyAppearance()" checked><span>Candle Border</span></label>
       <div class="space-x-2">
-        <button onclick="resetAppearance()" class="px-3 py-1.5 rounded bg-[#1e232d] text-[#d1d4dc] hover:text-white">Default</button>
-        <button onclick="toggleAppearanceModal()" class="px-4 py-1.5 rounded bg-[#2962ff] text-white font-semibold">Done</button>
+        <button onclick="resetAppearance()" class="px-3 py-1 rounded-xs t-bg-sub border t-border">Default</button>
+        <button onclick="toggleAppearanceModal()" class="px-4 py-1 rounded-xs t-accent-bg font-bold">Done</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- INDICATOR SETTINGS MODAL -->
 <div id="indicator-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-  <div class="bg-[#131722] border border-[#2a2e39] rounded-md w-full max-w-xs p-4 text-xs space-y-3 shadow-2xl">
-    <div class="flex items-center justify-between border-b border-[#1e232d] pb-2">
-      <h3 id="ind-modal-title" class="font-bold text-sm text-white">Indicator Settings</h3>
-      <button onclick="closeIndModal()" class="text-[#848e9c] hover:text-white">✕</button>
+  <div class="t-bg-panel border t-border rounded-xs w-full max-w-xs p-4 text-xs space-y-3 shadow-2xl">
+    <div class="flex items-center justify-between border-b t-border pb-2">
+      <h3 id="ind-modal-title" class="font-bold text-sm t-accent-text">Indicator Config</h3>
+      <button onclick="closeIndModal()" class="t-text-muted">✕</button>
     </div>
     <div id="ind-modal-body" class="space-y-2.5"></div>
-    <div class="flex justify-end space-x-2 pt-2 border-t border-[#1e232d]">
-      <button onclick="closeIndModal()" class="px-3 py-1.5 rounded bg-[#1e232d] text-[#d1d4dc]">Cancel</button>
-      <button onclick="saveIndModal()" class="px-4 py-1.5 rounded bg-[#2962ff] text-white font-semibold">Apply</button>
+    <div class="flex justify-end space-x-2 pt-2 border-t t-border">
+      <button onclick="closeIndModal()" class="px-3 py-1 rounded-xs t-bg-sub border t-border">Cancel</button>
+      <button onclick="saveIndModal()" class="px-4 py-1 rounded-xs t-accent-bg font-bold">Apply</button>
     </div>
   </div>
 </div>
 
 <script>
-let screenerData = null, currentChartData = null, currentTicker = 'BBCA', activeChartTF = '1d', screenerTF = '1d', activePreset = 'custom', isDarkMode = true;
+let screenerData = null, currentChartData = null, currentTicker = 'BBCA', activeChartTF = '1d', screenerTF = '1d';
+let activeScreenerTab = 'all', isScreenerFullscreen = false, isDarkMode = true;
 let mainChart, candleSeries, volumeSeries, ma1Series, ma2Series, rsiChart, rsiSeries, stochChart, stochKSeries, stochDSeries, crtPriceLines = [];
 
-const defaultAppearance = { bodyUp:'#10b981', bodyDown:'#ef4444', wickUp:'#10b981', wickDown:'#ef4444', bdrUp:'#10b981', bdrDown:'#ef4444', showBorder:true, bg:'#0b0e14', grid:'#161b26', crtConf:'#10b981', crtPot:'#eab308' };
-let appearance = JSON.parse(localStorage.getItem('idx_appearance_v2')) || { ...defaultAppearance };
-let indConfig = JSON.parse(localStorage.getItem('idx_ind_config_v2')) || {
-  ma1: { visible:true, type:'SMA', period:20, color:'#2962ff', width:1.5 },
-  ma2: { visible:true, type:'SMA', period:50, color:'#ff6d00', width:1.5 },
-  crt: { visible:true },
-  rsi: { visible:false, period:14, color:'#a855f7' },
-  stoch: { visible:false, rsiLen:10, stochLen:10, smoothK:5, smoothD:5, colorK:'#2962ff', colorD:'#ff6d00' }
+const defaultAppearance = {
+  bodyUp: '#00c853', bodyDown: '#ff3d00', wickUp: '#00c853', wickDown: '#ff3d00',
+  bdrUp: '#00c853', bdrDown: '#ff3d00', showBorder: true, crtConf: '#00c853', crtPot: '#ffab00'
 };
-let watchlist = JSON.parse(localStorage.getItem('idx_watchlist')) || ['BBCA','DEWA','BUMI','ADRO'];
-let savedPresets = JSON.parse(localStorage.getItem('idx_saved_presets')) || null;
+let appearance = JSON.parse(localStorage.getItem('gozi_appearance_v1')) || { ...defaultAppearance };
+let indConfig = JSON.parse(localStorage.getItem('gozi_ind_v1')) || {
+  ma1: { visible: true, type: 'SMA', period: 20, color: '#ff8000', width: 1.5 },
+  ma2: { visible: true, type: 'SMA', period: 50, color: '#00b0ff', width: 1.5 },
+  crt: { visible: true },
+  rsi: { visible: false, period: 14, color: '#d500f9' },
+  stoch: { visible: false, rsiLen: 10, stochLen: 10, smoothK: 5, smoothD: 5, colorK: '#ff8000', colorD: '#00b0ff' }
+};
 
+// ==========================================
+// 1. MATH ENGINES
+// ==========================================
 function calcMA(candles, type, period) {
   const res = [], k = 2 / (period + 1); let emaPrev = null;
   for (let i = 0; i < candles.length; i++) {
@@ -314,31 +432,54 @@ function calcStochRSI(candles, rsiLen, stochLen, smoothK, smoothD) {
   return { kSeries, dSeries };
 }
 
+// ==========================================
+// 2. CHART INITIALIZATION & THEME SYNC
+// ==========================================
+function getChartThemeOptions() {
+  return {
+    layout: {
+      background: { type: 'solid', color: isDarkMode ? '#000000' : '#f4f6f9' },
+      textColor: isDarkMode ? '#8b949e' : '#475569',
+      fontFamily: "'JetBrains Mono', monospace"
+    },
+    grid: {
+      vertLines: { color: isDarkMode ? '#11161f' : '#e2e8f0' },
+      horzLines: { color: isDarkMode ? '#11161f' : '#e2e8f0' }
+    },
+    rightPriceScale: { borderColor: isDarkMode ? '#222936' : '#cbd5e1' },
+    timeScale: { borderColor: isDarkMode ? '#222936' : '#cbd5e1' }
+  };
+}
+
 function initCharts() {
   const c = document.getElementById('htf-chart-container');
+  const opts = getChartThemeOptions();
   mainChart = LightweightCharts.createChart(c, {
-    layout: { background: { type:'solid', color:appearance.bg }, textColor:'#848e9c' },
-    grid: { vertLines:{ color:appearance.grid }, horzLines:{ color:appearance.grid } },
+    ...opts,
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor:'#1e232d', autoScale:true, scaleMargins:{ top:0.08, bottom:0.18 } },
-    timeScale: { borderColor:'#1e232d', timeVisible:true, rightOffset:6 }
+    rightPriceScale: { ...opts.rightPriceScale, autoScale: true, scaleMargins: { top: 0.08, bottom: 0.18 } },
+    timeScale: { ...opts.timeScale, timeVisible: true, rightOffset: 6 }
   });
-  candleSeries = mainChart.addCandlestickSeries({ upColor:appearance.bodyUp, downColor:appearance.bodyDown, wickUpColor:appearance.wickUp, wickDownColor:appearance.wickDown, borderVisible:appearance.showBorder, borderUpColor:appearance.bdrUp, borderDownColor:appearance.bdrDown });
-  volumeSeries = mainChart.addHistogramSeries({ priceFormat:{ type:'volume' }, priceScaleId:'' });
-  volumeSeries.priceScale().applyOptions({ scaleMargins:{ top:0.85, bottom:0 } });
-  ma1Series = mainChart.addLineSeries({ color:indConfig.ma1.color, lineWidth:indConfig.ma1.width, visible:indConfig.ma1.visible, priceLineVisible:false });
-  ma2Series = mainChart.addLineSeries({ color:indConfig.ma2.color, lineWidth:indConfig.ma2.width, visible:indConfig.ma2.visible, priceLineVisible:false });
+  candleSeries = mainChart.addCandlestickSeries({
+    upColor: appearance.bodyUp, downColor: appearance.bodyDown,
+    wickUpColor: appearance.wickUp, wickDownColor: appearance.wickDown,
+    borderVisible: appearance.showBorder, borderUpColor: appearance.bdrUp, borderDownColor: appearance.bdrDown
+  });
+  volumeSeries = mainChart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: '' });
+  volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+  ma1Series = mainChart.addLineSeries({ color: indConfig.ma1.color, lineWidth: indConfig.ma1.width, visible: indConfig.ma1.visible, priceLineVisible: false });
+  ma2Series = mainChart.addLineSeries({ color: indConfig.ma2.color, lineWidth: indConfig.ma2.width, visible: indConfig.ma2.visible, priceLineVisible: false });
 
-  rsiChart = LightweightCharts.createChart(document.getElementById('rsi-chart-container'), { layout:{ background:{ type:'solid', color:appearance.bg }, textColor:'#848e9c' }, grid:{ vertLines:{ color:appearance.grid }, horzLines:{ color:appearance.grid } }, rightPriceScale:{ borderColor:'#1e232d' }, timeScale:{ visible:false } });
-  rsiSeries = rsiChart.addLineSeries({ color:indConfig.rsi.color, lineWidth:1.5, priceLineVisible:false });
-  rsiSeries.createPriceLine({ price:70, color:'#ef444466', lineWidth:1, lineStyle:2, axisLabelVisible:false });
-  rsiSeries.createPriceLine({ price:30, color:'#10b98166', lineWidth:1, lineStyle:2, axisLabelVisible:false });
+  rsiChart = LightweightCharts.createChart(document.getElementById('rsi-chart-container'), { ...opts, timeScale: { visible: false } });
+  rsiSeries = rsiChart.addLineSeries({ color: indConfig.rsi.color, lineWidth: 1.5, priceLineVisible: false });
+  rsiSeries.createPriceLine({ price: 70, color: '#ff3d0066', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+  rsiSeries.createPriceLine({ price: 30, color: '#00c85366', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
-  stochChart = LightweightCharts.createChart(document.getElementById('stoch-chart-container'), { layout:{ background:{ type:'solid', color:appearance.bg }, textColor:'#848e9c' }, grid:{ vertLines:{ color:appearance.grid }, horzLines:{ color:appearance.grid } }, rightPriceScale:{ borderColor:'#1e232d' }, timeScale:{ visible:false } });
-  stochKSeries = stochChart.addLineSeries({ color:indConfig.stoch.colorK, lineWidth:1.5, priceLineVisible:false });
-  stochDSeries = stochChart.addLineSeries({ color:indConfig.stoch.colorD, lineWidth:1.5, priceLineVisible:false });
-  stochKSeries.createPriceLine({ price:80, color:'#ef444466', lineWidth:1, lineStyle:2, axisLabelVisible:false });
-  stochKSeries.createPriceLine({ price:20, color:'#10b98166', lineWidth:1, lineStyle:2, axisLabelVisible:false });
+  stochChart = LightweightCharts.createChart(document.getElementById('stoch-chart-container'), { ...opts, timeScale: { visible: false } });
+  stochKSeries = stochChart.addLineSeries({ color: indConfig.stoch.colorK, lineWidth: 1.5, priceLineVisible: false });
+  stochDSeries = stochChart.addLineSeries({ color: indConfig.stoch.colorD, lineWidth: 1.5, priceLineVisible: false });
+  stochKSeries.createPriceLine({ price: 80, color: '#ff3d0066', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+  stochKSeries.createPriceLine({ price: 20, color: '#00c85366', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
   mainChart.timeScale().subscribeVisibleLogicalRangeChange((r) => {
     if (!r) return;
@@ -350,26 +491,46 @@ function initCharts() {
   mainChart.subscribeCrosshairMove((p) => {
     if (!p.time || !p.seriesData) return;
     const bar = p.seriesData.get(candleSeries), m1 = p.seriesData.get(ma1Series), m2 = p.seriesData.get(ma2Series);
-    if (bar) { document.getElementById('leg-o').textContent = bar.open.toLocaleString('id-ID'); document.getElementById('leg-h').textContent = bar.high.toLocaleString('id-ID'); document.getElementById('leg-l').textContent = bar.low.toLocaleString('id-ID'); document.getElementById('leg-c').textContent = bar.close.toLocaleString('id-ID'); }
+    if (bar) {
+      document.getElementById('leg-o').textContent = bar.open.toLocaleString('id-ID');
+      document.getElementById('leg-h').textContent = bar.high.toLocaleString('id-ID');
+      document.getElementById('leg-l').textContent = bar.low.toLocaleString('id-ID');
+      document.getElementById('leg-c').textContent = bar.close.toLocaleString('id-ID');
+    }
     if (m1) document.getElementById('val-ma1').textContent = m1.value.toLocaleString('id-ID');
     if (m2) document.getElementById('val-ma2').textContent = m2.value.toLocaleString('id-ID');
   });
 
   window.addEventListener('resize', resizeAllCharts);
-  syncAppearanceInputs(); syncIndicatorPills();
+  syncAppearanceInputs();
+  syncIndicatorPills();
+}
+
+function toggleTheme() {
+  isDarkMode = !isDarkMode;
+  document.documentElement.classList.toggle('light', !isDarkMode);
+  document.documentElement.classList.toggle('dark', isDarkMode);
+  document.getElementById('theme-lbl').textContent = isDarkMode ? 'Light' : 'Dark';
+
+  const opts = getChartThemeOptions();
+  mainChart.applyOptions(opts);
+  rsiChart.applyOptions(opts);
+  stochChart.applyOptions(opts);
+  renderStockList();
 }
 
 function resizeAllCharts() {
+  if (isScreenerFullscreen) return;
   const c = document.getElementById('htf-chart-container');
-  mainChart.applyOptions({ width:c.clientWidth, height:c.clientHeight });
-  if (indConfig.rsi.visible) { const r = document.getElementById('rsi-chart-container'); rsiChart.applyOptions({ width:r.clientWidth, height:r.clientHeight }); }
-  if (indConfig.stoch.visible) { const s = document.getElementById('stoch-chart-container'); stochChart.applyOptions({ width:s.clientWidth, height:s.clientHeight }); }
+  mainChart.applyOptions({ width: c.clientWidth, height: c.clientHeight });
+  if (indConfig.rsi.visible) { const r = document.getElementById('rsi-chart-container'); rsiChart.applyOptions({ width: r.clientWidth, height: r.clientHeight }); }
+  if (indConfig.stoch.visible) { const s = document.getElementById('stoch-chart-container'); stochChart.applyOptions({ width: s.clientWidth, height: s.clientHeight }); }
   renderDrawings();
 }
 
 function zoomChart(bars = 85) {
   const total = candleSeries.data().length;
-  mainChart.priceScale('right').applyOptions({ autoScale:true });
+  mainChart.priceScale('right').applyOptions({ autoScale: true });
   if (total > 0) {
     const r = { from: Math.max(0, total - bars), to: total + 4 };
     mainChart.timeScale().setVisibleLogicalRange(r);
@@ -379,10 +540,18 @@ function zoomChart(bars = 85) {
   setTimeout(renderDrawings, 30);
 }
 
-function fitAllChart() { mainChart.priceScale('right').applyOptions({ autoScale:true }); mainChart.timeScale().fitContent(); setTimeout(renderDrawings, 30); }
+function fitAllChart() {
+  mainChart.priceScale('right').applyOptions({ autoScale: true });
+  mainChart.timeScale().fitContent();
+  setTimeout(renderDrawings, 30);
+}
 
+// ==========================================
+// 3. LOAD CHART DATA & INDICATORS
+// ==========================================
 async function loadHTFChart(ticker, tf) {
   currentTicker = ticker.toUpperCase();
+  deselectDrawing();
   document.getElementById('top-ticker-input').value = currentTicker;
   document.getElementById('chart-ticker-lbl').textContent = currentTicker;
   document.getElementById('chart-tf-lbl').textContent = tf.toUpperCase();
@@ -392,7 +561,7 @@ async function loadHTFChart(ticker, tf) {
     document.getElementById('chart-price-lbl').textContent = 'Rp ' + summary.close.toLocaleString('id-ID');
     const chgEl = document.getElementById('chart-chg-lbl');
     chgEl.textContent = `${summary.change_pct > 0 ? '+' : ''}${summary.change_pct}%`;
-    chgEl.className = `font-medium tabular-nums ${summary.change_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+    chgEl.style.color = summary.change_pct >= 0 ? 'var(--bull)' : 'var(--bear)';
   }
 
   try {
@@ -402,7 +571,7 @@ async function loadHTFChart(ticker, tf) {
     if (!data?.candles) return;
     currentChartData = data;
     candleSeries.setData(data.candles);
-    volumeSeries.setData(data.volume.map(v => ({ time:v.time, value:v.value, color: v.isUp ? appearance.bodyUp + '66' : appearance.bodyDown + '66' })));
+    volumeSeries.setData(data.volume.map(v => ({ time: v.time, value: v.value, color: v.isUp ? appearance.bodyUp + '55' : appearance.bodyDown + '55' })));
     recomputeIndicators();
     zoomChart(tf === '1m' ? 48 : (tf === '1w' ? 75 : 85));
   } catch (err) { console.error(err); }
@@ -418,7 +587,7 @@ function recomputeIndicators() {
   if (m2.length) document.getElementById('val-ma2').textContent = m2[m2.length-1].value.toLocaleString('id-ID');
 
   const rsiRaw = calcRSIArray(candles, indConfig.rsi.period), rsiData = [];
-  for (let i = 0; i < candles.length; i++) if (rsiRaw[i] !== null) rsiData.push({ time:candles[i].time, value:Number(rsiRaw[i].toFixed(2)) });
+  for (let i = 0; i < candles.length; i++) if (rsiRaw[i] !== null) rsiData.push({ time: candles[i].time, value: Number(rsiRaw[i].toFixed(2)) });
   rsiSeries.setData(rsiData);
   if (rsiData.length) document.getElementById('pane-rsi-val').textContent = rsiData[rsiData.length-1].value;
 
@@ -431,16 +600,20 @@ function recomputeIndicators() {
 
   if (indConfig.crt.visible && currentChartData.crt) {
     if (currentChartData.crt.markers?.length) {
-      candleSeries.setMarkers(currentChartData.crt.markers.map(m => ({ ...m, color: m.text.includes('POTENTIAL') ? appearance.crtPot : (m.position === 'belowBar' ? appearance.crtConf : '#ef4444') })));
+      candleSeries.setMarkers(currentChartData.crt.markers.map(m => ({
+        ...m, color: m.text.includes('POTENTIAL') ? appearance.crtPot : (m.position === 'belowBar' ? appearance.crtConf : '#ff3d00')
+      })));
     }
     const s = currentChartData.crt.latest_setup;
     if (s && !s.is_broken) {
-      const isPot = s.status === 'POTENTIAL', col = isPot ? appearance.crtPot : (s.dir === 1 ? appearance.crtConf : '#ef4444');
+      const isPot = s.status === 'POTENTIAL', col = isPot ? appearance.crtPot : (s.dir === 1 ? appearance.crtConf : '#ff3d00');
       badge.textContent = `${s.signal} [${s.status}]`;
-      badge.className = `px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide ${isPot ? 'bg-yellow-500/20 text-yellow-300' : 'bg-emerald-500/20 text-emerald-400'}`;
-      crtPriceLines.push(candleSeries.createPriceLine({ price:s.crth, color:col, lineWidth:2, lineStyle:isPot?2:0, axisLabelVisible:true, title:'CRTH' }));
-      crtPriceLines.push(candleSeries.createPriceLine({ price:s.mid50, color:col, lineWidth:1, lineStyle:2, axisLabelVisible:false, title:'50%' }));
-      crtPriceLines.push(candleSeries.createPriceLine({ price:s.crtl, color:col, lineWidth:2, lineStyle:isPot?2:0, axisLabelVisible:true, title:'CRTL' }));
+      badge.className = 'px-2 py-0.5 rounded-xs text-[10px] font-bold tracking-wide';
+      badge.style.backgroundColor = col + '26';
+      badge.style.color = col;
+      crtPriceLines.push(candleSeries.createPriceLine({ price: s.crth, color: col, lineWidth: 2, lineStyle: isPot ? 2 : 0, axisLabelVisible: true, title: 'CRTH' }));
+      crtPriceLines.push(candleSeries.createPriceLine({ price: s.mid50, color: col, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '50%' }));
+      crtPriceLines.push(candleSeries.createPriceLine({ price: s.crtl, color: col, lineWidth: 2, lineStyle: isPot ? 2 : 0, axisLabelVisible: true, title: 'CRTL' }));
     }
   }
   if (candles.length) {
@@ -452,6 +625,9 @@ function recomputeIndicators() {
   }
 }
 
+// ==========================================
+// 4. INDICATOR & STYLE MODALS
+// ==========================================
 let editingIndKey = null;
 function syncIndicatorPills() {
   document.getElementById('lbl-ma1').textContent = `${indConfig.ma1.type} ${indConfig.ma1.period}`;
@@ -471,35 +647,32 @@ function syncIndicatorPills() {
   document.getElementById('eye-stoch').style.opacity = indConfig.stoch.visible ? '1' : '0.35';
   document.getElementById('pane-stoch-wrap').classList.toggle('hidden', !indConfig.stoch.visible);
 }
-
 function toggleInd(key) {
   indConfig[key].visible = !indConfig[key].visible;
-  localStorage.setItem('idx_ind_config_v2', JSON.stringify(indConfig));
-  if (key === 'ma1') ma1Series.applyOptions({ visible:indConfig.ma1.visible });
-  if (key === 'ma2') ma2Series.applyOptions({ visible:indConfig.ma2.visible });
+  localStorage.setItem('gozi_ind_v1', JSON.stringify(indConfig));
+  if (key === 'ma1') ma1Series.applyOptions({ visible: indConfig.ma1.visible });
+  if (key === 'ma2') ma2Series.applyOptions({ visible: indConfig.ma2.visible });
   if (key === 'crt') recomputeIndicators();
   syncIndicatorPills();
 }
-
 function toggleSubPane(key) {
   indConfig[key].visible = !indConfig[key].visible;
-  localStorage.setItem('idx_ind_config_v2', JSON.stringify(indConfig));
+  localStorage.setItem('gozi_ind_v1', JSON.stringify(indConfig));
   syncIndicatorPills();
   setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 30);
 }
-
 function openIndModal(key) {
   editingIndKey = key;
   const title = document.getElementById('ind-modal-title'), body = document.getElementById('ind-modal-body');
   if (key === 'ma1' || key === 'ma2') {
     const c = indConfig[key]; title.textContent = `Moving Average (${key.toUpperCase()})`;
-    body.innerHTML = `<div class="flex items-center justify-between"><span>Type</span><select id="inp-ma-type" class="bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39]"><option value="SMA" ${c.type==='SMA'?'selected':''}>SMA</option><option value="EMA" ${c.type==='EMA'?'selected':''}>EMA</option></select></div><div class="flex items-center justify-between"><span>Period</span><input type="number" id="inp-ma-period" value="${c.period}" min="2" max="250" class="w-20 bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39] text-right"></div><div class="flex items-center justify-between"><span>Color</span><input type="color" id="inp-ma-color" value="${c.color}"></div>`;
+    body.innerHTML = `<div class="flex items-center justify-between"><span>Type</span><select id="inp-ma-type" class="px-2 py-1 rounded-xs"><option value="SMA" ${c.type==='SMA'?'selected':''}>SMA</option><option value="EMA" ${c.type==='EMA'?'selected':''}>EMA</option></select></div><div class="flex items-center justify-between"><span>Period</span><input type="number" id="inp-ma-period" value="${c.period}" min="2" max="250" class="w-20 px-2 py-1 rounded-xs text-right"></div><div class="flex items-center justify-between"><span>Color</span><input type="color" id="inp-ma-color" value="${c.color}"></div>`;
   } else if (key === 'rsi') {
     const c = indConfig.rsi; title.textContent = 'RSI Settings';
-    body.innerHTML = `<div class="flex items-center justify-between"><span>Period</span><input type="number" id="inp-rsi-len" value="${c.period}" min="2" max="100" class="w-20 bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39] text-right"></div><div class="flex items-center justify-between"><span>Color</span><input type="color" id="inp-rsi-col" value="${c.color}"></div>`;
+    body.innerHTML = `<div class="flex items-center justify-between"><span>Period</span><input type="number" id="inp-rsi-len" value="${c.period}" min="2" max="100" class="w-20 px-2 py-1 rounded-xs text-right"></div><div class="flex items-center justify-between"><span>Color</span><input type="color" id="inp-rsi-col" value="${c.color}"></div>`;
   } else if (key === 'stoch') {
     const c = indConfig.stoch; title.textContent = 'StochRSI Settings';
-    body.innerHTML = `<div class="flex items-center justify-between"><span>RSI Len</span><input type="number" id="inp-st-rsi" value="${c.rsiLen}" class="w-20 bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39] text-right"></div><div class="flex items-center justify-between"><span>Stoch Len</span><input type="number" id="inp-st-stoch" value="${c.stochLen}" class="w-20 bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39] text-right"></div><div class="flex items-center justify-between"><span>Smooth K</span><input type="number" id="inp-st-k" value="${c.smoothK}" class="w-20 bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39] text-right"></div><div class="flex items-center justify-between"><span>Smooth D</span><input type="number" id="inp-st-d" value="${c.smoothD}" class="w-20 bg-[#0b0e14] px-2 py-1 rounded border border-[#2a2e39] text-right"></div><div class="flex items-center justify-between"><span>%K / %D</span><div class="space-x-1"><input type="color" id="inp-st-colk" value="${c.colorK}"><input type="color" id="inp-st-cold" value="${c.colorD}"></div></div>`;
+    body.innerHTML = `<div class="flex items-center justify-between"><span>RSI Len</span><input type="number" id="inp-st-rsi" value="${c.rsiLen}" class="w-20 px-2 py-1 rounded-xs text-right"></div><div class="flex items-center justify-between"><span>Stoch Len</span><input type="number" id="inp-st-stoch" value="${c.stochLen}" class="w-20 px-2 py-1 rounded-xs text-right"></div><div class="flex items-center justify-between"><span>Smooth K</span><input type="number" id="inp-st-k" value="${c.smoothK}" class="w-20 px-2 py-1 rounded-xs text-right"></div><div class="flex items-center justify-between"><span>Smooth D</span><input type="number" id="inp-st-d" value="${c.smoothD}" class="w-20 px-2 py-1 rounded-xs text-right"></div><div class="flex items-center justify-between"><span>%K / %D</span><div class="space-x-1"><input type="color" id="inp-st-colk" value="${c.colorK}"><input type="color" id="inp-st-cold" value="${c.colorD}"></div></div>`;
   }
   document.getElementById('indicator-modal').classList.remove('hidden');
 }
@@ -509,11 +682,11 @@ function saveIndModal() {
     indConfig[editingIndKey].type = document.getElementById('inp-ma-type').value;
     indConfig[editingIndKey].period = Math.max(2, parseInt(document.getElementById('inp-ma-period').value) || 20);
     indConfig[editingIndKey].color = document.getElementById('inp-ma-color').value;
-    (editingIndKey === 'ma1' ? ma1Series : ma2Series).applyOptions({ color:indConfig[editingIndKey].color });
+    (editingIndKey === 'ma1' ? ma1Series : ma2Series).applyOptions({ color: indConfig[editingIndKey].color });
   } else if (editingIndKey === 'rsi') {
     indConfig.rsi.period = Math.max(2, parseInt(document.getElementById('inp-rsi-len').value) || 14);
     indConfig.rsi.color = document.getElementById('inp-rsi-col').value;
-    rsiSeries.applyOptions({ color:indConfig.rsi.color });
+    rsiSeries.applyOptions({ color: indConfig.rsi.color });
   } else if (editingIndKey === 'stoch') {
     indConfig.stoch.rsiLen = Math.max(2, parseInt(document.getElementById('inp-st-rsi').value) || 10);
     indConfig.stoch.stochLen = Math.max(2, parseInt(document.getElementById('inp-st-stoch').value) || 10);
@@ -521,9 +694,9 @@ function saveIndModal() {
     indConfig.stoch.smoothD = Math.max(1, parseInt(document.getElementById('inp-st-d').value) || 5);
     indConfig.stoch.colorK = document.getElementById('inp-st-colk').value;
     indConfig.stoch.colorD = document.getElementById('inp-st-cold').value;
-    stochKSeries.applyOptions({ color:indConfig.stoch.colorK }); stochDSeries.applyOptions({ color:indConfig.stoch.colorD });
+    stochKSeries.applyOptions({ color: indConfig.stoch.colorK }); stochDSeries.applyOptions({ color: indConfig.stoch.colorD });
   }
-  localStorage.setItem('idx_ind_config_v2', JSON.stringify(indConfig));
+  localStorage.setItem('gozi_ind_v1', JSON.stringify(indConfig));
   syncIndicatorPills(); recomputeIndicators(); closeIndModal();
 }
 
@@ -531,201 +704,621 @@ function syncAppearanceInputs() {
   document.getElementById('col-body-up').value = appearance.bodyUp; document.getElementById('col-body-down').value = appearance.bodyDown;
   document.getElementById('col-wick-up').value = appearance.wickUp; document.getElementById('col-wick-down').value = appearance.wickDown;
   document.getElementById('col-bdr-up').value = appearance.bdrUp; document.getElementById('col-bdr-down').value = appearance.bdrDown;
-  document.getElementById('col-bg').value = appearance.bg; document.getElementById('col-grid').value = appearance.grid;
   document.getElementById('col-crt-conf').value = appearance.crtConf; document.getElementById('col-crt-pot').value = appearance.crtPot;
   document.getElementById('chk-candle-border').checked = appearance.showBorder;
 }
 function toggleAppearanceModal() { document.getElementById('appearance-modal').classList.toggle('hidden'); }
 function applyAppearance() {
   appearance = {
-    bodyUp:document.getElementById('col-body-up').value, bodyDown:document.getElementById('col-body-down').value,
-    wickUp:document.getElementById('col-wick-up').value, wickDown:document.getElementById('col-wick-down').value,
-    bdrUp:document.getElementById('col-bdr-up').value, bdrDown:document.getElementById('col-bdr-down').value,
-    showBorder:document.getElementById('chk-candle-border').checked, bg:document.getElementById('col-bg').value,
-    grid:document.getElementById('col-grid').value, crtConf:document.getElementById('col-crt-conf').value, crtPot:document.getElementById('col-crt-pot').value
+    bodyUp: document.getElementById('col-body-up').value, bodyDown: document.getElementById('col-body-down').value,
+    wickUp: document.getElementById('col-wick-up').value, wickDown: document.getElementById('col-wick-down').value,
+    bdrUp: document.getElementById('col-bdr-up').value, bdrDown: document.getElementById('col-bdr-down').value,
+    showBorder: document.getElementById('chk-candle-border').checked, crtConf: document.getElementById('col-crt-conf').value, crtPot: document.getElementById('col-crt-pot').value
   };
-  localStorage.setItem('idx_appearance_v2', JSON.stringify(appearance));
-  candleSeries.applyOptions({ upColor:appearance.bodyUp, downColor:appearance.bodyDown, wickUpColor:appearance.wickUp, wickDownColor:appearance.wickDown, borderVisible:appearance.showBorder, borderUpColor:appearance.bdrUp, borderDownColor:appearance.bdrDown });
-  mainChart.applyOptions({ layout:{ background:{ type:'solid', color:appearance.bg } }, grid:{ vertLines:{ color:appearance.grid }, horzLines:{ color:appearance.grid } } });
-  rsiChart.applyOptions({ layout:{ background:{ type:'solid', color:appearance.bg } }, grid:{ vertLines:{ color:appearance.grid }, horzLines:{ color:appearance.grid } } });
-  stochChart.applyOptions({ layout:{ background:{ type:'solid', color:appearance.bg } }, grid:{ vertLines:{ color:appearance.grid }, horzLines:{ color:appearance.grid } } });
+  localStorage.setItem('gozi_appearance_v1', JSON.stringify(appearance));
+  candleSeries.applyOptions({ upColor: appearance.bodyUp, downColor: appearance.bodyDown, wickUpColor: appearance.wickUp, wickDownColor: appearance.wickDown, borderVisible: appearance.showBorder, borderUpColor: appearance.bdrUp, borderDownColor: appearance.bdrDown });
   recomputeIndicators();
 }
-function resetAppearance() { appearance = { ...defaultAppearance }; localStorage.setItem('idx_appearance_v2', JSON.stringify(appearance)); syncAppearanceInputs(); applyAppearance(); }
-function toggleTheme() {
-  isDarkMode = !isDarkMode;
-  const bg = isDarkMode ? '#0b0e14' : '#ffffff', panel = isDarkMode ? '#131722' : '#f8fafc', grid = isDarkMode ? '#161b26' : '#e2e8f0', txt = isDarkMode ? '#d1d4dc' : '#0f172a';
-  appearance.bg = bg; appearance.grid = grid; syncAppearanceInputs();
-  document.body.style.backgroundColor = bg; document.body.style.color = txt;
-  document.getElementById('top-bar').style.backgroundColor = panel; document.getElementById('left-toolbar').style.backgroundColor = panel; document.getElementById('legend-bar').style.backgroundColor = bg;
-  document.getElementById('theme-lbl').textContent = isDarkMode ? 'Light' : 'Dark';
-  mainChart.applyOptions({ layout:{ background:{ type:'solid', color:bg }, textColor:txt }, grid:{ vertLines:{ color:grid }, horzLines:{ color:grid } } });
-  rsiChart.applyOptions({ layout:{ background:{ type:'solid', color:bg }, textColor:txt } });
-  stochChart.applyOptions({ layout:{ background:{ type:'solid', color:bg }, textColor:txt } });
-}
+function resetAppearance() { appearance = { ...defaultAppearance }; localStorage.setItem('gozi_appearance_v1', JSON.stringify(appearance)); syncAppearanceInputs(); applyAppearance(); }
 
-let activeDrawTool = 'cursor', activeDrawColor = '#2962ff', hideAllDrawings = false, pendingPoint = null;
-function getDrawStorageKey() { return `idx_drawings_${currentTicker}_${activeChartTF}`; }
+// ==========================================
+// 5. TRADINGVIEW INTERACTIVE DRAWING ENGINE
+//    (SELECT, MOVE, RESIZE HANDLES, EDIT)
+// ==========================================
+let activeDrawTool = 'cursor', defaultDrawColor = '#ff8000', hideAllDrawings = false;
+let pendingPoint = null, selectedDrawId = null, dragState = null;
+
+function getDrawStorageKey() { return `gozi_drawings_${currentTicker}_${activeChartTF}`; }
 function loadDrawingsList() { return JSON.parse(localStorage.getItem(getDrawStorageKey())) || []; }
 function saveDrawingsList(l) { localStorage.setItem(getDrawStorageKey(), JSON.stringify(l)); }
+
 function setDrawTool(t) {
-  activeDrawTool = t; pendingPoint = null;
+  activeDrawTool = t;
+  pendingPoint = null;
+  if (t !== 'cursor') deselectDrawing();
+
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`tool-${t}`)?.classList.add('active');
+
   const svg = document.getElementById('drawing-svg'), hint = document.getElementById('draw-hint-bar');
-  if (t === 'cursor') { svg.style.pointerEvents = 'none'; hint.classList.add('hidden'); }
-  else { svg.style.pointerEvents = 'auto'; svg.style.cursor = 'crosshair'; hint.classList.remove('hidden'); document.getElementById('draw-hint-text').textContent = ['hline','vline','text'].includes(t) ? 'Click 1 point on chart.' : 'Click point 1, then point 2.'; }
+  if (t === 'cursor') {
+    svg.style.cursor = 'default';
+    hint.classList.add('hidden');
+  } else {
+    svg.style.cursor = 'crosshair';
+    hint.classList.remove('hidden');
+    document.getElementById('draw-hint-text').textContent = ['hline', 'vline', 'text'].includes(t)
+      ? 'Klik 1 titik pada chart untuk menempatkan objek.'
+      : 'Klik titik awal, lalu klik titik akhir pada chart.';
+  }
+  renderDrawings();
 }
-function updateDrawColor(hex) { activeDrawColor = hex; document.getElementById('draw-color-dot').style.backgroundColor = hex; }
-function toggleHideDrawings() { hideAllDrawings = !hideAllDrawings; document.getElementById('tool-hide-draw').style.opacity = hideAllDrawings ? '0.4' : '1'; renderDrawings(); }
-function undoLastDrawing() { const l = loadDrawingsList(); l.pop(); saveDrawingsList(l); renderDrawings(); }
-function clearAllDrawings() { saveDrawingsList([]); renderDrawings(); }
+
+function updateDefaultDrawColor(hex) {
+  defaultDrawColor = hex;
+  document.getElementById('draw-color-dot').style.backgroundColor = hex;
+}
+
+function toggleHideDrawings() {
+  hideAllDrawings = !hideAllDrawings;
+  document.getElementById('tool-hide-draw').style.opacity = hideAllDrawings ? '0.4' : '1';
+  if (hideAllDrawings) deselectDrawing();
+  renderDrawings();
+}
+
+function selectDrawing(id) {
+  selectedDrawId = id;
+  const list = loadDrawingsList();
+  const obj = list.find(x => x.id === id);
+  const bar = document.getElementById('floating-draw-toolbar');
+  const delBtn = document.getElementById('tool-del-selected');
+  if (!obj) { deselectDrawing(); return; }
+
+  bar.classList.remove('hidden');
+  delBtn.classList.remove('hidden');
+  document.getElementById('flt-obj-type').textContent = obj.type.toUpperCase();
+  document.getElementById('sel-obj-color').value = obj.color || '#ff8000';
+  document.getElementById('sel-obj-width').value = String(obj.width || 1.5);
+  document.getElementById('sel-obj-dash').value = obj.dash || '';
+  document.getElementById('sel-obj-edit-text').classList.toggle('hidden', obj.type !== 'text');
+  renderDrawings();
+}
+
+function deselectDrawing() {
+  selectedDrawId = null;
+  document.getElementById('floating-draw-toolbar').classList.add('hidden');
+  document.getElementById('tool-del-selected').classList.add('hidden');
+  renderDrawings();
+}
+
+function updateSelectedObjProp(prop, val) {
+  if (!selectedDrawId) return;
+  const list = loadDrawingsList();
+  const idx = list.findIndex(x => x.id === selectedDrawId);
+  if (idx !== -1) {
+    list[idx][prop] = val;
+    saveDrawingsList(list);
+    renderDrawings();
+  }
+}
+
+function editSelectedObjText() {
+  if (!selectedDrawId) return;
+  const list = loadDrawingsList();
+  const idx = list.findIndex(x => x.id === selectedDrawId);
+  if (idx !== -1 && list[idx].type === 'text') {
+    const newTxt = prompt('Edit teks catatan:', list[idx].text);
+    if (newTxt !== null && newTxt.trim() !== '') {
+      list[idx].text = newTxt.trim();
+      saveDrawingsList(list);
+      renderDrawings();
+    }
+  }
+}
+
+function deleteSelectedDrawing() {
+  if (!selectedDrawId) return;
+  const list = loadDrawingsList().filter(x => x.id !== selectedDrawId);
+  saveDrawingsList(list);
+  deselectDrawing();
+}
+
+function clearAllDrawings() {
+  saveDrawingsList([]);
+  deselectDrawing();
+}
+
 function pixelToChartCoord(x, y) {
   if (!currentChartData?.candles?.length) return null;
-  const logical = mainChart.timeScale().coordinateToLogical(x), price = candleSeries.coordinateToPrice(y);
+  const logical = mainChart.timeScale().coordinateToLogical(x);
+  const price = candleSeries.coordinateToPrice(y);
   if (logical === null || price === null) return null;
   const idx = Math.max(0, Math.min(currentChartData.candles.length - 1, Math.round(logical)));
   return { idx, time: currentChartData.candles[idx].time, price: Number(price.toFixed(2)) };
 }
+
 function chartCoordToPixel(pt) {
-  if (!currentChartData?.candles?.length) return null;
-  let idx = currentChartData.candles.findIndex(c => c.time === pt.time); if (idx === -1) idx = pt.idx || 0;
-  const x = mainChart.timeScale().logicalToCoordinate(idx), y = candleSeries.priceToCoordinate(pt.price);
+  if (!currentChartData?.candles?.length || !pt) return null;
+  let idx = currentChartData.candles.findIndex(c => c.time === pt.time);
+  if (idx === -1) idx = pt.idx || 0;
+  const x = mainChart.timeScale().logicalToCoordinate(idx);
+  const y = candleSeries.priceToCoordinate(pt.price);
   return (x === null || y === null) ? null : { x, y };
 }
-document.getElementById('drawing-svg').addEventListener('click', (e) => {
-  if (activeDrawTool === 'cursor') return;
-  const r = e.currentTarget.getBoundingClientRect(), pt = pixelToChartCoord(e.clientX - r.left, e.clientY - r.top);
-  if (!pt) return;
+
+const svgCanvas = document.getElementById('drawing-svg');
+
+// Allow chart pan/zoom when in cursor mode unless clicking on a drawing object
+svgCanvas.style.pointerEvents = 'none';
+
+function handleObjPointerDown(e, id, mode) {
+  e.stopPropagation();
+  if (activeDrawTool !== 'cursor') return;
+  selectDrawing(id);
+  const rect = svgCanvas.getBoundingClientRect();
   const list = loadDrawingsList();
-  if (activeDrawTool === 'hline' || activeDrawTool === 'vline') { list.push({ type:activeDrawTool, p1:pt, color:activeDrawColor }); saveDrawingsList(list); setDrawTool('cursor'); renderDrawings(); return; }
-  if (activeDrawTool === 'text') { const txt = prompt('Chart note:'); if (txt) { list.push({ type:'text', p1:pt, text:txt, color:activeDrawColor }); saveDrawingsList(list); } setDrawTool('cursor'); renderDrawings(); return; }
-  if (!pendingPoint) { pendingPoint = pt; document.getElementById('draw-hint-text').textContent = 'Click second point...'; }
-  else { list.push({ type:activeDrawTool, p1:pendingPoint, p2:pt, color:activeDrawColor }); saveDrawingsList(list); pendingPoint = null; setDrawTool('cursor'); renderDrawings(); }
-});
-function renderDrawings() {
-  const svg = document.getElementById('drawing-svg'); svg.innerHTML = ''; if (hideAllDrawings) return;
-  const list = loadDrawingsList(), w = svg.clientWidth, h = svg.clientHeight;
-  list.forEach(item => {
-    const a = chartCoordToPixel(item.p1); if (!a) return; const col = item.color || '#2962ff';
-    if (item.type === 'hline') svg.innerHTML += `<line x1="0" y1="${a.y}" x2="${w}" y2="${a.y}" stroke="${col}" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${w-65}" y="${a.y-4}" fill="${col}" font-size="10">${item.p1.price}</text>`;
-    else if (item.type === 'vline') svg.innerHTML += `<line x1="${a.x}" y1="0" x2="${a.x}" y2="${h}" stroke="${col}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-    else if (item.type === 'text') svg.innerHTML += `<text x="${a.x}" y="${a.y}" fill="${col}" font-size="11" font-weight="600">${item.text}</text>`;
-    else if (item.p2) {
-      const b = chartCoordToPixel(item.p2); if (!b) return;
-      if (item.type === 'trendline') svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="1.8"/>`;
-      else if (item.type === 'extline') { const dx = b.x - a.x, dy = b.y - a.y, sc = dx !== 0 ? (w - a.x)/dx : 1; svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${w}" y2="${a.y + dy*sc}" stroke="${col}" stroke-width="1.8"/>`; }
-      else if (item.type === 'rect') svg.innerHTML += `<rect x="${Math.min(a.x,b.x)}" y="${Math.min(a.y,b.y)}" width="${Math.abs(b.x-a.x)}" height="${Math.abs(b.y-a.y)}" fill="${col}26" stroke="${col}" stroke-width="1.5"/>`;
-      else if (item.type === 'fib') {
-        const x1 = Math.min(a.x,b.x), x2 = Math.max(a.x,b.x,a.x+120);
-        [0,0.236,0.382,0.5,0.618,0.705,0.786,1].forEach(lvl => { const yL = a.y + (b.y-a.y)*lvl, pV = (item.p1.price + (item.p2.price-item.p1.price)*lvl).toFixed(0); svg.innerHTML += `<line x1="${x1}" y1="${yL}" x2="${x2}" y2="${yL}" stroke="${col}" stroke-width="1" stroke-opacity="0.75"/><text x="${x1+4}" y="${yL-2}" fill="${col}" font-size="9">${lvl} (${pV})</text>`; });
-      } else if (item.type === 'rr') {
-        const x1 = Math.min(a.x,b.x), rw = Math.max(60,Math.abs(b.x-a.x)), midY = (a.y+b.y)/2;
-        svg.innerHTML += `<rect x="${x1}" y="${Math.min(a.y,b.y)}" width="${rw}" height="${Math.abs(midY-Math.min(a.y,b.y))}" fill="#10b98133" stroke="#10b981" stroke-width="1"/><rect x="${x1}" y="${midY}" width="${rw}" height="${Math.abs(Math.max(a.y,b.y)-midY)}" fill="#ef444433" stroke="#ef4444" stroke-width="1"/>`;
+  const obj = list.find(x => x.id === id);
+  if (!obj) return;
+
+  dragState = {
+    id,
+    mode, // 'move', 'p1', 'p2'
+    startX: e.clientX - rect.left,
+    startY: e.clientY - rect.top,
+    origP1: { ...obj.p1 },
+    origP2: obj.p2 ? { ...obj.p2 } : null
+  };
+  svgCanvas.style.pointerEvents = 'auto';
+}
+
+window.addEventListener('pointermove', (e) => {
+  if (!dragState) return;
+  const rect = svgCanvas.getBoundingClientRect();
+  const curX = e.clientX - rect.left;
+  const curY = e.clientY - rect.top;
+  const list = loadDrawingsList();
+  const idx = list.findIndex(x => x.id === dragState.id);
+  if (idx === -1) return;
+
+  if (dragState.mode === 'p1') {
+    const pt = pixelToChartCoord(curX, curY);
+    if (pt) list[idx].p1 = pt;
+  } else if (dragState.mode === 'p2') {
+    const pt = pixelToChartCoord(curX, curY);
+    if (pt) list[idx].p2 = pt;
+  } else if (dragState.mode === 'move') {
+    const startPt = pixelToChartCoord(dragState.startX, dragState.startY);
+    const curPt = pixelToChartCoord(curX, curY);
+    if (startPt && curPt) {
+      const dIdx = curPt.idx - startPt.idx;
+      const dPrice = curPt.price - startPt.price;
+      const maxIdx = currentChartData.candles.length - 1;
+
+      const newIdx1 = Math.max(0, Math.min(maxIdx, dragState.origP1.idx + dIdx));
+      list[idx].p1 = {
+        idx: newIdx1,
+        time: currentChartData.candles[newIdx1].time,
+        price: Number((dragState.origP1.price + dPrice).toFixed(2))
+      };
+
+      if (dragState.origP2) {
+        const newIdx2 = Math.max(0, Math.min(maxIdx, dragState.origP2.idx + dIdx));
+        list[idx].p2 = {
+          idx: newIdx2,
+          time: currentChartData.candles[newIdx2].time,
+          price: Number((dragState.origP2.price + dPrice).toFixed(2))
+        };
       }
     }
+  }
+  saveDrawingsList(list);
+  renderDrawings();
+});
+
+window.addEventListener('pointerup', () => {
+  if (dragState) {
+    dragState = null;
+    if (activeDrawTool === 'cursor') svgCanvas.style.pointerEvents = 'none';
+  }
+});
+
+// Drawing creation click handler
+svgCanvas.addEventListener('click', (e) => {
+  if (activeDrawTool === 'cursor') return;
+  const rect = svgCanvas.getBoundingClientRect();
+  const pt = pixelToChartCoord(e.clientX - rect.left, e.clientY - rect.top);
+  if (!pt) return;
+
+  const list = loadDrawingsList();
+  const newId = 'obj_' + Date.now();
+
+  if (activeDrawTool === 'hline' || activeDrawTool === 'vline') {
+    list.push({ id: newId, type: activeDrawTool, p1: pt, color: defaultDrawColor, width: 1.5, dash: '5 3' });
+    saveDrawingsList(list);
+    setDrawTool('cursor');
+    selectDrawing(newId);
+    return;
+  }
+  if (activeDrawTool === 'text') {
+    const txt = prompt('Masukkan catatan chart:');
+    if (txt && txt.trim()) {
+      list.push({ id: newId, type: 'text', p1: pt, text: txt.trim(), color: defaultDrawColor, width: 1.5, dash: '' });
+      saveDrawingsList(list);
+      setDrawTool('cursor');
+      selectDrawing(newId);
+    } else {
+      setDrawTool('cursor');
+    }
+    return;
+  }
+
+  if (!pendingPoint) {
+    pendingPoint = pt;
+    document.getElementById('draw-hint-text').textContent = 'Klik titik kedua untuk menyelesaikan gambar...';
+  } else {
+    list.push({ id: newId, type: activeDrawTool, p1: pendingPoint, p2: pt, color: defaultDrawColor, width: 1.8, dash: '' });
+    saveDrawingsList(list);
+    pendingPoint = null;
+    setDrawTool('cursor');
+    selectDrawing(newId);
+  }
+});
+
+// Toggle SVG pointer capture only when drawing tool is active
+const origSetDrawTool = setDrawTool;
+setDrawTool = function(t) {
+  origSetDrawTool(t);
+  svgCanvas.style.pointerEvents = (t === 'cursor') ? 'none' : 'auto';
+};
+
+// Deselect when clicking empty chart space in cursor mode
+document.getElementById('htf-chart-container').addEventListener('click', () => {
+  if (activeDrawTool === 'cursor' && selectedDrawId) deselectDrawing();
+});
+
+function renderDrawings() {
+  svgCanvas.innerHTML = '';
+  if (hideAllDrawings) return;
+  const list = loadDrawingsList(), w = svgCanvas.clientWidth, h = svgCanvas.clientHeight;
+
+  list.forEach(item => {
+    const a = chartCoordToPixel(item.p1);
+    if (!a) return;
+    const col = item.color || '#ff8000';
+    const sw = item.width || 1.5;
+    const dash = item.dash || '';
+    const isSel = item.id === selectedDrawId;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.style.pointerEvents = 'all';
+    g.style.cursor = 'move';
+    g.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, 'move'));
+
+    if (item.type === 'hline') {
+      g.innerHTML = `
+        <line x1="0" y1="${a.y}" x2="${w}" y2="${a.y}" stroke="transparent" stroke-width="14"/>
+        <line x1="0" y1="${a.y}" x2="${w}" y2="${a.y}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+        <text x="${w - 72}" y="${a.y - 5}" fill="${col}" font-size="10" font-weight="700">${item.p1.price}</text>
+      `;
+      if (isSel) g.innerHTML += `<circle cx="${w / 2}" cy="${a.y}" r="5" fill="#ffffff" stroke="#ff8000" stroke-width="2"/>`;
+    } else if (item.type === 'vline') {
+      g.innerHTML = `
+        <line x1="${a.x}" y1="0" x2="${a.x}" y2="${h}" stroke="transparent" stroke-width="14"/>
+        <line x1="${a.x}" y1="0" x2="${a.x}" y2="${h}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+      `;
+      if (isSel) g.innerHTML += `<circle cx="${a.x}" cy="${h / 2}" r="5" fill="#ffffff" stroke="#ff8000" stroke-width="2"/>`;
+    } else if (item.type === 'text') {
+      g.innerHTML = `
+        <rect x="${a.x - 4}" y="${a.y - 13}" width="${item.text.length * 7.2 + 8}" height="18" fill="${isSel ? 'rgba(255,128,0,0.18)' : 'transparent'}" stroke="${isSel ? '#ff8000' : 'none'}" rx="2"/>
+        <text x="${a.x}" y="${a.y}" fill="${col}" font-size="11" font-weight="700">${item.text}</text>
+      `;
+    } else if (item.p2) {
+      const b = chartCoordToPixel(item.p2);
+      if (!b) return;
+
+      if (item.type === 'trendline') {
+        g.innerHTML = `
+          <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="transparent" stroke-width="14"/>
+          <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+        `;
+      } else if (item.type === 'extline') {
+        const dx = b.x - a.x, dy = b.y - a.y, sc = dx !== 0 ? (w - a.x) / dx : 1;
+        g.innerHTML = `
+          <line x1="${a.x}" y1="${a.y}" x2="${w}" y2="${a.y + dy * sc}" stroke="transparent" stroke-width="14"/>
+          <line x1="${a.x}" y1="${a.y}" x2="${w}" y2="${a.y + dy * sc}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+        `;
+      } else if (item.type === 'rect') {
+        const rx = Math.min(a.x, b.x), ry = Math.min(a.y, b.y), rw = Math.abs(b.x - a.x), rh = Math.abs(b.y - a.y);
+        g.innerHTML = `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="${col}28" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>`;
+      } else if (item.type === 'fib') {
+        const x1 = Math.min(a.x, b.x), x2 = Math.max(a.x, b.x, a.x + 120);
+        let fibHtml = `<rect x="${x1}" y="${Math.min(a.y, b.y)}" width="${x2 - x1}" height="${Math.abs(b.y - a.y)}" fill="transparent"/>`;
+        [0, 0.236, 0.382, 0.5, 0.618, 0.705, 0.786, 1].forEach(lvl => {
+          const yL = a.y + (b.y - a.y) * lvl;
+          const pV = (item.p1.price + (item.p2.price - item.p1.price) * lvl).toFixed(0);
+          fibHtml += `<line x1="${x1}" y1="${yL}" x2="${x2}" y2="${yL}" stroke="${col}" stroke-width="1" stroke-opacity="0.85"/><text x="${x1 + 4}" y="${yL - 2}" fill="${col}" font-size="9" font-weight="600">${lvl} (${pV})</text>`;
+        });
+        g.innerHTML = fibHtml;
+      } else if (item.type === 'rr') {
+        const x1 = Math.min(a.x, b.x), rw = Math.max(60, Math.abs(b.x - a.x)), midY = (a.y + b.y) / 2;
+        g.innerHTML = `
+          <rect x="${x1}" y="${Math.min(a.y, b.y)}" width="${rw}" height="${Math.abs(midY - Math.min(a.y, b.y))}" fill="#00c85330" stroke="#00c853" stroke-width="1.2"/>
+          <rect x="${x1}" y="${midY}" width="${rw}" height="${Math.abs(Math.max(a.y, b.y) - midY)}" fill="#ff3d0030" stroke="#ff3d00" stroke-width="1.2"/>
+        `;
+      }
+
+      // Render TradingView Anchor Handles when selected
+      if (isSel) {
+        const h1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        h1.setAttribute('cx', a.x); h1.setAttribute('cy', a.y); h1.setAttribute('r', '5.5');
+        h1.setAttribute('fill', '#ffffff'); h1.setAttribute('stroke', '#ff8000'); h1.setAttribute('stroke-width', '2');
+        h1.style.cursor = 'nwse-resize';
+        h1.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, 'p1'));
+
+        const h2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        h2.setAttribute('cx', b.x); h2.setAttribute('cy', b.y); h2.setAttribute('r', '5.5');
+        h2.setAttribute('fill', '#ffffff'); h2.setAttribute('stroke', '#ff8000'); h2.setAttribute('stroke-width', '2');
+        h2.style.cursor = 'nwse-resize';
+        h2.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, 'p2'));
+
+        g.appendChild(h1);
+        g.appendChild(h2);
+      }
+    }
+
+    svgCanvas.appendChild(g);
   });
 }
 
-function toggleScreenerDrawer() { document.getElementById('screener-drawer').classList.toggle('hidden'); setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40); }
-function selectTimeframe(tf) {
-  activeChartTF = tf;
-  document.querySelectorAll('.tf-btn').forEach(b => { b.classList.remove('bg-[#2962ff]','text-white'); b.classList.add('text-[#848e9c]'); });
-  const b = document.getElementById(`btn-tf-${tf}`); if (b) { b.classList.remove('text-[#848e9c]'); b.classList.add('bg-[#2962ff]','text-white'); }
-  loadHTFChart(currentTicker, tf);
+// ==========================================
+// 6. SCREENER (2 TABS + FULL SCREEN TABLE)
+// ==========================================
+function toggleScreenerDrawer() {
+  const drawer = document.getElementById('screener-drawer');
+  drawer.classList.toggle('hidden');
+  if (drawer.classList.contains('hidden') && isScreenerFullscreen) {
+    isScreenerFullscreen = false;
+    applyScreenerLayout();
+  }
+  setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40);
 }
-function setScreenerTF(tf) {
-  screenerTF = tf;
-  ['1d','1w','1m'].forEach(t => { document.getElementById(`scr-tf-${t}`).className = t===tf ? 'px-2.5 py-1 text-[11px] font-semibold rounded bg-[#2962ff] text-white' : 'px-2.5 py-1 text-[11px] font-semibold rounded bg-[#0b0e14] text-[#848e9c] hover:text-white'; });
-  updatePresetCounts(); renderStockList();
+
+function toggleScreenerFullscreen() {
+  isScreenerFullscreen = !isScreenerFullscreen;
+  applyScreenerLayout();
 }
-function applyPreset(p) {
-  activePreset = p;
-  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('text-white','border-b-2','border-[#2962ff]'); b.classList.add('text-[#848e9c]'); });
-  const ab = document.getElementById(`tab-${p}`); if (ab) { ab.classList.remove('text-[#848e9c]'); ab.classList.add('text-white','border-b-2','border-[#2962ff]'); }
-  resetFilters(false);
-  if (p === 'crt') document.getElementById('flt-crt').value = 'BULL_ALL';
-  else if (p === 'stoch') document.getElementById('flt-stoch').value = 'OS_CROSS';
-  else if (p === 'saved' && savedPresets) {
-    document.getElementById('flt-min-price').value = savedPresets.minPrice || ''; document.getElementById('flt-max-price').value = savedPresets.maxPrice || '';
-    document.getElementById('flt-min-tx').value = savedPresets.minTx || ''; document.getElementById('flt-crt').value = savedPresets.crt || 'ALL';
-    document.getElementById('flt-ma').value = savedPresets.ma || 'ALL'; document.getElementById('flt-stoch').value = savedPresets.stoch || 'ALL'; document.getElementById('flt-rsi').value = savedPresets.rsi || 'ALL';
+
+function applyScreenerLayout() {
+  const drawer = document.getElementById('screener-drawer');
+  const chartSec = document.getElementById('chart-section');
+  const lbl = document.getElementById('lbl-scr-full');
+
+  if (isScreenerFullscreen) {
+    chartSec.classList.add('hidden');
+    drawer.classList.remove('sm:w-[490px]', 'border-l');
+    drawer.classList.add('w-full');
+    lbl.textContent = 'Exit Full';
+  } else {
+    chartSec.classList.remove('hidden');
+    drawer.classList.remove('w-full');
+    drawer.classList.add('w-full', 'sm:w-[490px]', 'border-l');
+    lbl.textContent = 'Full Screen';
+    setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40);
   }
   renderStockList();
 }
-function saveCustomPreset() {
-  savedPresets = { minPrice:document.getElementById('flt-min-price').value, maxPrice:document.getElementById('flt-max-price').value, minTx:document.getElementById('flt-min-tx').value, crt:document.getElementById('flt-crt').value, ma:document.getElementById('flt-ma').value, stoch:document.getElementById('flt-stoch').value, rsi:document.getElementById('flt-rsi').value };
-  localStorage.setItem('idx_saved_presets', JSON.stringify(savedPresets));
-  alert('Preset filter disimpan ke Saved Setup.');
+
+function switchScreenerTab(tab) {
+  activeScreenerTab = tab;
+  const tabAll = document.getElementById('tab-all');
+  const tabScr = document.getElementById('tab-screener');
+  const panelAll = document.getElementById('panel-all-search');
+  const panelScr = document.getElementById('panel-screener-filters');
+
+  if (tab === 'all') {
+    tabAll.style.borderColor = 'var(--accent)'; tabAll.style.color = 'var(--accent)';
+    tabScr.style.borderColor = 'transparent'; tabScr.style.color = 'var(--text-muted)';
+    panelAll.classList.remove('hidden');
+    panelScr.classList.add('hidden');
+  } else {
+    tabScr.style.borderColor = 'var(--accent)'; tabScr.style.color = 'var(--accent)';
+    tabAll.style.borderColor = 'transparent'; tabAll.style.color = 'var(--text-muted)';
+    panelScr.classList.remove('hidden');
+    panelAll.classList.add('hidden');
+  }
+  renderStockList();
 }
-function resetFilters(rerender = true) {
-  ['flt-ticker','flt-min-price','flt-max-price','flt-min-tx'].forEach(id => document.getElementById(id).value = '');
-  ['flt-crt','flt-ma','flt-stoch','flt-rsi'].forEach(id => document.getElementById(id).value = 'ALL');
+
+function selectTimeframe(tf) {
+  activeChartTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => {
+    b.classList.remove('t-accent-bg', 'font-bold');
+    b.classList.add('t-text-muted', 'font-semibold');
+  });
+  const b = document.getElementById(`btn-tf-${tf}`);
+  if (b) { b.classList.remove('t-text-muted', 'font-semibold'); b.classList.add('t-accent-bg', 'font-bold'); }
+  loadHTFChart(currentTicker, tf);
+}
+
+function setScreenerTF(tf) {
+  screenerTF = tf;
+  ['1d', '1w', '1m'].forEach(t => {
+    const btn = document.getElementById(`scr-tf-${t}`);
+    if (t === tf) {
+      btn.className = 'px-2 py-0.5 text-[11px] font-bold rounded-xs t-accent-bg';
+    } else {
+      btn.className = 'px-2 py-0.5 text-[11px] font-semibold rounded-xs t-bg-sub t-text-muted';
+    }
+  });
+  renderStockList();
+}
+
+function resetFilters() {
+  ['flt-ticker', 'flt-min-price', 'flt-max-price', 'flt-min-tx'].forEach(id => document.getElementById(id).value = '');
+  ['flt-crt', 'flt-ma', 'flt-stoch', 'flt-rsi'].forEach(id => document.getElementById(id).value = 'ALL');
   document.getElementById('flt-sort').value = 'TICKER_ASC';
-  if (rerender) renderStockList();
+  renderStockList();
 }
-function toggleWatchlist(e, t) { e.stopPropagation(); watchlist = watchlist.includes(t) ? watchlist.filter(x => x !== t) : [...watchlist, t]; localStorage.setItem('idx_watchlist', JSON.stringify(watchlist)); updatePresetCounts(); renderStockList(); }
-function updatePresetCounts() {
-  const all = Object.values(screenerData?.[screenerTF]?.all_data || {});
-  document.getElementById('count-crt').textContent = all.filter(x => x.crt_bull).length;
-  document.getElementById('count-stoch').textContent = all.filter(x => x.stoch_os_cross).length;
-  document.getElementById('count-watch').textContent = watchlist.length;
-}
+
 function renderStockList() {
   if (!screenerData?.[screenerTF]) return;
-  let list = Object.values(screenerData[screenerTF].all_data || {});
-  if (activePreset === 'watchlist') list = list.filter(x => watchlist.includes(x.ticker));
-  const q = document.getElementById('flt-ticker').value.trim().toUpperCase(), minP = parseFloat(document.getElementById('flt-min-price').value), maxP = parseFloat(document.getElementById('flt-max-price').value), minTx = parseFloat(document.getElementById('flt-min-tx').value);
-  const fCrt = document.getElementById('flt-crt').value, fMa = document.getElementById('flt-ma').value, fSt = document.getElementById('flt-stoch').value, fRsi = document.getElementById('flt-rsi').value, fSort = document.getElementById('flt-sort').value;
+  const rawAll = Object.values(screenerData[screenerTF].all_data || {});
+  document.getElementById('count-all').textContent = rawAll.length;
 
-  if (q) list = list.filter(x => x.ticker.includes(q));
-  if (!isNaN(minP)) list = list.filter(x => x.close >= minP);
-  if (!isNaN(maxP)) list = list.filter(x => x.close <= maxP);
-  if (!isNaN(minTx)) list = list.filter(x => (x.tx_miliar || 0) >= minTx);
-  if (fCrt === 'BULL_ALL') list = list.filter(x => x.crt_bull);
-  else if (fCrt === 'CONFIRMED') list = list.filter(x => x.crt_bull && x.crt_status === 'CONFIRMED');
-  else if (fCrt === 'POTENTIAL') list = list.filter(x => x.crt_bull && x.crt_status === 'POTENTIAL');
-  if (fMa === 'ABOVE_20') list = list.filter(x => x.above_ma20);
-  else if (fMa === 'ABOVE_50') list = list.filter(x => x.above_ma50);
-  else if (fMa === 'ABOVE_BOTH') list = list.filter(x => x.above_ma20 && x.above_ma50);
-  else if (fMa === 'NEAR_MA20') list = list.filter(x => Math.abs(x.dist_ma20 || 99) <= 2.0);
-  else if (fMa === 'BELOW_20') list = list.filter(x => x.ma20 > 0 && x.close < x.ma20);
-  if (fSt === 'OS_CROSS') list = list.filter(x => x.stoch_os_cross);
-  else if (fSt === 'OS_ZONE') list = list.filter(x => x.stoch_k <= 20);
-  else if (fSt === 'OB_ZONE') list = list.filter(x => x.stoch_k >= 80);
-  if (fRsi === 'OS') list = list.filter(x => (x.rsi14 || 50) <= 30);
-  else if (fRsi === 'MID') list = list.filter(x => (x.rsi14 || 50) >= 40 && (x.rsi14 || 50) <= 60);
-  else if (fRsi === 'OB') list = list.filter(x => (x.rsi14 || 50) >= 70);
+  let list = [...rawAll];
 
-  if (fSort === 'TICKER_ASC') list.sort((a,b) => a.ticker.localeCompare(b.ticker));
-  else if (fSort === 'TX_DESC') list.sort((a,b) => (b.tx_miliar||0) - (a.tx_miliar||0));
-  else if (fSort === 'PRICE_ASC') list.sort((a,b) => a.close - b.close);
-  else if (fSort === 'PRICE_DESC') list.sort((a,b) => b.close - a.close);
-  else if (fSort === 'CHG_DESC') list.sort((a,b) => b.change_pct - a.change_pct);
-  else if (fSort === 'STOCH_ASC') list.sort((a,b) => a.stoch_k - b.stoch_k);
+  if (activeScreenerTab === 'all') {
+    const q = document.getElementById('all-quick-search').value.trim().toUpperCase();
+    const s = document.getElementById('all-sort').value;
+    if (q) list = list.filter(x => x.ticker.includes(q));
+    if (s === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    else if (s === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
+    else if (s === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
+    else if (s === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
+    else if (s === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
+    document.getElementById('top-scr-count').textContent = list.length;
+  } else {
+    const q = document.getElementById('flt-ticker').value.trim().toUpperCase();
+    const minP = parseFloat(document.getElementById('flt-min-price').value);
+    const maxP = parseFloat(document.getElementById('flt-max-price').value);
+    const minTx = parseFloat(document.getElementById('flt-min-tx').value);
+    const fCrt = document.getElementById('flt-crt').value;
+    const fMa = document.getElementById('flt-ma').value;
+    const fSt = document.getElementById('flt-stoch').value;
+    const fRsi = document.getElementById('flt-rsi').value;
+    const fSort = document.getElementById('flt-sort').value;
 
-  document.getElementById('count-result').textContent = list.length;
-  document.getElementById('top-scr-count').textContent = list.length;
+    if (q) list = list.filter(x => x.ticker.includes(q));
+    if (!isNaN(minP)) list = list.filter(x => x.close >= minP);
+    if (!isNaN(maxP)) list = list.filter(x => x.close <= maxP);
+    if (!isNaN(minTx)) list = list.filter(x => (x.tx_miliar || 0) >= minTx);
+
+    if (fCrt === 'BULL_ALL') list = list.filter(x => x.crt_bull);
+    else if (fCrt === 'CONFIRMED') list = list.filter(x => x.crt_bull && x.crt_status === 'CONFIRMED');
+    else if (fCrt === 'POTENTIAL') list = list.filter(x => x.crt_bull && x.crt_status === 'POTENTIAL');
+
+    if (fMa === 'ABOVE_20') list = list.filter(x => x.above_ma20);
+    else if (fMa === 'ABOVE_50') list = list.filter(x => x.above_ma50);
+    else if (fMa === 'ABOVE_BOTH') list = list.filter(x => x.above_ma20 && x.above_ma50);
+    else if (fMa === 'NEAR_MA20') list = list.filter(x => Math.abs(x.dist_ma20 || 99) <= 2.0);
+    else if (fMa === 'BELOW_20') list = list.filter(x => x.ma20 > 0 && x.close < x.ma20);
+
+    if (fSt === 'OS_CROSS') list = list.filter(x => x.stoch_os_cross);
+    else if (fSt === 'OS_ZONE') list = list.filter(x => x.stoch_k <= 20);
+    else if (fSt === 'OB_ZONE') list = list.filter(x => x.stoch_k >= 80);
+
+    if (fRsi === 'OS') list = list.filter(x => (x.rsi14 || 50) <= 30);
+    else if (fRsi === 'MID') list = list.filter(x => (x.rsi14 || 50) >= 40 && (x.rsi14 || 50) <= 60);
+    else if (fRsi === 'OB') list = list.filter(x => (x.rsi14 || 50) >= 70);
+
+    if (fSort === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    else if (fSort === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
+    else if (fSort === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
+    else if (fSort === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
+    else if (fSort === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
+    else if (fSort === 'STOCH_ASC') list.sort((a, b) => a.stoch_k - b.stoch_k);
+
+    document.getElementById('count-filtered').textContent = list.length;
+    document.getElementById('top-scr-count').textContent = list.length;
+  }
+
+  // Update filtered counter even when viewing "Semua Saham"
+  if (activeScreenerTab === 'all') {
+    document.getElementById('count-filtered').textContent = rawAll.length;
+  }
+
+  const hdr = document.getElementById('table-header-row');
+  if (isScreenerFullscreen) {
+    hdr.innerHTML = `
+      <div class="col-span-2">Ticker</div>
+      <div class="col-span-2 text-right">Last Price</div>
+      <div class="col-span-1 text-right">%Chg</div>
+      <div class="col-span-1 text-right">Tx (M)</div>
+      <div class="col-span-1 text-right">MA20</div>
+      <div class="col-span-1 text-right">MA50</div>
+      <div class="col-span-1 text-right">RSI14</div>
+      <div class="col-span-1 text-right">Stoch K/D</div>
+      <div class="col-span-2 text-right">CRT Signal</div>
+    `;
+  } else {
+    hdr.innerHTML = `
+      <div class="col-span-5">Ticker / Status</div>
+      <div class="col-span-3 text-right">Price / Chg</div>
+      <div class="col-span-2 text-right">Tx (M)</div>
+      <div class="col-span-2 text-right">Stoch</div>
+    `;
+  }
+
   const container = document.getElementById('stock-list');
-  if (!list.length) { container.innerHTML = `<div class="p-8 text-center text-xs text-[#848e9c]">No equities match the selected filters.</div>`; return; }
+  if (!list.length) {
+    container.innerHTML = `<div class="p-8 text-center text-xs t-text-muted">Tidak ada emiten yang cocok dengan filter.</div>`;
+    return;
+  }
 
   container.innerHTML = list.map(item => {
-    const sel = item.ticker === currentTicker, wat = watchlist.includes(item.ticker);
-    const pill = item.crt_status === 'POTENTIAL' ? `<span class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-yellow-500/20 text-yellow-300">POTENTIAL</span>` : (item.crt_status === 'CONFIRMED' ? `<span class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400">CONFIRMED</span>` : '');
-    return `<div onclick="currentTicker='${item.ticker}'; selectTimeframe('${screenerTF}'); renderStockList();" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer hover:bg-[#1e232d] ${sel ? 'bg-[#2962ff]/15 border-l-2 border-[#2962ff]' : ''}">
-      <div class="col-span-5 flex items-center space-x-2">
-        <button onclick="toggleWatchlist(event, '${item.ticker}')" class="text-[#848e9c] hover:text-yellow-400"><svg class="w-3.5 h-3.5 ${wat?'fill-yellow-400 text-yellow-400':''}" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
-        <div><div class="font-bold text-xs text-white flex items-center space-x-1.5"><span>${item.ticker}</span>${pill}</div><div class="text-[10px] text-[#848e9c] truncate">${item.crt_sig || screenerTF.toUpperCase()}</div></div>
+    const sel = item.ticker === currentTicker;
+    const chgCol = item.change_pct >= 0 ? 'var(--bull)' : 'var(--bear)';
+    const sign = item.change_pct > 0 ? '+' : '';
+    const pill = item.crt_status === 'POTENTIAL'
+      ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(255,171,0,0.2);color:#ffab00">POTENTIAL</span>`
+      : (item.crt_status === 'CONFIRMED'
+        ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(0,200,83,0.2);color:var(--bull)">CONFIRMED</span>`
+        : '');
+
+    const onSelectRow = `currentTicker='${item.ticker}'; if(isScreenerFullscreen){isScreenerFullscreen=false;applyScreenerLayout();} selectTimeframe('${screenerTF}'); renderStockList();`;
+
+    if (isScreenerFullscreen) {
+      return `
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row text-xs tabular-nums ${sel ? 't-row-active' : ''}">
+        <div class="col-span-2 font-bold t-accent-text flex items-center space-x-2"><span>${item.ticker}</span>${pill}</div>
+        <div class="col-span-2 text-right font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+        <div class="col-span-1 text-right font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        <div class="col-span-1 text-right t-text-muted">${(item.tx_miliar || 0).toFixed(1)}B</div>
+        <div class="col-span-1 text-right t-text-main">${item.ma20 ? item.ma20.toLocaleString('id-ID') : '-'}</div>
+        <div class="col-span-1 text-right t-text-main">${item.ma50 ? item.ma50.toLocaleString('id-ID') : '-'}</div>
+        <div class="col-span-1 text-right t-text-main">${item.rsi14 ?? '-'}</div>
+        <div class="col-span-1 text-right t-text-muted">${item.stoch_k}/${item.stoch_d}</div>
+        <div class="col-span-2 text-right text-[11px] t-text-main">${item.crt_sig || '-'}</div>
+      </div>`;
+    }
+
+    return `
+    <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+      <div class="col-span-5">
+        <div class="font-bold text-xs t-accent-text flex items-center space-x-1.5"><span>${item.ticker}</span>${pill}</div>
+        <div class="text-[10px] t-text-muted truncate">${item.crt_sig || screenerTF.toUpperCase()}</div>
       </div>
-      <div class="col-span-3 text-right tabular-nums"><div class="text-xs font-semibold text-white">${item.close.toLocaleString('id-ID')}</div><div class="text-[10px] ${item.change_pct>=0?'text-emerald-400':'text-red-400'}">${item.change_pct>0?'+':''}${item.change_pct}%</div></div>
-      <div class="col-span-2 text-right text-[10px] text-[#848e9c] tabular-nums">${(item.tx_miliar||0).toFixed(1)}B</div>
-      <div class="col-span-2 text-right text-[10px] tabular-nums"><div class="text-[#d1d4dc]">${item.stoch_k}</div><div class="text-[#848e9c]">${item.stoch_d}</div></div>
+      <div class="col-span-3 text-right tabular-nums">
+        <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+        <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+      </div>
+      <div class="col-span-2 text-right text-[10px] t-text-muted tabular-nums">${(item.tx_miliar || 0).toFixed(1)}B</div>
+      <div class="col-span-2 text-right text-[10px] tabular-nums">
+        <div class="t-text-main">${item.stoch_k}</div>
+        <div class="t-text-muted">${item.stoch_d}</div>
+      </div>
     </div>`;
   }).join('');
 }
 
-document.getElementById('top-ticker-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const v = e.target.value.trim().toUpperCase(); if (v.length >= 4) { currentTicker = v; selectTimeframe(activeChartTF); } } });
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setDrawTool('cursor'); });
+// ==========================================
+// 7. KEYBOARD SHORTCUTS & INIT
+// ==========================================
+document.getElementById('top-ticker-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const v = e.target.value.trim().toUpperCase();
+    if (v.length >= 4) { currentTicker = v; selectTimeframe(activeChartTF); }
+  }
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'Escape') {
+    setDrawTool('cursor');
+    deselectDrawing();
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedDrawId) {
+    deleteSelectedDrawing();
+  }
+});
 
 async function initApp() {
   initCharts();
@@ -733,7 +1326,8 @@ async function initApp() {
     const res = await fetch('data/screener_idx.json?t=' + Date.now());
     screenerData = await res.json();
     document.getElementById('last-updated').textContent = `Update: ${screenerData.last_updated}`;
-    updatePresetCounts(); renderStockList(); loadHTFChart('BBCA', '1d');
+    renderStockList();
+    loadHTFChart('BBCA', '1d');
   } catch (err) { console.error(err); }
 }
 initApp();
