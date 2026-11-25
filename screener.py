@@ -4,7 +4,7 @@ import json
 import os
 import time
 import calendar
-from datetime import datetime, timedelta
+from datetime import datetime
 
 OUTPUT_DIR = "data"
 CHARTS_DIR = os.path.join(OUTPUT_DIR, "charts")
@@ -40,8 +40,8 @@ def get_all_idx_tickers():
         return ["BBCA.JK", "BBRI.JK", "BMRI.JK", "BBNI.JK", "TLKM.JK"]
 
 
-def calculate_stoch_rsi(close_series, rsi_len=10, stoch_len=10, smooth_k=5, smooth_d=5):
-    """Stochastic RSI (10, 10, 5, 5)"""
+def calculate_rsi(close_series, rsi_len=14):
+    """Menghitung RSI (Wilder's Smoothing / RMA) standar TradingView"""
     delta = close_series.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
@@ -50,8 +50,12 @@ def calculate_stoch_rsi(close_series, rsi_len=10, stoch_len=10, smooth_k=5, smoo
     avg_loss = loss.ewm(alpha=1 / rsi_len, min_periods=rsi_len, adjust=False).mean()
 
     rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
+    return 100 - (100 / (1 + rs))
 
+
+def calculate_stoch_rsi(close_series, rsi_len=10, stoch_len=10, smooth_k=5, smooth_d=5):
+    """Menghitung Stochastic RSI (10, 10, 5, 5) standar TradingView"""
+    rsi = calculate_rsi(close_series, rsi_len=rsi_len)
     rsi_min = rsi.rolling(window=stoch_len).min()
     rsi_max = rsi.rolling(window=stoch_len).max()
     denom = (rsi_max - rsi_min).replace(0, float("nan"))
@@ -67,15 +71,12 @@ def is_last_candle_closed(last_daily_date, tf_name):
     """Mengecek apakah candle terakhir di TF tersebut sudah resmi closing"""
     dt = pd.to_datetime(last_daily_date)
     if tf_name == "1d":
-        return True  # Screener berjalan EOD setelah bursa tutup
+        return True
     elif tf_name == "1w":
-        # Jumat = weekday 4 (jika belum Jumat, minggu masih berjalan / potential)
         return dt.weekday() >= 4
     elif tf_name == "1m":
-        # Cek apakah tanggal terakhir sudah mendekati akhir bulan (sisa hari kerja habis)
         last_day_of_month = calendar.monthrange(dt.year, dt.month)[1]
         remaining_days = last_day_of_month - dt.day
-        # Jika sisa hari kalender <= 2 dan jatuh di akhir pekan, atau tanggal == akhir bulan
         if remaining_days == 0:
             return True
         if remaining_days <= 2 and dt.weekday() == 4:
@@ -175,7 +176,7 @@ def analyze_crt(df, tf_name="1d", last_bar_closed=True, scan_bars=60, min_ticks_
                     markers.append({
                         "time": t2,
                         "position": "belowBar",
-                        "color": "#ffd600" if bar_is_potential else "#00e676",
+                        "color": "#eab308" if bar_is_potential else "#10b981",
                         "shape": "arrowUp",
                         "text": sig_name,
                     })
@@ -183,7 +184,7 @@ def analyze_crt(df, tf_name="1d", last_bar_closed=True, scan_bars=60, min_ticks_
                     markers.append({
                         "time": t2,
                         "position": "aboveBar",
-                        "color": "#ffd600" if bar_is_potential else "#ff5252",
+                        "color": "#eab308" if bar_is_potential else "#ef4444",
                         "shape": "arrowDown",
                         "text": sig_name,
                     })
@@ -191,24 +192,24 @@ def analyze_crt(df, tf_name="1d", last_bar_closed=True, scan_bars=60, min_ticks_
     return {
         "active_bias": "BULLISH OPEN" if open_dir == 1 else ("BEARISH OPEN" if open_dir == -1 else "NEUTRAL"),
         "latest_setup": active_setup,
-        "markers": markers[-12:],
+        "markers": markers[-15:],
     }
 
 
 def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=12):
-    """Memproses indikator & chart payload untuk 1D, 1W, atau 1M"""
+    """Memproses data chart & ringkasan lengkap untuk screener multi-filter"""
     df = df_raw.dropna().copy()
     if len(df) < min_bars:
         return None, None
 
     df["MA20"] = df["Close"].rolling(window=20).mean()
     df["MA50"] = df["Close"].rolling(window=50).mean()
+    df["RSI14"] = calculate_rsi(df["Close"], rsi_len=14)
     df["STOCH_K"], df["STOCH_D"] = calculate_stoch_rsi(
         df["Close"], rsi_len=10, stoch_len=10, smooth_k=5, smooth_d=5
     )
 
-    candles, ma20_series, ma50_series, volumes = [], [], [], []
-
+    candles, volumes = [], []
     for index, row in df.iterrows():
         date_str = index.strftime("%Y-%m-%d")
         open_p = round(float(row["Open"]), 2)
@@ -218,13 +219,7 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
         vol_p = int(row["Volume"])
 
         candles.append({"time": date_str, "open": open_p, "high": high_p, "low": low_p, "close": close_p})
-        vol_color = "rgba(38, 166, 154, 0.5)" if close_p >= open_p else "rgba(239, 83, 80, 0.5)"
-        volumes.append({"time": date_str, "value": vol_p, "color": vol_color})
-
-        if pd.notna(row["MA20"]):
-            ma20_series.append({"time": date_str, "value": round(float(row["MA20"]), 2)})
-        if pd.notna(row["MA50"]):
-            ma50_series.append({"time": date_str, "value": round(float(row["MA50"]), 2)})
+        volumes.append({"time": date_str, "value": vol_p, "isUp": close_p >= open_p})
 
     closed_flag = is_last_candle_closed(last_daily_date, tf_name)
     crt_info = analyze_crt(df, tf_name=tf_name, last_bar_closed=closed_flag)
@@ -232,8 +227,6 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
     chart_data = {
         "candles": candles,
         "volume": volumes,
-        "ma20": ma20_series,
-        "ma50": ma50_series,
         "crt": crt_info,
     }
 
@@ -243,12 +236,20 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
     prev_close = round(float(yesterday["Close"]), 2)
     change_pct = round(((close_price - prev_close) / prev_close) * 100, 2) if prev_close != 0 else 0
 
+    # Nilai transaksi (Rp Miliar) & rata-rata 20 bar
+    val_series = df["Close"] * df["Volume"]
+    tx_val_miliar = round(float(val_series.iloc[-1]) / 1_000_000_000, 2)
+    avg_tx_miliar = round(float(val_series.tail(20).mean()) / 1_000_000_000, 2)
+
     ma20_val = round(float(today["MA20"]), 2) if pd.notna(today["MA20"]) else 0
     ma50_val = round(float(today["MA50"]), 2) if pd.notna(today["MA50"]) else 0
-    k_now = round(float(today["STOCH_K"]), 2) if pd.notna(today["STOCH_K"]) else 0
-    d_now = round(float(today["STOCH_D"]), 2) if pd.notna(today["STOCH_D"]) else 0
-    k_prev = round(float(yesterday["STOCH_K"]), 2) if pd.notna(yesterday["STOCH_K"]) else 0
-    d_prev = round(float(yesterday["STOCH_D"]), 2) if pd.notna(yesterday["STOCH_D"]) else 0
+    rsi14_val = round(float(today["RSI14"]), 2) if pd.notna(today["RSI14"]) else 50.0
+    k_now = round(float(today["STOCH_K"]), 2) if pd.notna(today["STOCH_K"]) else 50.0
+    d_now = round(float(today["STOCH_D"]), 2) if pd.notna(today["STOCH_D"]) else 50.0
+    k_prev = round(float(yesterday["STOCH_K"]), 2) if pd.notna(yesterday["STOCH_K"]) else 50.0
+    d_prev = round(float(yesterday["STOCH_D"]), 2) if pd.notna(yesterday["STOCH_D"]) else 50.0
+
+    dist_ma20_pct = round(((close_price - ma20_val) / ma20_val) * 100, 2) if ma20_val > 0 else 999.0
 
     is_golden_cross = (k_prev <= d_prev) and (k_now > d_now) and (k_now > 0)
     is_oversold = (k_prev <= 20 or d_prev <= 20) and (k_now <= 25)
@@ -264,8 +265,12 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
         "ticker": clean_ticker,
         "close": close_price,
         "change_pct": change_pct,
+        "tx_miliar": tx_val_miliar,
+        "avg_tx_miliar": avg_tx_miliar,
         "ma20": ma20_val,
         "ma50": ma50_val,
+        "dist_ma20": dist_ma20_pct,
+        "rsi14": rsi14_val,
         "stoch_k": k_now,
         "stoch_d": d_now,
         "above_ma20": (ma20_val > 0 and close_price > ma20_val),
@@ -279,24 +284,14 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
     return chart_data, summary
 
 
-def empty_tf_bucket():
-    return {
-        "above_ma20": [],
-        "above_ma50": [],
-        "stoch_golden_cross": [],
-        "crt_bull_active": [],
-        "all_data": {},
-    }
-
-
 def run_screener():
     all_tickers = get_all_idx_tickers()
 
     results = {
         "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
-        "1d": empty_tf_bucket(),
-        "1w": empty_tf_bucket(),
-        "1m": empty_tf_bucket(),
+        "1d": {"all_data": {}},
+        "1w": {"all_data": {}},
+        "1m": {"all_data": {}},
     }
 
     batch_size = 100
@@ -324,8 +319,8 @@ def run_screener():
                 clean_ticker = ticker.replace(".JK", "")
                 last_daily_date = df_daily.index[-1]
 
-                # 1. Daily (1D - 300 bar terakhir untuk chart)
-                chart_1d, sum_1d = process_timeframe(df_daily.tail(300), clean_ticker, "1d", last_daily_date, min_bars=30)
+                # 1. Daily (1D - 320 bar terakhir untuk chart & MA200 dinamis)
+                chart_1d, sum_1d = process_timeframe(df_daily.tail(320), clean_ticker, "1d", last_daily_date, min_bars=30)
 
                 # 2. Weekly (1W - tutup Jumat)
                 df_weekly = df_daily.resample("W-FRI").agg({
@@ -345,18 +340,12 @@ def run_screener():
                 with open(os.path.join(CHARTS_DIR, f"{clean_ticker}.json"), "w") as cf:
                     json.dump({"ticker": clean_ticker, "1d": chart_1d, "1w": chart_1w, "1m": chart_1m}, cf)
 
-                for tf_key, summary_obj in [("1d", sum_1d), ("1w", sum_1w), ("1m", sum_1m)]:
-                    if not summary_obj:
-                        continue
-                    results[tf_key]["all_data"][clean_ticker] = summary_obj
-                    if summary_obj["above_ma20"]:
-                        results[tf_key]["above_ma20"].append(summary_obj)
-                    if summary_obj["above_ma50"]:
-                        results[tf_key]["above_ma50"].append(summary_obj)
-                    if summary_obj["stoch_os_cross"]:
-                        results[tf_key]["stoch_golden_cross"].append(summary_obj)
-                    if summary_obj["crt_bull"]:
-                        results[tf_key]["crt_bull_active"].append(summary_obj)
+                if sum_1d:
+                    results["1d"]["all_data"][clean_ticker] = sum_1d
+                if sum_1w:
+                    results["1w"]["all_data"][clean_ticker] = sum_1w
+                if sum_1m:
+                    results["1m"]["all_data"][clean_ticker] = sum_1m
 
             except Exception:
                 continue
@@ -365,18 +354,11 @@ def run_screener():
 
     for tf in ["1d", "1w", "1m"]:
         results[tf]["all_data"] = dict(sorted(results[tf]["all_data"].items()))
-        results[tf]["above_ma20"].sort(key=lambda x: x["ticker"])
-        results[tf]["above_ma50"].sort(key=lambda x: x["ticker"])
-        results[tf]["stoch_golden_cross"].sort(key=lambda x: x["ticker"])
-        results[tf]["crt_bull_active"].sort(key=lambda x: x["ticker"])
 
     with open(os.path.join(OUTPUT_DIR, "screener_idx.json"), "w") as f:
         json.dump(results, f)
 
-    print(
-        f"\nSELESAI! CRT Bull -> 1D: {len(results['1d']['crt_bull_active'])} | "
-        f"1W: {len(results['1w']['crt_bull_active'])} | 1M: {len(results['1m']['crt_bull_active'])}"
-    )
+    print(f"\nSELESAI TOTAL! Berhasil memindai {len(results['1d']['all_data'])} emiten aktif IDX.")
 
 
 if __name__ == "__main__":
