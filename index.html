@@ -3,127 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IDX Technical Screener & Chart</title>
+    <title>IDX Pro Chart & CRT Screener</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body {
-            background-color: #131722;
-            color: #d1d4dc;
             font-family: -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
-            overflow-x: hidden;
+            overflow: hidden;
         }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #131722; }
-        ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #434651; }
-        .tv-panel { background-color: #1e222d; border: 1px solid #2a2e39; }
-        .tv-hover:hover { background-color: #2a2e39; }
-        .tv-active { background-color: #2962ff26; border-left: 3px solid #2962ff; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #363a45; border-radius: 3px; }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body class="h-screen flex flex-col bg-[#131722] text-[#d1d4dc]">
 
-    <!-- Header -->
-    <header class="h-12 bg-[#1e222d] border-b border-[#2a2e39] px-4 flex items-center justify-between shrink-0">
-        <div class="flex items-center space-x-3">
-            <div class="bg-[#2962ff] text-white font-bold px-2 py-0.5 rounded text-sm tracking-wide">IDX</div>
-            <div>
-                <h1 class="text-sm font-semibold text-white leading-tight">IDX Technical Screener</h1>
-                <p id="last-updated" class="text-[11px] text-gray-400">Memuat jadwal pembaruan...</p>
+    <!-- Top Navigation & Toolbar -->
+    <header id="top-bar" class="h-12 bg-[#1e222d] border-b border-[#2a2e39] px-3 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
+        
+        <!-- Left: Logo, Ticker Search & Timeframes -->
+        <div class="flex items-center space-x-2 shrink-0">
+            <div class="bg-[#2962ff] text-white font-bold px-2 py-0.5 rounded text-xs tracking-wider">IDX</div>
+
+            <!-- Quick Ticker Input -->
+            <div class="relative">
+                <input type="text" id="top-ticker-input" value="BBCA" maxlength="6"
+                    class="w-20 bg-[#131722] text-white font-bold text-xs uppercase px-2.5 py-1 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff]"
+                    title="Ketik kode saham lalu Enter">
+            </div>
+
+            <span class="text-gray-600">|</span>
+
+            <!-- Timeframes: LTF (1m..4H) & HTF (1D, 1W, 1M) -->
+            <div class="flex items-center space-x-0.5 bg-[#131722] p-0.5 rounded border border-[#2a2e39]">
+                <button onclick="selectTimeframe('1')" id="btn-tf-1" class="tf-btn px-2 py-1 text-[11px] font-semibold rounded text-gray-400 hover:text-white">1m</button>
+                <button onclick="selectTimeframe('3')" id="btn-tf-3" class="tf-btn px-2 py-1 text-[11px] font-semibold rounded text-gray-400 hover:text-white">3m</button>
+                <button onclick="selectTimeframe('5')" id="btn-tf-5" class="tf-btn px-2 py-1 text-[11px] font-semibold rounded text-gray-400 hover:text-white">5m</button>
+                <button onclick="selectTimeframe('15')" id="btn-tf-15" class="tf-btn px-2 py-1 text-[11px] font-semibold rounded text-gray-400 hover:text-white">15m</button>
+                <button onclick="selectTimeframe('60')" id="btn-tf-60" class="tf-btn px-2 py-1 text-[11px] font-semibold rounded text-gray-400 hover:text-white">1H</button>
+                <button onclick="selectTimeframe('240')" id="btn-tf-240" class="tf-btn px-2 py-1 text-[11px] font-semibold rounded text-gray-400 hover:text-white">4H</button>
+                <span class="text-gray-700 px-0.5">|</span>
+                <button onclick="selectTimeframe('1d')" id="btn-tf-1d" class="tf-btn px-2 py-1 text-[11px] font-bold rounded bg-[#2962ff] text-white">1D</button>
+                <button onclick="selectTimeframe('1w')" id="btn-tf-1w" class="tf-btn px-2 py-1 text-[11px] font-bold rounded text-gray-400 hover:text-white">1W</button>
+                <button onclick="selectTimeframe('1m')" id="btn-tf-1m" class="tf-btn px-2 py-1 text-[11px] font-bold rounded text-gray-400 hover:text-white">1M</button>
             </div>
         </div>
-        <div class="flex items-center space-x-4 text-xs">
-            <div class="hidden sm:flex items-center space-x-3">
-                <span class="flex items-center"><span class="w-2.5 h-0.5 bg-[#2962ff] mr-1.5"></span>MA 20</span>
-                <span class="flex items-center"><span class="w-2.5 h-0.5 bg-[#ff6d00] mr-1.5"></span>MA 50</span>
-                <span class="flex items-center"><span class="w-2.5 h-0.5 bg-[#00e676] mr-1.5"></span>CRT Active</span>
-            </div>
-            <span class="text-gray-500">|</span>
-            <span class="text-gray-400">Data: Yahoo Finance (EOD)</span>
+
+        <!-- Right: Chart Settings, Theme & Screener Menu Toggle -->
+        <div class="flex items-center space-x-2 shrink-0">
+            <button onclick="toggleSettingsModal()" class="px-2.5 py-1 text-xs font-medium rounded bg-[#2a2e39] hover:bg-[#363a45] text-gray-200 flex items-center space-x-1" title="Ubah Warna & Tampilan Chart">
+                <span>🎨</span>
+                <span class="hidden md:inline">Warna</span>
+            </button>
+
+            <button onclick="toggleTheme()" id="btn-theme" class="px-2.5 py-1 text-xs font-medium rounded bg-[#2a2e39] hover:bg-[#363a45] text-gray-200" title="Ganti Mode Dark / Light">
+                ☀️ Light
+            </button>
+
+            <button onclick="toggleScreenerDrawer()" id="btn-screener-menu" class="px-3 py-1 text-xs font-bold rounded bg-[#2962ff] hover:bg-[#1e53e5] text-white flex items-center space-x-1.5 shadow">
+                <span>📊</span>
+                <span>Menu Screener</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    <!-- Main Content Area -->
+    <div class="flex-1 flex relative overflow-hidden">
 
-        <!-- Left Chart Area -->
-        <div class="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-[#2a2e39] min-h-[380px]">
-            <div class="h-12 px-4 bg-[#131722] border-b border-[#2a2e39] flex items-center justify-between shrink-0">
-                <div class="flex items-center space-x-3">
-                    <span id="chart-ticker" class="text-lg font-bold text-white">BBCA</span>
-                    <span class="text-xs px-1.5 py-0.5 rounded bg-[#2a2e39] text-gray-300">IDX • 1D</span>
-                    <span id="chart-price" class="text-base font-semibold text-white">-</span>
-                    <span id="chart-change" class="text-xs font-medium">-</span>
-                    <span id="chart-crt-badge" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded bg-[#00e676]/20 text-[#00e676]">-</span>
+        <!-- Full Charting Area (Default View) -->
+        <div class="flex-1 flex flex-col relative overflow-hidden">
+            
+            <!-- HTF Info & OHLC Legend Bar -->
+            <div id="htf-legend-bar" class="h-9 px-4 border-b border-[#2a2e39] flex items-center justify-between text-xs shrink-0 bg-[#131722]">
+                <div class="flex items-center space-x-3 overflow-x-auto">
+                    <span id="chart-ticker-lbl" class="font-bold text-sm text-white">BBCA</span>
+                    <span id="chart-tf-lbl" class="px-1.5 py-0.5 rounded bg-[#2a2e39] text-[11px] font-semibold text-gray-300">1D • HTF</span>
+                    <span id="chart-price-lbl" class="font-semibold text-white">-</span>
+                    <span id="chart-chg-lbl" class="font-medium">-</span>
+                    <span id="chart-crt-status" class="hidden px-2 py-0.5 rounded text-[11px] font-bold">-</span>
                 </div>
-                <div id="ohlc-legend" class="hidden md:flex items-center space-x-3 text-xs text-gray-400">
-                    <span>O: <b id="leg-o" class="text-gray-200 font-normal">-</b></span>
-                    <span>H: <b id="leg-h" class="text-gray-200 font-normal">-</b></span>
-                    <span>L: <b id="leg-l" class="text-gray-200 font-normal">-</b></span>
-                    <span>C: <b id="leg-c" class="text-gray-200 font-normal">-</b></span>
+                <div class="hidden lg:flex items-center space-x-3 text-[11px] text-gray-400">
+                    <span>O: <b id="leg-o" class="font-normal text-gray-200">-</b></span>
+                    <span>H: <b id="leg-h" class="font-normal text-gray-200">-</b></span>
+                    <span>L: <b id="leg-l" class="font-normal text-gray-200">-</b></span>
+                    <span>C: <b id="leg-c" class="font-normal text-gray-200">-</b></span>
                     <span class="text-[#2962ff]">MA20: <b id="leg-ma20" class="font-normal">-</b></span>
                     <span class="text-[#ff6d00]">MA50: <b id="leg-ma50" class="font-normal">-</b></span>
                 </div>
             </div>
 
-            <div id="tv-chart-container" class="flex-1 w-full relative bg-[#131722]"></div>
+            <!-- HTF Custom Lightweight Chart Container -->
+            <div id="htf-chart-container" class="flex-1 w-full h-full relative"></div>
+
+            <!-- LTF TradingView Advanced Chart Container (Hidden when HTF is active) -->
+            <div id="ltf-tv-container" class="hidden flex-1 w-full h-full relative"></div>
         </div>
 
-        <!-- Right Screener Panel -->
-        <div class="w-full lg:w-[440px] bg-[#1e222d] flex flex-col h-[50vh] lg:h-full shrink-0">
-
-            <div class="p-3 border-b border-[#2a2e39]">
-                <div class="relative">
-                    <input type="text" id="search-input" placeholder="Cari kode emiten (misal: BBCA, DEWA, ADRO)..."
-                        class="w-full bg-[#131722] text-sm text-white placeholder-gray-500 px-3 py-1.5 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff]">
+        <!-- Slide-Over Screener Panel (Hidden on initial load so Chart is clean & full) -->
+        <aside id="screener-drawer" class="hidden w-full sm:w-[430px] bg-[#1e222d] border-l border-[#2a2e39] flex flex-col h-full z-20 shadow-2xl">
+            <div class="p-3 border-b border-[#2a2e39] flex items-center justify-between">
+                <div>
+                    <h2 class="text-xs font-bold text-white uppercase tracking-wider">IDX HTF Screener</h2>
+                    <p id="last-updated" class="text-[10px] text-gray-400">Update: -</p>
+                </div>
+                <div class="flex items-center space-x-1">
+                    <!-- HTF Screener Selector: Daily / Weekly / Monthly -->
+                    <button onclick="setScreenerTF('1d')" id="scr-tf-1d" class="px-2 py-1 text-[11px] font-bold rounded bg-[#2962ff] text-white">Daily</button>
+                    <button onclick="setScreenerTF('1w')" id="scr-tf-1w" class="px-2 py-1 text-[11px] font-bold rounded bg-[#131722] text-gray-400 hover:text-white">Weekly</button>
+                    <button onclick="setScreenerTF('1m')" id="scr-tf-1m" class="px-2 py-1 text-[11px] font-bold rounded bg-[#131722] text-gray-400 hover:text-white">Monthly</button>
+                    <button onclick="toggleScreenerDrawer()" class="ml-2 px-2 py-1 text-xs text-gray-400 hover:text-white">✕</button>
                 </div>
             </div>
 
-            <!-- Filter Tabs -->
-            <div class="flex border-b border-[#2a2e39] text-xs font-medium bg-[#131722] overflow-x-auto shrink-0">
-                <button onclick="setTab('all')" id="tab-all" class="tab-btn px-3 py-2.5 text-white border-b-2 border-[#2962ff] whitespace-nowrap">
-                    Semua (<span id="count-all">0</span>)
-                </button>
-                <button onclick="setTab('crt')" id="tab-crt" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
+            <!-- Search & Status Filter -->
+            <div class="p-2.5 border-b border-[#2a2e39] flex space-x-2">
+                <input type="text" id="search-input" placeholder="Cari emiten (BBCA, DEWA...)"
+                    class="flex-1 bg-[#131722] text-xs text-white placeholder-gray-500 px-2.5 py-1.5 rounded border border-[#2a2e39] focus:outline-none focus:border-[#2962ff]">
+                <select id="crt-status-filter" onchange="renderStockList()" class="bg-[#131722] text-xs text-gray-200 px-2 py-1.5 rounded border border-[#2a2e39] focus:outline-none">
+                    <option value="ALL">Semua CRT</option>
+                    <option value="CONFIRMED">Confirmed Only</option>
+                    <option value="POTENTIAL">Potential Only</option>
+                </select>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="flex border-b border-[#2a2e39] text-[11px] font-medium bg-[#131722] overflow-x-auto shrink-0">
+                <button onclick="setTab('crt')" id="tab-crt" class="tab-btn px-3 py-2 text-white border-b-2 border-[#2962ff] whitespace-nowrap">
                     CRT Bull (<span id="count-crt">0</span>)
                 </button>
-                <button onclick="setTab('stoch')" id="tab-stoch" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
+                <button onclick="setTab('stoch')" id="tab-stoch" class="tab-btn px-3 py-2 text-gray-400 hover:text-white whitespace-nowrap">
                     StochRSI OS (<span id="count-stoch">0</span>)
                 </button>
-                <button onclick="setTab('ma20')" id="tab-ma20" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
-                    > MA20 (<span id="count-ma20">0</span>)
+                <button onclick="setTab('all')" id="tab-all" class="tab-btn px-3 py-2 text-gray-400 hover:text-white whitespace-nowrap">
+                    Semua (<span id="count-all">0</span>)
                 </button>
-                <button onclick="setTab('ma50')" id="tab-ma50" class="tab-btn px-3 py-2.5 text-gray-400 hover:text-white whitespace-nowrap">
-                    > MA50 (<span id="count-ma50">0</span>)
+                <button onclick="setTab('ma20')" id="tab-ma20" class="tab-btn px-3 py-2 text-gray-400 hover:text-white whitespace-nowrap">
+                    >MA20 (<span id="count-ma20">0</span>)
+                </button>
+                <button onclick="setTab('ma50')" id="tab-ma50" class="tab-btn px-3 py-2 text-gray-400 hover:text-white whitespace-nowrap">
+                    >MA50 (<span id="count-ma50">0</span>)
                 </button>
             </div>
 
-            <!-- Table Column Headers -->
-            <div class="grid grid-cols-12 px-3 py-2 text-[11px] font-semibold text-gray-400 border-b border-[#2a2e39] bg-[#1e222d] shrink-0">
-                <div class="col-span-4">EMITEN</div>
+            <!-- Column Header -->
+            <div class="grid grid-cols-12 px-3 py-1.5 text-[10px] font-semibold text-gray-400 border-b border-[#2a2e39] bg-[#1e222d] shrink-0">
+                <div class="col-span-5">EMITEN & STATUS</div>
                 <div class="col-span-3 text-right">HARGA</div>
-                <div class="col-span-3 text-right">MA20 / MA50</div>
-                <div class="col-span-2 text-right">STOCH RSI</div>
+                <div class="col-span-2 text-right">MA20</div>
+                <div class="col-span-2 text-right">STOCH</div>
             </div>
 
             <!-- Stock List -->
             <div id="stock-list" class="flex-1 overflow-y-auto divide-y divide-[#2a2e39]/50">
-                <div class="p-8 text-center text-sm text-gray-500">Memuat data screener...</div>
+                <div class="p-8 text-center text-xs text-gray-500">Memuat data screener...</div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Chart Color Customization Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1e222d] border border-[#2a2e39] rounded-lg w-full max-w-sm p-4 text-xs space-y-3 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-[#2a2e39] pb-2">
+                <h3 class="font-bold text-sm text-white">Kustomisasi Warna Chart</h3>
+                <button onclick="toggleSettingsModal()" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center justify-between bg-[#131722] p-2 rounded">
+                    <span>Candle Bullish</span>
+                    <input type="color" id="col-up" value="#26a69a" onchange="applyCustomColors()">
+                </label>
+                <label class="flex items-center justify-between bg-[#131722] p-2 rounded">
+                    <span>Candle Bearish</span>
+                    <input type="color" id="col-down" value="#ef5350" onchange="applyCustomColors()">
+                </label>
+                <label class="flex items-center justify-between bg-[#131722] p-2 rounded">
+                    <span>Garis MA 20</span>
+                    <input type="color" id="col-ma20" value="#2962ff" onchange="applyCustomColors()">
+                </label>
+                <label class="flex items-center justify-between bg-[#131722] p-2 rounded">
+                    <span>Garis MA 50</span>
+                    <input type="color" id="col-ma50" value="#ff6d00" onchange="applyCustomColors()">
+                </label>
+                <label class="flex items-center justify-between bg-[#131722] p-2 rounded">
+                    <span>CRT Confirmed</span>
+                    <input type="color" id="col-crt-conf" value="#00e676" onchange="applyCustomColors()">
+                </label>
+                <label class="flex items-center justify-between bg-[#131722] p-2 rounded">
+                    <span>CRT Potential</span>
+                    <input type="color" id="col-crt-pot" value="#ffd600" onchange="applyCustomColors()">
+                </label>
+            </div>
+            <div class="flex justify-between pt-2 border-t border-[#2a2e39]">
+                <button onclick="resetColors()" class="px-3 py-1.5 rounded bg-[#2a2e39] text-gray-300 hover:text-white">Reset Default</button>
+                <button onclick="toggleSettingsModal()" class="px-4 py-1.5 rounded bg-[#2962ff] text-white font-semibold">Selesai</button>
             </div>
         </div>
     </div>
 
     <script>
         let screenerData = null;
-        let currentTab = 'all';
-        let selectedTicker = 'BBCA';
+        let currentTicker = 'BBCA';
+        let activeChartTF = '1d';   // '1','3','5','15','60','240' (LTF) atau '1d','1w','1m' (HTF)
+        let screenerTF = '1d';      // '1d', '1w', '1m'
+        let currentTab = 'crt';
+        let isDarkMode = true;
 
         let chart, candleSeries, volumeSeries, ma20Series, ma50Series;
         let crtPriceLines = [];
 
+        const defaultColors = {
+            up: '#26a69a',
+            down: '#ef5350',
+            ma20: '#2962ff',
+            ma50: '#ff6d00',
+            crtConf: '#00e676',
+            crtPot: '#ffd600'
+        };
+        let chartColors = JSON.parse(localStorage.getItem('idx_chart_colors')) || { ...defaultColors };
+
         function initChart() {
-            const container = document.getElementById('tv-chart-container');
+            const container = document.getElementById('htf-chart-container');
             chart = LightweightCharts.createChart(container, {
                 layout: {
                     background: { type: 'solid', color: '#131722' },
@@ -139,23 +238,29 @@
             });
 
             candleSeries = chart.addCandlestickSeries({
-                upColor: '#26a69a',
-                downColor: '#ef5350',
+                upColor: chartColors.up,
+                downColor: chartColors.down,
                 borderVisible: false,
-                wickUpColor: '#26a69a',
-                wickDownColor: '#ef5350',
+                wickUpColor: chartColors.up,
+                wickDownColor: chartColors.down,
             });
 
             volumeSeries = chart.addHistogramSeries({
                 priceFormat: { type: 'volume' },
                 priceScaleId: '',
             });
-            volumeSeries.priceScale().applyOptions({
-                scaleMargins: { top: 0.82, bottom: 0 },
-            });
+            volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } });
 
-            ma20Series = chart.addLineSeries({ color: '#2962ff', lineWidth: 1.5, priceLineVisible: false });
-            ma50Series = chart.addLineSeries({ color: '#ff6d00', lineWidth: 1.5, priceLineVisible: false });
+            ma20Series = chart.addLineSeries({ color: chartColors.ma20, lineWidth: 1.5, priceLineVisible: false });
+            ma50Series = chart.addLineSeries({ color: chartColors.ma50, lineWidth: 1.5, priceLineVisible: false });
+
+            // Sync color inputs
+            document.getElementById('col-up').value = chartColors.up;
+            document.getElementById('col-down').value = chartColors.down;
+            document.getElementById('col-ma20').value = chartColors.ma20;
+            document.getElementById('col-ma50').value = chartColors.ma50;
+            document.getElementById('col-crt-conf').value = chartColors.crtConf;
+            document.getElementById('col-crt-pot').value = chartColors.crtPot;
 
             chart.subscribeCrosshairMove((param) => {
                 if (!param.time || !param.seriesData) return;
@@ -177,61 +282,184 @@
             });
         }
 
-        async function loadStockChart(ticker) {
-            selectedTicker = ticker;
-            renderStockList();
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const bg = isDarkMode ? '#131722' : '#ffffff';
+            const panelBg = isDarkMode ? '#1e222d' : '#f0f3fa';
+            const textCol = isDarkMode ? '#d1d4dc' : '#131722';
+            const gridCol = isDarkMode ? '#1e222d' : '#e1ecf4';
+            const borderCol = isDarkMode ? '#2a2e39' : '#d1d4dc';
 
-            const summary = screenerData.all_data[ticker];
+            document.body.style.backgroundColor = bg;
+            document.body.style.color = textCol;
+            document.getElementById('top-bar').style.backgroundColor = panelBg;
+            document.getElementById('top-bar').style.borderColor = borderCol;
+            document.getElementById('htf-legend-bar').style.backgroundColor = bg;
+            document.getElementById('htf-legend-bar').style.borderColor = borderCol;
+            document.getElementById('btn-theme').textContent = isDarkMode ? '☀️ Light' : '🌙 Dark';
+
+            chart.applyOptions({
+                layout: { background: { type: 'solid', color: bg }, textColor: textCol },
+                grid: { vertLines: { color: gridCol }, horzLines: { color: gridCol } },
+                rightPriceScale: { borderColor: borderCol },
+                timeScale: { borderColor: borderCol },
+            });
+
+            if (!['1d', '1w', '1m'].includes(activeChartTF)) {
+                renderLTFTradingView(currentTicker, activeChartTF);
+            }
+        }
+
+        function toggleSettingsModal() {
+            document.getElementById('settings-modal').classList.toggle('hidden');
+        }
+
+        function applyCustomColors() {
+            chartColors = {
+                up: document.getElementById('col-up').value,
+                down: document.getElementById('col-down').value,
+                ma20: document.getElementById('col-ma20').value,
+                ma50: document.getElementById('col-ma50').value,
+                crtConf: document.getElementById('col-crt-conf').value,
+                crtPot: document.getElementById('col-crt-pot').value,
+            };
+            localStorage.setItem('idx_chart_colors', JSON.stringify(chartColors));
+
+            candleSeries.applyOptions({
+                upColor: chartColors.up,
+                downColor: chartColors.down,
+                wickUpColor: chartColors.up,
+                wickDownColor: chartColors.down,
+            });
+            ma20Series.applyOptions({ color: chartColors.ma20 });
+            ma50Series.applyOptions({ color: chartColors.ma50 });
+
+            if (['1d', '1w', '1m'].includes(activeChartTF)) {
+                loadHTFChart(currentTicker, activeChartTF);
+            }
+        }
+
+        function resetColors() {
+            chartColors = { ...defaultColors };
+            localStorage.setItem('idx_chart_colors', JSON.stringify(chartColors));
+            document.getElementById('col-up').value = chartColors.up;
+            document.getElementById('col-down').value = chartColors.down;
+            document.getElementById('col-ma20').value = chartColors.ma20;
+            document.getElementById('col-ma50').value = chartColors.ma50;
+            document.getElementById('col-crt-conf').value = chartColors.crtConf;
+            document.getElementById('col-crt-pot').value = chartColors.crtPot;
+            applyCustomColors();
+        }
+
+        function toggleScreenerDrawer() {
+            const drawer = document.getElementById('screener-drawer');
+            drawer.classList.toggle('hidden');
+            setTimeout(() => {
+                const container = document.getElementById('htf-chart-container');
+                chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+            }, 50);
+        }
+
+        function renderLTFTradingView(ticker, interval) {
+            const container = document.getElementById('ltf-tv-container');
+            const themeStr = isDarkMode ? 'dark' : 'light';
+            container.innerHTML = `
+                <iframe
+                    src="https://s.tradingview.com/widgetembed/?frameElementId=tv_chart&symbol=IDX%3A${ticker}&interval=${interval}&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=${themeStr}&style=1&timezone=Asia%2FJakarta"
+                    style="width: 100%; height: 100%; border: none;"
+                    allowtransparency="true"
+                    scrolling="no"
+                    allowfullscreen>
+                </iframe>`;
+        }
+
+        function selectTimeframe(tf) {
+            activeChartTF = tf;
+            document.querySelectorAll('.tf-btn').forEach(btn => {
+                btn.classList.remove('bg-[#2962ff]', 'text-white');
+                btn.classList.add('text-gray-400');
+            });
+            const activeBtn = document.getElementById(`btn-tf-${tf}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-400');
+                activeBtn.classList.add('bg-[#2962ff]', 'text-white');
+            }
+
+            const isHTF = ['1d', '1w', '1m'].includes(tf);
+            if (isHTF) {
+                document.getElementById('ltf-tv-container').classList.add('hidden');
+                document.getElementById('htf-chart-container').classList.remove('hidden');
+                document.getElementById('htf-legend-bar').classList.remove('hidden');
+                loadHTFChart(currentTicker, tf);
+            } else {
+                document.getElementById('htf-chart-container').classList.add('hidden');
+                document.getElementById('htf-legend-bar').classList.add('hidden');
+                document.getElementById('ltf-tv-container').classList.remove('hidden');
+                renderLTFTradingView(currentTicker, tf);
+            }
+        }
+
+        async function loadHTFChart(ticker, tf) {
+            currentTicker = ticker.toUpperCase();
+            document.getElementById('top-ticker-input').value = currentTicker;
+            document.getElementById('chart-ticker-lbl').textContent = currentTicker;
+            document.getElementById('chart-tf-lbl').textContent = `${tf.toUpperCase()} • HTF`;
+
+            const bucket = screenerData ? screenerData[tf] : null;
+            const summary = bucket && bucket.all_data ? bucket.all_data[currentTicker] : null;
             if (summary) {
-                document.getElementById('chart-ticker').textContent = ticker;
-                document.getElementById('chart-price').textContent = 'Rp ' + summary.close.toLocaleString('id-ID');
-                const chgEl = document.getElementById('chart-change');
+                document.getElementById('chart-price-lbl').textContent = 'Rp ' + summary.close.toLocaleString('id-ID');
+                const chgEl = document.getElementById('chart-chg-lbl');
                 const sign = summary.change_pct > 0 ? '+' : '';
                 chgEl.textContent = `${sign}${summary.change_pct}%`;
-                chgEl.className = `text-xs font-medium ${summary.change_pct >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}`;
+                chgEl.className = `font-medium ${summary.change_pct >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}`;
             }
 
             try {
-                const res = await fetch(`data/charts/${ticker}.json`);
-                const data = await res.json();
+                const res = await fetch(`data/charts/${currentTicker}.json`);
+                const fullJson = await res.json();
+                const data = fullJson[tf];
+                if (!data) return;
 
                 candleSeries.setData(data.candles);
                 volumeSeries.setData(data.volume);
                 ma20Series.setData(data.ma20);
                 ma50Series.setData(data.ma50);
 
-                // Hapus garis CRT lama
                 crtPriceLines.forEach(line => candleSeries.removePriceLine(line));
                 crtPriceLines = [];
                 candleSeries.setMarkers([]);
 
-                const crtBadge = document.getElementById('chart-crt-badge');
-                crtBadge.classList.add('hidden');
+                const statusBadge = document.getElementById('chart-crt-status');
+                statusBadge.classList.add('hidden');
 
-                // Gambar panah & garis CRT jika tersedia
                 if (data.crt) {
                     if (data.crt.markers && data.crt.markers.length > 0) {
-                        candleSeries.setMarkers(data.crt.markers);
+                        const coloredMarkers = data.crt.markers.map(m => ({
+                            ...m,
+                            color: m.text.includes('POTENTIAL') ? chartColors.crtPot : (m.position === 'belowBar' ? chartColors.crtConf : '#ff5252')
+                        }));
+                        candleSeries.setMarkers(coloredMarkers);
                     }
 
                     const setup = data.crt.latest_setup;
                     if (setup && !setup.is_broken) {
-                        const isBull = setup.dir === 1;
-                        const col = isBull ? '#00e676' : (setup.dir === -1 ? '#ff5252' : '#ff9800');
+                        const isPot = setup.status === 'POTENTIAL';
+                        const col = isPot ? chartColors.crtPot : (setup.dir === 1 ? chartColors.crtConf : '#ff5252');
 
-                        crtBadge.textContent = `${setup.signal} (${setup.date_c2})`;
-                        crtBadge.className = `text-[11px] font-semibold px-2 py-0.5 rounded ${
-                            isBull ? 'bg-[#00e676]/20 text-[#00e676]' : 'bg-[#ff5252]/20 text-[#ff5252]'
+                        statusBadge.textContent = `${setup.signal} [${setup.status}]`;
+                        statusBadge.className = `px-2 py-0.5 rounded text-[11px] font-bold ${
+                            isPot ? 'bg-yellow-500/20 text-yellow-300' : 'bg-emerald-500/20 text-emerald-400'
                         }`;
 
                         crtPriceLines.push(candleSeries.createPriceLine({
-                            price: setup.crth, color: col, lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'CRTH'
+                            price: setup.crth, color: col, lineWidth: 2, lineStyle: isPot ? 2 : 0, axisLabelVisible: true, title: 'CRTH'
                         }));
                         crtPriceLines.push(candleSeries.createPriceLine({
                             price: setup.mid50, color: col, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '50%'
                         }));
                         crtPriceLines.push(candleSeries.createPriceLine({
-                            price: setup.crtl, color: col, lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'CRTL'
+                            price: setup.crtl, color: col, lineWidth: 2, lineStyle: isPot ? 2 : 0, axisLabelVisible: true, title: 'CRTL'
                         }));
                     }
                 }
@@ -248,8 +476,20 @@
 
                 chart.timeScale().fitContent();
             } catch (err) {
-                console.error("Gagal memuat chart:", err);
+                console.error("Chart load error:", err);
             }
+        }
+
+        function setScreenerTF(tf) {
+            screenerTF = tf;
+            ['1d', '1w', '1m'].forEach(t => {
+                const btn = document.getElementById(`scr-tf-${t}`);
+                btn.className = t === tf
+                    ? 'px-2 py-1 text-[11px] font-bold rounded bg-[#2962ff] text-white'
+                    : 'px-2 py-1 text-[11px] font-bold rounded bg-[#131722] text-gray-400 hover:text-white';
+            });
+            updateTabCounts();
+            renderStockList();
         }
 
         function setTab(tab) {
@@ -264,79 +504,109 @@
             renderStockList();
         }
 
+        function updateTabCounts() {
+            if (!screenerData || !screenerData[screenerTF]) return;
+            const b = screenerData[screenerTF];
+            document.getElementById('count-crt').textContent = (b.crt_bull_active || []).length;
+            document.getElementById('count-stoch').textContent = (b.stoch_golden_cross || []).length;
+            document.getElementById('count-all').textContent = Object.keys(b.all_data || {}).length;
+            document.getElementById('count-ma20').textContent = (b.above_ma20 || []).length;
+            document.getElementById('count-ma50').textContent = (b.above_ma50 || []).length;
+        }
+
+        function selectStockFromScreener(ticker) {
+            currentTicker = ticker;
+            selectTimeframe(screenerTF); // Sinkronkan chart ke TF screener (1D / 1W / 1M)
+            renderStockList();
+        }
+
         function renderStockList() {
-            if (!screenerData) return;
+            if (!screenerData || !screenerData[screenerTF]) return;
+            const bucket = screenerData[screenerTF];
             const query = document.getElementById('search-input').value.trim().toUpperCase();
+            const statusFilter = document.getElementById('crt-status-filter').value;
 
             let list = [];
-            if (currentTab === 'all') list = Object.values(screenerData.all_data);
-            else if (currentTab === 'crt') list = screenerData.crt_bull_active || [];
-            else if (currentTab === 'stoch') list = screenerData.stoch_golden_cross || [];
-            else if (currentTab === 'ma20') list = screenerData.above_ma20 || [];
-            else if (currentTab === 'ma50') list = screenerData.above_ma50 || [];
+            if (currentTab === 'crt') list = bucket.crt_bull_active || [];
+            else if (currentTab === 'stoch') list = bucket.stoch_golden_cross || [];
+            else if (currentTab === 'all') list = Object.values(bucket.all_data || {});
+            else if (currentTab === 'ma20') list = bucket.above_ma20 || [];
+            else if (currentTab === 'ma50') list = bucket.above_ma50 || [];
 
-            if (query) {
-                list = list.filter(item => item.ticker.includes(query));
+            if (query) list = list.filter(item => item.ticker.includes(query));
+            if (currentTab === 'crt' && statusFilter !== 'ALL') {
+                list = list.filter(item => item.crt_status === statusFilter);
             }
 
             const container = document.getElementById('stock-list');
             if (list.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-gray-500">Tidak ada emiten yang memenuhi kriteria.</div>`;
+                container.innerHTML = `<div class="p-8 text-center text-xs text-gray-500">Tidak ada emiten memenuhi kriteria (${screenerTF.toUpperCase()}).</div>`;
                 return;
             }
 
             container.innerHTML = list.map(item => {
-                const isSelected = item.ticker === selectedTicker;
+                const isSelected = item.ticker === currentTicker;
                 const chgColor = item.change_pct >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]';
                 const sign = item.change_pct > 0 ? '+' : '';
-                const crtTag = item.crt_sig ? `<span class="ml-1 text-[9px] px-1 rounded bg-[#00e676]/20 text-[#00e676]">${item.crt_sig}</span>` : '';
+
+                let statusPill = '';
+                if (item.crt_status === 'POTENTIAL') {
+                    statusPill = `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300">POTENTIAL</span>`;
+                } else if (item.crt_status === 'CONFIRMED') {
+                    statusPill = `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">CONFIRMED</span>`;
+                }
 
                 return `
-                <div onclick="loadStockChart('${item.ticker}')"
-                     class="grid grid-cols-12 items-center px-3 py-2.5 cursor-pointer tv-hover transition-colors ${isSelected ? 'tv-active' : ''}">
-                    <div class="col-span-4">
-                        <div class="font-bold text-sm text-white flex items-center">${item.ticker}${crtTag}</div>
-                        <div class="text-[10px] text-gray-500">IDX</div>
+                <div onclick="selectStockFromScreener('${item.ticker}')"
+                     class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer hover:bg-[#2a2e39] transition-colors ${isSelected ? 'bg-[#2962ff]/20 border-l-2 border-[#2962ff]' : ''}">
+                    <div class="col-span-5">
+                        <div class="font-bold text-xs text-white flex items-center space-x-1.5">
+                            <span>${item.ticker}</span>
+                            ${statusPill}
+                        </div>
+                        <div class="text-[10px] text-gray-400 truncate">${item.crt_sig || screenerTF.toUpperCase()}</div>
                     </div>
                     <div class="col-span-3 text-right">
                         <div class="text-xs font-semibold text-white">${item.close.toLocaleString('id-ID')}</div>
-                        <div class="text-[11px] ${chgColor}">${sign}${item.change_pct}%</div>
+                        <div class="text-[10px] ${chgColor}">${sign}${item.change_pct}%</div>
                     </div>
-                    <div class="col-span-3 text-right text-[11px]">
-                        <div class="text-[#2962ff]">${item.ma20.toLocaleString('id-ID')}</div>
-                        <div class="text-[#ff6d00]">${item.ma50.toLocaleString('id-ID')}</div>
+                    <div class="col-span-2 text-right text-[10px] text-[#2962ff]">
+                        ${item.ma20.toLocaleString('id-ID')}
                     </div>
-                    <div class="col-span-2 text-right text-[11px]">
-                        <div class="text-gray-200">K: ${item.stoch_k}</div>
-                        <div class="text-gray-500">D: ${item.stoch_d}</div>
+                    <div class="col-span-2 text-right text-[10px]">
+                        <div class="text-gray-200">${item.stoch_k}</div>
+                        <div class="text-gray-500">${item.stoch_d}</div>
                     </div>
                 </div>`;
             }).join('');
         }
+
+        document.getElementById('top-ticker-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = e.target.value.trim().toUpperCase();
+                if (val.length >= 4) {
+                    currentTicker = val;
+                    selectTimeframe(activeChartTF);
+                }
+            }
+        });
+
+        document.getElementById('search-input').addEventListener('input', renderStockList);
 
         async function initApp() {
             initChart();
             try {
                 const res = await fetch('data/screener_idx.json?t=' + Date.now());
                 screenerData = await res.json();
-
                 document.getElementById('last-updated').textContent = `Update: ${screenerData.last_updated}`;
-                document.getElementById('count-all').textContent = Object.keys(screenerData.all_data).length;
-                document.getElementById('count-crt').textContent = (screenerData.crt_bull_active || []).length;
-                document.getElementById('count-stoch').textContent = (screenerData.stoch_golden_cross || []).length;
-                document.getElementById('count-ma20').textContent = (screenerData.above_ma20 || []).length;
-                document.getElementById('count-ma50').textContent = (screenerData.above_ma50 || []).length;
-
+                updateTabCounts();
                 renderStockList();
-                const initialTicker = screenerData.all_data['BBCA'] ? 'BBCA' : Object.keys(screenerData.all_data)[0];
-                if (initialTicker) loadStockChart(initialTicker);
+                loadHTFChart('BBCA', '1d');
             } catch (err) {
-                document.getElementById('stock-list').innerHTML =
-                    `<div class="p-6 text-center text-xs text-red-400">Gagal memuat data JSON.</div>`;
+                console.error("Failed to load screener JSON:", err);
             }
         }
 
-        document.getElementById('search-input').addEventListener('input', renderStockList);
         initApp();
     </script>
 </body>
