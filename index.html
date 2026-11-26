@@ -113,14 +113,12 @@
     </div>
   </div>
 
-  <!-- Right Controls: Risk Config, Screenshot, Style, Theme, Screener -->
+  <!-- Right Controls: Lot Size Input, Screenshot, Style, Theme, Screener -->
   <div class="flex items-center space-x-1.5 shrink-0">
-    <!-- Risk & Capital Mini Inputs for R:R Lot Calculator -->
-    <div class="hidden xl:flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-sub border t-border text-[10px]" title="Modal (Juta Rp) & Risiko per Trade (%) untuk Kalkulator Lot Otomatis">
-      <span class="t-text-muted">Cap(Jt):</span>
-      <input type="number" id="inp-equity-jt" value="100" min="1" onchange="saveRiskPrefs()" class="w-12 px-1 py-0 text-right font-bold tabular-nums rounded-xs">
-      <span class="t-text-muted">Risk%:</span>
-      <input type="number" id="inp-risk-pct" value="1.0" step="0.1" min="0.1" max="10" onchange="saveRiskPrefs()" class="w-10 px-1 py-0 text-right font-bold t-accent-text tabular-nums rounded-xs">
+    <!-- Lot Size Input for Long R:R Calculator -->
+    <div class="flex items-center space-x-1.5 px-2 py-0.5 rounded-xs t-bg-sub border t-border text-[10px]" title="Jumlah Lot untuk Kalkulator Long R:R (1 Lot = 100 Lembar)">
+      <span class="t-text-muted font-semibold">Size (Lot):</span>
+      <input type="number" id="inp-trade-lot" value="100" min="1" step="1" onchange="saveLotPrefs()" oninput="saveLotPrefs()" class="w-16 px-1.5 py-0 text-right font-bold t-accent-text tabular-nums rounded-xs">
     </div>
 
     <!-- Instant Screenshot to Clipboard -->
@@ -147,6 +145,25 @@
   </div>
 </header>
 
+<!-- MARKET BREADTH & RADAR STRIP -->
+<div class="h-6 t-bg-sub border-b t-border px-3 flex items-center justify-between text-[10px] shrink-0 overflow-x-auto gap-4">
+  <div class="flex items-center space-x-3 shrink-0 tabular-nums">
+    <span class="font-bold t-text-muted uppercase">IDX Breadth (1D):</span>
+    <span><b id="brd-up" style="color:var(--bull)">0</b> Naik</span>
+    <span><b id="brd-down" style="color:var(--bear)">0</b> Turun</span>
+    <span><b id="brd-flat" class="t-text-muted">0</b> Stagnan</span>
+    <span class="t-text-muted opacity-30">|</span>
+    <span>&gt;MA20: <b id="brd-ma20" class="t-text-main">0%</b></span>
+    <span>&gt;MA50: <b id="brd-ma50" class="t-text-main">0%</b></span>
+  </div>
+  <div class="flex items-center space-x-2 shrink-0">
+    <button onclick="quickOpenFilter('BEAR_CRT')" class="px-1.5 py-0.2 rounded-xs font-bold text-[9.5px] flex items-center space-x-1 hover:opacity-80" style="background:rgba(255,67,61,0.18); color:var(--bear)" title="Klik untuk melihat daftar saham Bearish CRT yang sebaiknya dihindari">
+      <span>⚠️ Bearish CRT (Hindari):</span>
+      <b id="brd-bear-crt" class="tabular-nums">0</b>
+    </button>
+  </div>
+</div>
+
 <!-- TOAST NOTIFICATION -->
 <div id="toast-banner" class="hidden fixed bottom-4 right-4 z-50 px-3 py-2 rounded-xs text-xs font-bold shadow-2xl border t-border t-bg-panel t-accent-text"></div>
 
@@ -163,7 +180,7 @@
     <button onclick="setDrawTool('vline')" id="tool-vline" class="tool-btn" title="Vertical Line"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v18"/><circle cx="12" cy="12" r="2"/></svg></button>
     <button onclick="setDrawTool('rect')" id="tool-rect" class="tool-btn" title="Supply / Demand Zone"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
     <button onclick="setDrawTool('fib')" id="tool-fib" class="tool-btn" title="Fibonacci Retracement"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h16M4 19h16"/></svg></button>
-    <button onclick="setDrawTool('rr')" id="tool-rr" class="tool-btn" title="Long / Short R:R & Lot Calculator (Auto Fraksi BEI)"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16v7H4z"/><path d="M4 12h16v7H4z" stroke-dasharray="2 2"/></svg></button>
+    <button onclick="setDrawTool('rr')" id="tool-rr" class="tool-btn" title="Long Position R:R & Lot Calculator (TP, Entry, SL bebas geser)"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16v7H4z"/><path d="M4 12h16v7H4z" stroke-dasharray="2 2"/></svg></button>
     <button onclick="setDrawTool('text')" id="tool-text" class="tool-btn" title="Text Note"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
     <div class="w-5 border-t t-border my-0.5"></div>
     <!-- Magnet OHLC Toggle -->
@@ -184,7 +201,9 @@
         <span id="chart-price-lbl" class="font-bold t-text-main tabular-nums">-</span>
         <span id="chart-chg-lbl" class="font-semibold tabular-nums">-</span>
         <span id="chart-tick-lbl" class="px-1.5 py-0.5 rounded-xs t-bg-sub text-[9px] t-text-muted tabular-nums" title="Fraksi Harga Reguler BEI">Tick: -</span>
+        <span id="chart-beta-lbl" class="px-1.5 py-0.5 rounded-xs t-bg-sub text-[9px] t-text-muted tabular-nums" title="Beta 1Y terhadap IHSG">β: -</span>
         <span id="chart-crt-status" class="hidden px-2 py-0.5 rounded-xs text-[10px] font-bold tracking-wide">-</span>
+        <span id="chart-smc-status" class="hidden px-1.5 py-0.5 rounded-xs text-[9.5px] font-bold t-bg-sub t-blue-text border t-border">-</span>
         <div class="hidden xl:flex items-center space-x-2 text-[11px] t-text-muted pl-2 border-l t-border tabular-nums">
           <span>O <b id="leg-o" class="font-normal t-text-main">-</b></span>
           <span>H <b id="leg-h" class="font-normal t-text-main">-</b></span>
@@ -282,7 +301,7 @@
   </div>
 
   <!-- RIGHT SCREENER DRAWER (2 TABS + PIN + FULL SCREEN) -->
-  <aside id="screener-drawer" class="hidden w-full sm:w-[490px] t-bg-panel border-l t-border flex flex-col h-full z-30 shadow-2xl">
+  <aside id="screener-drawer" class="hidden w-full sm:w-[510px] t-bg-panel border-l t-border flex flex-col h-full z-30 shadow-2xl">
     <!-- Drawer Header -->
     <div class="px-3.5 py-2 border-b t-border flex items-center justify-between shrink-0">
       <div>
@@ -305,7 +324,7 @@
       </div>
     </div>
 
-    <!-- 2 TABS ONLY: SEMUA SAHAM & SCREENER -->
+    <!-- 2 TABS: SEMUA SAHAM & SCREENER -->
     <div class="flex border-b t-border text-[11px] font-bold t-bg-sub shrink-0">
       <button onclick="switchScreenerTab('all')" id="tab-all" class="flex-1 py-2 text-center border-b-2" style="border-color:var(--accent); color:var(--accent)">
         Semua Saham (<span id="count-all" class="tabular-nums">0</span>)
@@ -321,13 +340,15 @@
       <select id="all-sort" onchange="renderStockList()" class="px-2 py-1 rounded-xs text-[11px]">
         <option value="TICKER_ASC">Kode A-Z</option>
         <option value="TX_DESC">Tx Value Desc</option>
+        <option value="VOL_DESC">Vol Spike Desc</option>
         <option value="CHG_DESC">% Change Desc</option>
+        <option value="BETA_ASC">Beta Terendah</option>
         <option value="PRICE_ASC">Harga Termurah</option>
         <option value="PRICE_DESC">Harga Termahal</option>
       </select>
     </div>
 
-    <!-- Editable Filter Panel for "Screener" (CRT only Confirmed & Potential) -->
+    <!-- Editable Filter Panel for "Screener" -->
     <div id="panel-screener-filters" class="hidden p-2.5 border-b t-border t-bg-panel space-y-2 text-[11px] shrink-0">
       <div class="grid grid-cols-12 gap-1.5">
         <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Ticker</label><input type="text" id="flt-ticker" oninput="renderStockList()" placeholder="ALL" class="w-full px-2 py-1 rounded-xs uppercase"></div>
@@ -335,13 +356,16 @@
         <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Max Price</label><input type="number" id="flt-max-price" oninput="renderStockList()" placeholder="Any" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
         <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Min Tx (M)</label><input type="number" id="flt-min-tx" oninput="renderStockList()" placeholder="0" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
       </div>
+
       <div class="grid grid-cols-4 gap-1.5">
         <div>
           <label class="block text-[9px] t-text-muted uppercase mb-0.5">CRT Setup</label>
           <select id="flt-crt" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
             <option value="ALL">All</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="POTENTIAL">Potential</option>
+            <option value="BULL_ALL">Bullish (All)</option>
+            <option value="CONFIRMED">Bull Confirmed</option>
+            <option value="POTENTIAL">Bull Potential</option>
+            <option value="BEAR_CRT">⚠️ Bearish (Avoid)</option>
           </select>
         </div>
         <div>
@@ -374,17 +398,55 @@
           </select>
         </div>
       </div>
+
+      <!-- Row 3: Volume Spike, Beta vs IHSG, SMC/ICT Detector -->
+      <div class="grid grid-cols-3 gap-1.5">
+        <div>
+          <label class="block text-[9px] t-text-muted uppercase mb-0.5">Vol Spike</label>
+          <select id="flt-vol" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
+            <option value="ALL">All</option>
+            <option value="2X">&ge; 2.0x MA20</option>
+            <option value="3X">&ge; 3.0x MA20</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[9px] t-text-muted uppercase mb-0.5">Beta IHSG</label>
+          <select id="flt-beta" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
+            <option value="ALL">All</option>
+            <option value="NEG">Negatif (&lt; 0)</option>
+            <option value="LOW">Defensif (&lt; 0.5)</option>
+            <option value="HIGH">Agresif (&gt; 1.2)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[9px] t-text-muted uppercase mb-0.5">SMC / ICT</label>
+          <select id="flt-smc" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
+            <option value="ALL">All</option>
+            <option value="BULL_FVG">Bullish FVG</option>
+            <option value="BEAR_FVG">Bearish FVG</option>
+            <option value="SSL_SWEEP">SSL Sweep (Low)</option>
+            <option value="BSL_SWEEP">BSL Sweep (High)</option>
+          </select>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between pt-0.5">
         <div class="flex items-center space-x-1.5">
           <span class="text-[10px] t-text-muted">Sort:</span>
           <select id="flt-sort" onchange="renderStockList()" class="text-[10px] px-1.5 py-0.5 rounded-xs">
             <option value="TICKER_ASC">Kode A-Z</option>
             <option value="TX_DESC">Tx Value Desc</option>
+            <option value="VOL_DESC">Vol Spike Desc</option>
+            <option value="BETA_ASC">Beta Terendah</option>
             <option value="PRICE_ASC">Price Asc</option>
             <option value="PRICE_DESC">Price Desc</option>
             <option value="CHG_DESC">% Change Desc</option>
             <option value="STOCH_ASC">StochRSI Asc</option>
           </select>
+          <label class="flex items-center space-x-1 text-[10px] t-text-muted cursor-pointer ml-1" title="Sembunyikan otomatis saham yang sedang Bearish CRT">
+            <input type="checkbox" id="chk-hide-bear-crt" onchange="renderStockList()">
+            <span>Hide Bear CRT</span>
+          </label>
         </div>
         <button onclick="resetFilters()" class="text-[10px] t-accent-text hover:underline font-bold">Reset Filter</button>
       </div>
@@ -477,18 +539,23 @@ let indConfig = JSON.parse(localStorage.getItem('gozi_bbg_ind_v1')) || {
   stoch: { visible: false, rsiLen: 10, stochLen: 10, smoothK: 5, smoothD: 5, colorK: '#fb8b1e', colorD: '#0068ff' }
 };
 let pinnedTickers = JSON.parse(localStorage.getItem('gozi_pinned_tickers')) || [];
-let riskPrefs = JSON.parse(localStorage.getItem('gozi_risk_prefs')) || { equityJt: 100, riskPct: 1.0 };
+let tradeLotSize = Math.max(1, parseInt(localStorage.getItem('gozi_trade_lot')) || 100);
 
-document.getElementById('inp-equity-jt').value = riskPrefs.equityJt;
-document.getElementById('inp-risk-pct').value = riskPrefs.riskPct;
+document.getElementById('inp-trade-lot').value = tradeLotSize;
 
-function saveRiskPrefs() {
-  riskPrefs = {
-    equityJt: Math.max(1, parseFloat(document.getElementById('inp-equity-jt').value) || 100),
-    riskPct: Math.max(0.1, parseFloat(document.getElementById('inp-risk-pct').value) || 1.0)
-  };
-  localStorage.setItem('gozi_risk_prefs', JSON.stringify(riskPrefs));
+function saveLotPrefs() {
+  tradeLotSize = Math.max(1, parseInt(document.getElementById('inp-trade-lot').value) || 100);
+  localStorage.setItem('gozi_trade_lot', String(tradeLotSize));
   renderDrawings();
+}
+
+function formatRupiahCompact(rp) {
+  const abs = Math.abs(rp);
+  const sign = rp < 0 ? '-' : '';
+  if (abs >= 1_000_000_000) return `${sign}Rp ${(abs / 1_000_000_000).toFixed(2)}M`;
+  if (abs >= 1_000_000) return `${sign}Rp ${(abs / 1_000_000).toFixed(2)}Jt`;
+  if (abs >= 1_000) return `${sign}Rp ${(abs / 1_000).toFixed(0)}Rb`;
+  return `${sign}Rp ${abs.toLocaleString('id-ID')}`;
 }
 
 function showToast(msg) {
@@ -594,7 +661,6 @@ function getChartThemeOptions() {
 function initCharts() {
   const opts = getChartThemeOptions();
 
-  // Primary Chart (Wide rightOffset: 35 so users can freely draw in future empty space)
   mainChart = LightweightCharts.createChart(document.getElementById('htf-chart-container'), {
     ...opts,
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -611,7 +677,6 @@ function initCharts() {
   ma1Series = mainChart.addLineSeries({ color: indConfig.ma1.color, lineWidth: indConfig.ma1.width, visible: indConfig.ma1.visible, priceLineVisible: false });
   ma2Series = mainChart.addLineSeries({ color: indConfig.ma2.color, lineWidth: indConfig.ma2.width, visible: indConfig.ma2.visible, priceLineVisible: false });
 
-  // Split HTF Chart (Left Pane when Split Mode enabled)
   splitChart = LightweightCharts.createChart(document.getElementById('split-left-container'), {
     ...opts,
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -626,20 +691,17 @@ function initCharts() {
   splitMa1Series = splitChart.addLineSeries({ color: indConfig.ma1.color, lineWidth: 1.3, visible: indConfig.ma1.visible, priceLineVisible: false });
   splitMa2Series = splitChart.addLineSeries({ color: indConfig.ma2.color, lineWidth: 1.3, visible: indConfig.ma2.visible, priceLineVisible: false });
 
-  // RSI Sub-Chart
   rsiChart = LightweightCharts.createChart(document.getElementById('rsi-chart-container'), { ...opts, timeScale: { visible: false } });
   rsiSeries = rsiChart.addLineSeries({ color: indConfig.rsi.color, lineWidth: 1.5, priceLineVisible: false });
   rsiSeries.createPriceLine({ price: 70, color: '#ff433d66', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
   rsiSeries.createPriceLine({ price: 30, color: '#4af6c366', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
-  // StochRSI Sub-Chart
   stochChart = LightweightCharts.createChart(document.getElementById('stoch-chart-container'), { ...opts, timeScale: { visible: false } });
   stochKSeries = stochChart.addLineSeries({ color: indConfig.stoch.colorK, lineWidth: 1.5, priceLineVisible: false });
   stochDSeries = stochChart.addLineSeries({ color: indConfig.stoch.colorD, lineWidth: 1.5, priceLineVisible: false });
   stochKSeries.createPriceLine({ price: 80, color: '#ff433d66', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
   stochKSeries.createPriceLine({ price: 20, color: '#4af6c366', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
-  // Sync Visible Range & Redraw SVG
   mainChart.timeScale().subscribeVisibleLogicalRangeChange((r) => {
     if (!r) return;
     if (indConfig.rsi.visible) rsiChart.timeScale().setVisibleLogicalRange(r);
@@ -647,7 +709,6 @@ function initCharts() {
     renderDrawings();
   });
 
-  // Sync Crosshair Vertical Line across Main, RSI & StochRSI
   mainChart.subscribeCrosshairMove((p) => {
     if (!isSyncingCrosshair) {
       isSyncingCrosshair = true;
@@ -723,7 +784,6 @@ function zoomChart(bars = 85) {
   const total = candleSeries.data().length;
   mainChart.priceScale('right').applyOptions({ autoScale: true });
   if (total > 0) {
-    // Keep +14 bars of empty future space visible on the right for drawing projections
     const r = { from: Math.max(0, total - bars), to: total + 14 };
     mainChart.timeScale().setVisibleLogicalRange(r);
     if (indConfig.rsi.visible) rsiChart.timeScale().setVisibleLogicalRange(r);
@@ -749,12 +809,25 @@ async function loadHTFChart(ticker, tf) {
   document.getElementById('chart-tf-lbl').textContent = tf.toUpperCase();
 
   const summary = screenerData?.[tf]?.all_data?.[currentTicker];
+  const smcBadge = document.getElementById('chart-smc-status');
+  smcBadge.classList.add('hidden');
+
   if (summary) {
     document.getElementById('chart-price-lbl').textContent = 'Rp ' + summary.close.toLocaleString('id-ID');
     document.getElementById('chart-tick-lbl').textContent = 'Tick: Rp ' + getIDXTickSize(summary.close);
+    document.getElementById('chart-beta-lbl').textContent = summary.beta !== null && summary.beta !== undefined ? `β: ${summary.beta}` : 'β: -';
     const chgEl = document.getElementById('chart-chg-lbl');
     chgEl.textContent = `${summary.change_pct > 0 ? '+' : ''}${summary.change_pct}%`;
     chgEl.style.color = summary.change_pct >= 0 ? 'var(--bull)' : 'var(--bear)';
+
+    const tags = [];
+    if (summary.fvg) tags.push(summary.fvg);
+    if (summary.sweep) tags.push(summary.sweep);
+    if (summary.vol_ratio >= 2.0) tags.push(`VOL ${summary.vol_ratio}x`);
+    if (tags.length) {
+      smcBadge.textContent = tags.join(' | ');
+      smcBadge.classList.remove('hidden');
+    }
   }
 
   try {
@@ -787,11 +860,11 @@ function renderSplitChart() {
   splitCandleSeries.setMarkers([]);
   if (indConfig.crt.visible && data.crt) {
     if (data.crt.markers?.length) {
-      splitCandleSeries.setMarkers(data.crt.markers.map(m => ({ ...m, color: m.text.includes('POTENTIAL') ? appearance.crtPot : appearance.crtConf })));
+      splitCandleSeries.setMarkers(data.crt.markers.map(m => ({ ...m, color: m.text.includes('POTENTIAL') ? appearance.crtPot : (m.position === 'belowBar' ? appearance.crtConf : '#ff433d') })));
     }
     const s = data.crt.latest_setup;
     if (s && !s.is_broken) {
-      const col = s.status === 'POTENTIAL' ? appearance.crtPot : appearance.crtConf;
+      const col = s.status === 'POTENTIAL' ? appearance.crtPot : (s.dir === 1 ? appearance.crtConf : '#ff433d');
       splitCrtLines.push(splitCandleSeries.createPriceLine({ price: s.crth, color: col, lineWidth: 1.5, lineStyle: s.status === 'POTENTIAL' ? 2 : 0, axisLabelVisible: true, title: 'CRTH' }));
       splitCrtLines.push(splitCandleSeries.createPriceLine({ price: s.crtl, color: col, lineWidth: 1.5, lineStyle: s.status === 'POTENTIAL' ? 2 : 0, axisLabelVisible: true, title: 'CRTL' }));
     }
@@ -830,7 +903,8 @@ function recomputeIndicators() {
     const s = currentChartData.crt.latest_setup;
     if (s && !s.is_broken) {
       const isPot = s.status === 'POTENTIAL', col = isPot ? appearance.crtPot : (s.dir === 1 ? appearance.crtConf : '#ff433d');
-      badge.textContent = `${s.signal} [${s.status}]`;
+      const warnPrefix = s.dir === -1 ? '⚠️ AVOID: ' : '';
+      badge.textContent = `${warnPrefix}${s.signal} [${s.status}]`;
       badge.className = 'px-2 py-0.5 rounded-xs text-[10px] font-bold tracking-wide';
       badge.style.backgroundColor = col + '26';
       badge.style.color = col;
@@ -948,9 +1022,8 @@ function resetAppearance() { appearance = { ...bloombergPalette }; localStorage.
 
 // ==========================================
 // 6. INTERACTIVE DRAWING ENGINE
-//    - UNRESTRICTED FUTURE RIGHT SPACE (LOGICAL INDEX)
-//    - MAGNET SNAP OHLC & MEASURE RULER
-//    - IDX TICK AUTO-SNAP & R:R LOT CALCULATOR
+//    - INDEPENDENT LONG R:R HANDLES (TP, ENTRY, SL FREE DRAG)
+//    - LOT-BASED PROFIT/LOSS & MODAL CALCULATION
 // ==========================================
 let activeDrawTool = 'cursor', defaultDrawColor = '#fb8b1e', hideAllDrawings = false, isMagnetOn = false;
 let pendingPoint = null, measurePreview = null, selectedDrawId = null, dragState = null;
@@ -986,8 +1059,9 @@ function setDrawTool(t) {
     svg.style.cursor = 'crosshair';
     hint.classList.remove('hidden');
     if (t === 'measure') document.getElementById('draw-hint-text').textContent = 'Penggaris Ukur: Klik titik awal, lalu arahkan ke titik tujuan.';
+    else if (t === 'rr') document.getElementById('draw-hint-text').textContent = 'Long R:R: Klik titik Entry, lalu klik lebar kotak (setelah jadi, geser garis TP/Entry/SL bebas).';
     else if (['hline', 'vline', 'text'].includes(t)) document.getElementById('draw-hint-text').textContent = 'Klik di mana saja (termasuk area kosong kanan).';
-    else document.getElementById('draw-hint-text').textContent = 'Klik titik pertama, lalu klik titik kedua (bebas hingga area kosong kanan).';
+    else document.getElementById('draw-hint-text').textContent = 'Klik titik pertama, lalu klik titik kedua.';
   }
   renderDrawings();
 }
@@ -1014,7 +1088,7 @@ function selectDrawing(id) {
 
   bar.classList.remove('hidden');
   delBtn.classList.remove('hidden');
-  document.getElementById('flt-obj-type').textContent = obj.type.toUpperCase();
+  document.getElementById('flt-obj-type').textContent = obj.type === 'rr' ? 'LONG R:R' : obj.type.toUpperCase();
   document.getElementById('sel-obj-color').value = obj.color || '#fb8b1e';
   document.getElementById('sel-obj-width').value = String(obj.width || 1.5);
   document.getElementById('sel-obj-dash').value = obj.dash || '';
@@ -1065,7 +1139,6 @@ function clearAllDrawings() {
   deselectDrawing();
 }
 
-// UNRESTRICTED LOGICAL COORDINATES (ALLOWS DRAWING FAR INTO RIGHT EMPTY FUTURE SPACE)
 function pixelToChartCoord(x, y, applyTickSnap = false) {
   if (!currentChartData?.candles?.length) return null;
   const logical = mainChart.timeScale().coordinateToLogical(x);
@@ -1076,7 +1149,6 @@ function pixelToChartCoord(x, y, applyTickSnap = false) {
   const barIdx = Math.round(logical);
   let finalPrice = Number(rawPrice.toFixed(2));
 
-  // Magnet Mode: snap to nearest candle OHLC if within historical bars
   if (isMagnetOn && barIdx >= 0 && barIdx < currentChartData.candles.length) {
     const c = currentChartData.candles[barIdx];
     const candidates = [c.open, c.high, c.low, c.close];
@@ -1095,7 +1167,6 @@ function pixelToChartCoord(x, y, applyTickSnap = false) {
 function chartCoordToPixel(pt) {
   if (!currentChartData?.candles?.length || !pt) return null;
   let targetLogical = pt.logical;
-  // Backward compatibility if time exists
   if (pt.time) {
     const foundIdx = currentChartData.candles.findIndex(c => c.time === pt.time);
     if (foundIdx !== -1) targetLogical = foundIdx;
@@ -1123,7 +1194,10 @@ function handleObjPointerDown(e, id, mode) {
     startX: e.clientX - rect.left,
     startY: e.clientY - rect.top,
     origP1: { ...obj.p1 },
-    origP2: obj.p2 ? { ...obj.p2 } : null
+    origP2: obj.p2 ? { ...obj.p2 } : null,
+    origEntry: obj.entryPrice,
+    origTp: obj.tpPrice,
+    origSl: obj.slPrice
   };
   svgCanvas.style.pointerEvents = 'auto';
 }
@@ -1133,7 +1207,6 @@ window.addEventListener('pointermove', (e) => {
   const curX = e.clientX - rect.left;
   const curY = e.clientY - rect.top;
 
-  // Live Measure Ruler Preview
   if (activeDrawTool === 'measure' && pendingPoint) {
     const curPt = pixelToChartCoord(curX, curY, false);
     if (curPt) {
@@ -1148,14 +1221,48 @@ window.addEventListener('pointermove', (e) => {
   const idx = list.findIndex(x => x.id === dragState.id);
   if (idx === -1) return;
 
-  const useTickSnap = ['hline', 'rr'].includes(list[idx].type);
+  const item = list[idx];
+  const useTickSnap = ['hline', 'rr'].includes(item.type);
+
+  // Dragging handles specifically for Long R:R (TP, Entry, SL, Width)
+  if (item.type === 'rr') {
+    const pt = pixelToChartCoord(curX, curY, true);
+    if (!pt) return;
+    const tick = getIDXTickSize(item.entryPrice);
+
+    if (dragState.mode === 'rr_tp') {
+      item.tpPrice = Math.max(item.entryPrice + tick, pt.price);
+      item.p2.logical = pt.logical;
+    } else if (dragState.mode === 'rr_sl') {
+      item.slPrice = Math.min(item.entryPrice - tick, pt.price);
+      item.p2.logical = pt.logical;
+    } else if (dragState.mode === 'rr_entry') {
+      const clampedEntry = Math.min(item.tpPrice - tick, Math.max(item.slPrice + tick, pt.price));
+      item.entryPrice = clampedEntry;
+    } else if (dragState.mode === 'move') {
+      const startPt = pixelToChartCoord(dragState.startX, dragState.startY, false);
+      const curRaw = pixelToChartCoord(curX, curY, false);
+      if (startPt && curRaw) {
+        const dLogical = curRaw.logical - startPt.logical;
+        const dPrice = curRaw.price - startPt.price;
+        item.p1.logical = Number((dragState.origP1.logical + dLogical).toFixed(2));
+        item.p2.logical = Number((dragState.origP2.logical + dLogical).toFixed(2));
+        item.entryPrice = snapToIDXTick(dragState.origEntry + dPrice);
+        item.tpPrice = snapToIDXTick(dragState.origTp + dPrice);
+        item.slPrice = snapToIDXTick(dragState.origSl + dPrice);
+      }
+    }
+    saveDrawingsList(list);
+    renderDrawings();
+    return;
+  }
 
   if (dragState.mode === 'p1') {
     const pt = pixelToChartCoord(curX, curY, useTickSnap);
-    if (pt) list[idx].p1 = pt;
+    if (pt) item.p1 = pt;
   } else if (dragState.mode === 'p2') {
     const pt = pixelToChartCoord(curX, curY, useTickSnap);
-    if (pt) list[idx].p2 = pt;
+    if (pt) item.p2 = pt;
   } else if (dragState.mode === 'move') {
     const startPt = pixelToChartCoord(dragState.startX, dragState.startY, false);
     const curPt = pixelToChartCoord(curX, curY, false);
@@ -1166,7 +1273,7 @@ window.addEventListener('pointermove', (e) => {
       const newLog1 = Number((dragState.origP1.logical + dLogical).toFixed(2));
       const b1 = Math.round(newLog1);
       const rawP1 = dragState.origP1.price + dPrice;
-      list[idx].p1 = {
+      item.p1 = {
         logical: newLog1,
         time: (b1 >= 0 && b1 < currentChartData.candles.length) ? currentChartData.candles[b1].time : null,
         price: useTickSnap ? snapToIDXTick(rawP1) : Number(rawP1.toFixed(2))
@@ -1176,7 +1283,7 @@ window.addEventListener('pointermove', (e) => {
         const newLog2 = Number((dragState.origP2.logical + dLogical).toFixed(2));
         const b2 = Math.round(newLog2);
         const rawP2 = dragState.origP2.price + dPrice;
-        list[idx].p2 = {
+        item.p2 = {
           logical: newLog2,
           time: (b2 >= 0 && b2 < currentChartData.candles.length) ? currentChartData.candles[b2].time : null,
           price: useTickSnap ? snapToIDXTick(rawP2) : Number(rawP2.toFixed(2))
@@ -1195,7 +1302,6 @@ window.addEventListener('pointerup', () => {
   }
 });
 
-// Shift + Click Shortcut for Quick Measure Ruler
 document.getElementById('htf-chart-container').addEventListener('click', (e) => {
   if (e.shiftKey && activeDrawTool === 'cursor') {
     setDrawTool('measure');
@@ -1250,9 +1356,37 @@ svgCanvas.addEventListener('click', (e) => {
 
   if (!pendingPoint) {
     pendingPoint = pt;
-    document.getElementById('draw-hint-text').textContent = 'Klik titik kedua pada chart...';
+    if (activeDrawTool === 'rr') {
+      document.getElementById('draw-hint-text').textContent = 'Klik titik kedua untuk lebar area R:R (lalu geser TP/Entry/SL bebas)...';
+    } else {
+      document.getElementById('draw-hint-text').textContent = 'Klik titik kedua pada chart...';
+    }
   } else {
-    list.push({ id: newId, type: activeDrawTool, p1: pendingPoint, p2: pt, color: defaultDrawColor, width: 1.8, dash: '' });
+    if (activeDrawTool === 'rr') {
+      // Independent Long R:R initialization: Entry at first click, initial TP & SL customizable freely
+      const entryP = snapToIDXTick(pendingPoint.price);
+      const tick = getIDXTickSize(entryP);
+      const clickedP = snapToIDXTick(pt.price);
+      let initSl = clickedP < entryP ? clickedP : snapToIDXTick(entryP * 0.96);
+      if (initSl >= entryP) initSl = entryP - tick * 2;
+      const riskDist = Math.max(tick * 2, entryP - initSl);
+      const initTp = clickedP > entryP ? clickedP : snapToIDXTick(entryP + riskDist * 2.5);
+
+      list.push({
+        id: newId,
+        type: 'rr',
+        p1: { logical: Math.min(pendingPoint.logical, pt.logical), price: entryP },
+        p2: { logical: Math.max(pendingPoint.logical + 6, pt.logical), price: initTp },
+        entryPrice: entryP,
+        tpPrice: initTp,
+        slPrice: initSl,
+        color: defaultDrawColor,
+        width: 1.5,
+        dash: ''
+      });
+    } else {
+      list.push({ id: newId, type: activeDrawTool, p1: pendingPoint, p2: pt, color: defaultDrawColor, width: 1.8, dash: '' });
+    }
     saveDrawingsList(list);
     pendingPoint = null;
     setDrawTool('cursor');
@@ -1263,7 +1397,6 @@ svgCanvas.addEventListener('click', (e) => {
 function renderDrawings() {
   svgCanvas.innerHTML = '';
 
-  // Render Measure Ruler Overlay if active
   if (measurePreview) {
     const a = chartCoordToPixel(measurePreview.p1);
     const b = chartCoordToPixel(measurePreview.p2);
@@ -1318,6 +1451,70 @@ function renderDrawings() {
         <rect x="${a.x - 4}" y="${a.y - 13}" width="${item.text.length * 7.2 + 8}" height="18" fill="${isSel ? 'rgba(251,139,30,0.18)' : 'transparent'}" stroke="${isSel ? '#fb8b1e' : 'none'}" rx="2"/>
         <text x="${a.x}" y="${a.y}" fill="${col}" font-size="11" font-weight="700">${item.text}</text>
       `;
+    } else if (item.type === 'rr') {
+      // Backward compatibility for older saved R:R drawings
+      const entryP = snapToIDXTick(item.entryPrice ?? ((item.p1.price + item.p2.price) / 2));
+      const tpP = snapToIDXTick(item.tpPrice ?? Math.max(item.p1.price, item.p2.price));
+      const slP = snapToIDXTick(item.slPrice ?? Math.min(item.p1.price, item.p2.price));
+      item.entryPrice = entryP; item.tpPrice = tpP; item.slPrice = slP;
+
+      const xStart = mainChart.timeScale().logicalToCoordinate(item.p1.logical);
+      const xEnd = mainChart.timeScale().logicalToCoordinate(item.p2.logical);
+      const tpY = candleSeries.priceToCoordinate(tpP);
+      const entryY = candleSeries.priceToCoordinate(entryP);
+      const slY = candleSeries.priceToCoordinate(slP);
+      if (xStart === null || xEnd === null || tpY === null || entryY === null || slY === null) return;
+
+      const x1 = Math.min(xStart, xEnd);
+      const rw = Math.max(115, Math.abs(xEnd - xStart));
+      const x2 = x1 + rw;
+
+      const riskPerShare = Math.max(1, entryP - slP);
+      const rewardPerShare = Math.max(0, tpP - entryP);
+      const rrRatio = (rewardPerShare / riskPerShare).toFixed(2);
+      const slPct = (((entryP - slP) / entryP) * 100).toFixed(2);
+      const tpPct = (((tpP - entryP) / entryP) * 100).toFixed(2);
+
+      // Lot-based calculation (1 Lot = 100 Lembar)
+      const lots = tradeLotSize;
+      const shares = lots * 100;
+      const totalModal = shares * entryP;
+      const totalProfit = shares * rewardPerShare;
+      const totalLoss = shares * riskPerShare;
+
+      const topH = Math.max(2, entryY - tpY);
+      const botH = Math.max(2, slY - entryY);
+      const boxW = Math.max(rw, 265);
+
+      const line1 = `R:R 1 : ${rrRatio}  |  ${lots.toLocaleString('id-ID')} Lot (Modal: ${formatRupiahCompact(totalModal)})`;
+      const line2 = `TP ${tpP} (+${tpPct}% / +${formatRupiahCompact(totalProfit)})  |  SL ${slP} (-${slPct}% / -${formatRupiahCompact(totalLoss)})`;
+
+      g.innerHTML = `
+        <rect x="${x1}" y="${tpY}" width="${rw}" height="${topH}" fill="#4af6c328" stroke="#4af6c3" stroke-width="1.2"/>
+        <rect x="${x1}" y="${entryY}" width="${rw}" height="${botH}" fill="#ff433d28" stroke="#ff433d" stroke-width="1.2"/>
+        <line x1="${x1}" y1="${entryY}" x2="${x2}" y2="${entryY}" stroke="#fb8b1e" stroke-width="1.6"/>
+        <rect x="${x1}" y="${Math.max(4, tpY - 32)}" width="${boxW}" height="30" rx="2" fill="#090b0f" stroke="#fb8b1e" stroke-width="1"/>
+        <text x="${x1 + 6}" y="${Math.max(16, tpY - 19)}" fill="#fb8b1e" font-size="9.5" font-weight="700">${line1}</text>
+        <text x="${x1 + 6}" y="${Math.max(27, tpY - 7)}" fill="#f0f4f8" font-size="8.5">${line2}</text>
+      `;
+
+      // 3 Independent Drag Handles (TP Top, Entry Middle, SL Bottom) when selected
+      if (isSel) {
+        const makeHandle = (cx, cy, fillCol, modeName, titleTxt) => {
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', '6');
+          c.setAttribute('fill', fillCol); c.setAttribute('stroke', '#ffffff'); c.setAttribute('stroke-width', '2');
+          c.style.cursor = 'ns-resize';
+          const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          t.textContent = titleTxt;
+          c.appendChild(t);
+          c.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, modeName));
+          return c;
+        };
+        g.appendChild(makeHandle(x2, tpY, '#4af6c3', 'rr_tp', 'Geser Target Profit (TP)'));
+        g.appendChild(makeHandle(x1, entryY, '#fb8b1e', 'rr_entry', 'Geser Harga Entry'));
+        g.appendChild(makeHandle(x2, slY, '#ff433d', 'rr_sl', 'Geser Stop Loss (SL)'));
+      }
     } else if (item.p2) {
       const b = chartCoordToPixel(item.p2);
       if (!b) return;
@@ -1345,39 +1542,6 @@ function renderDrawings() {
           fibHtml += `<line x1="${x1}" y1="${yL}" x2="${x2}" y2="${yL}" stroke="${col}" stroke-width="1" stroke-opacity="0.85"/><text x="${x1 + 4}" y="${yL - 2}" fill="${col}" font-size="9" font-weight="600">${lvl} (${snappedFib})</text>`;
         });
         g.innerHTML = fibHtml;
-      } else if (item.type === 'rr') {
-        // IDX Tick-Snapped R:R & Automatic Lot Sizing Box
-        const x1 = Math.min(a.x, b.x), rw = Math.max(95, Math.abs(b.x - a.x));
-        const topY = Math.min(a.y, b.y), botY = Math.max(a.y, b.y);
-        const midY = topY + (botY - topY) * 0.65; // Default 1:2 visual split around entry
-        const entryY = candleSeries.priceToCoordinate(snapToIDXTick((item.p1.price + item.p2.price) / 2)) || midY;
-
-        const tpPrice = snapToIDXTick(Math.max(item.p1.price, item.p2.price));
-        const slPrice = snapToIDXTick(Math.min(item.p1.price, item.p2.price));
-        const entryPrice = snapToIDXTick((tpPrice + slPrice * 2) / 3); // 1:2 default structure between SL & TP
-
-        const riskPerShare = Math.max(1, entryPrice - slPrice);
-        const rewardPerShare = Math.max(0, tpPrice - entryPrice);
-        const rrRatio = (rewardPerShare / riskPerShare).toFixed(2);
-        const slPct = (((entryPrice - slPrice) / entryPrice) * 100).toFixed(1);
-        const tpPct = (((tpPrice - entryPrice) / entryPrice) * 100).toFixed(1);
-
-        const maxRiskRp = (riskPrefs.equityJt * 1000000) * (riskPrefs.riskPct / 100);
-        const lots = Math.max(1, Math.floor(maxRiskRp / (riskPerShare * 100)));
-        const modalJt = ((lots * 100 * entryPrice) / 1000000).toFixed(1);
-
-        const topH = Math.max(4, entryY - topY);
-        const botH = Math.max(4, botY - entryY);
-        const hudText = `R:R 1:${rrRatio} | ${lots} Lot (Rp ${modalJt}Jt)`;
-        const subText = `TP ${tpPrice} (+${tpPct}%) | EN ${entryPrice} | SL ${slPrice} (-${slPct}%)`;
-
-        g.innerHTML = `
-          <rect x="${x1}" y="${topY}" width="${rw}" height="${topH}" fill="#4af6c328" stroke="#4af6c3" stroke-width="1.2"/>
-          <rect x="${x1}" y="${entryY}" width="${rw}" height="${botH}" fill="#ff433d28" stroke="#ff433d" stroke-width="1.2"/>
-          <rect x="${x1}" y="${Math.max(4, topY - 30)}" width="${Math.max(rw, 235)}" height="28" rx="2" fill="#090b0f" stroke="#fb8b1e" stroke-width="1"/>
-          <text x="${x1 + 5}" y="${Math.max(15, topY - 18)}" fill="#fb8b1e" font-size="9.5" font-weight="700">${hudText}</text>
-          <text x="${x1 + 5}" y="${Math.max(26, topY - 7)}" fill="#f0f4f8" font-size="8.5">${subText}</text>
-        `;
       }
 
       if (isSel) {
@@ -1412,10 +1576,8 @@ async function captureChartScreenshot() {
     outCanvas.height = chartCanvas.height;
     const ctx = outCanvas.getContext('2d');
 
-    // Draw base chart
     ctx.drawImage(chartCanvas, 0, 0);
 
-    // Overlay SVG drawings onto canvas
     const svgData = new XMLSerializer().serializeToString(svgCanvas);
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
@@ -1424,7 +1586,6 @@ async function captureChartScreenshot() {
       ctx.drawImage(img, 0, 0, outCanvas.width, outCanvas.height);
       URL.revokeObjectURL(url);
 
-      // Stamp Bloomberg Watermark
       ctx.fillStyle = '#fb8b1e';
       ctx.font = 'bold 13px "JetBrains Mono", monospace';
       ctx.fillText(`GOZI TERMINAL | ${currentTicker} (${activeChartTF.toUpperCase()})`, 14, 22);
@@ -1450,7 +1611,7 @@ async function captureChartScreenshot() {
 }
 
 // ==========================================
-// 8. SCREENER (2 TABS, PINNING, FULL SCREEN)
+// 8. SCREENER (2 TABS, PINNING, FULL SCREEN, BEARISH CRT AVOID)
 // ==========================================
 function toggleScreenerDrawer() {
   const drawer = document.getElementById('screener-drawer');
@@ -1460,6 +1621,18 @@ function toggleScreenerDrawer() {
     applyScreenerLayout();
   }
   setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40);
+}
+
+function quickOpenFilter(preset) {
+  const drawer = document.getElementById('screener-drawer');
+  if (drawer.classList.contains('hidden')) drawer.classList.remove('hidden');
+  switchScreenerTab('screener');
+  resetFilters();
+  if (preset === 'BEAR_CRT') {
+    document.getElementById('flt-crt').value = 'BEAR_CRT';
+    document.getElementById('chk-hide-bear-crt').checked = false;
+  }
+  renderStockList();
 }
 
 function toggleScreenerFullscreen() {
@@ -1474,13 +1647,13 @@ function applyScreenerLayout() {
 
   if (isScreenerFullscreen) {
     chartSec.classList.add('hidden');
-    drawer.classList.remove('sm:w-[490px]', 'border-l');
+    drawer.classList.remove('sm:w-[510px]', 'border-l');
     drawer.classList.add('w-full');
     lbl.textContent = 'Exit Full';
   } else {
     chartSec.classList.remove('hidden');
     drawer.classList.remove('w-full');
-    drawer.classList.add('w-full', 'sm:w-[490px]', 'border-l');
+    drawer.classList.add('w-full', 'sm:w-[510px]', 'border-l');
     lbl.textContent = 'Full Screen';
     setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40);
   }
@@ -1538,9 +1711,21 @@ function togglePinTicker(e, ticker) {
 
 function resetFilters() {
   ['flt-ticker', 'flt-min-price', 'flt-max-price', 'flt-min-tx'].forEach(id => document.getElementById(id).value = '');
-  ['flt-crt', 'flt-ma', 'flt-stoch', 'flt-rsi'].forEach(id => document.getElementById(id).value = 'ALL');
+  ['flt-crt', 'flt-ma', 'flt-stoch', 'flt-rsi', 'flt-vol', 'flt-beta', 'flt-smc'].forEach(id => document.getElementById(id).value = 'ALL');
+  document.getElementById('chk-hide-bear-crt').checked = false;
   document.getElementById('flt-sort').value = 'TICKER_ASC';
   renderStockList();
+}
+
+function sortStockArray(list, sortKey) {
+  if (sortKey === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
+  else if (sortKey === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
+  else if (sortKey === 'VOL_DESC') list.sort((a, b) => (b.vol_ratio || 0) - (a.vol_ratio || 0));
+  else if (sortKey === 'BETA_ASC') list.sort((a, b) => (a.beta ?? 99) - (b.beta ?? 99));
+  else if (sortKey === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
+  else if (sortKey === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
+  else if (sortKey === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
+  else if (sortKey === 'STOCH_ASC') list.sort((a, b) => a.stoch_k - b.stoch_k);
 }
 
 function renderStockList() {
@@ -1554,11 +1739,7 @@ function renderStockList() {
     const q = document.getElementById('all-quick-search').value.trim().toUpperCase();
     const s = document.getElementById('all-sort').value;
     if (q) list = list.filter(x => x.ticker.includes(q));
-    if (s === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
-    else if (s === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
-    else if (s === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
-    else if (s === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
-    else if (s === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
+    sortStockArray(list, s);
     document.getElementById('count-filtered').textContent = rawAll.length;
     document.getElementById('top-scr-count').textContent = list.length;
   } else {
@@ -1570,16 +1751,22 @@ function renderStockList() {
     const fMa = document.getElementById('flt-ma').value;
     const fSt = document.getElementById('flt-stoch').value;
     const fRsi = document.getElementById('flt-rsi').value;
+    const fVol = document.getElementById('flt-vol').value;
+    const fBeta = document.getElementById('flt-beta').value;
+    const fSmc = document.getElementById('flt-smc').value;
+    const hideBear = document.getElementById('chk-hide-bear-crt').checked;
     const fSort = document.getElementById('flt-sort').value;
 
     if (q) list = list.filter(x => x.ticker.includes(q));
     if (!isNaN(minP)) list = list.filter(x => x.close >= minP);
     if (!isNaN(maxP)) list = list.filter(x => x.close <= maxP);
     if (!isNaN(minTx)) list = list.filter(x => (x.tx_miliar || 0) >= minTx);
+    if (hideBear) list = list.filter(x => !x.crt_bear);
 
-    // CRT Setup: only Confirmed or Potential
-    if (fCrt === 'CONFIRMED') list = list.filter(x => x.crt_bull && x.crt_status === 'CONFIRMED');
+    if (fCrt === 'BULL_ALL') list = list.filter(x => x.crt_bull);
+    else if (fCrt === 'CONFIRMED') list = list.filter(x => x.crt_bull && x.crt_status === 'CONFIRMED');
     else if (fCrt === 'POTENTIAL') list = list.filter(x => x.crt_bull && x.crt_status === 'POTENTIAL');
+    else if (fCrt === 'BEAR_CRT') list = list.filter(x => x.crt_bear);
 
     if (fMa === 'ABOVE_20') list = list.filter(x => x.above_ma20);
     else if (fMa === 'ABOVE_50') list = list.filter(x => x.above_ma50);
@@ -1595,40 +1782,47 @@ function renderStockList() {
     else if (fRsi === 'MID') list = list.filter(x => (x.rsi14 || 50) >= 40 && (x.rsi14 || 50) <= 60);
     else if (fRsi === 'OB') list = list.filter(x => (x.rsi14 || 50) >= 70);
 
-    if (fSort === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
-    else if (fSort === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
-    else if (fSort === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
-    else if (fSort === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
-    else if (fSort === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
-    else if (fSort === 'STOCH_ASC') list.sort((a, b) => a.stoch_k - b.stoch_k);
+    if (fVol === '2X') list = list.filter(x => (x.vol_ratio || 0) >= 2.0);
+    else if (fVol === '3X') list = list.filter(x => (x.vol_ratio || 0) >= 3.0);
+
+    if (fBeta === 'NEG') list = list.filter(x => x.beta !== null && x.beta !== undefined && x.beta < 0);
+    else if (fBeta === 'LOW') list = list.filter(x => x.beta !== null && x.beta !== undefined && x.beta < 0.5);
+    else if (fBeta === 'HIGH') list = list.filter(x => x.beta !== null && x.beta !== undefined && x.beta > 1.2);
+
+    if (fSmc === 'BULL_FVG') list = list.filter(x => x.fvg === 'BULL FVG');
+    else if (fSmc === 'BEAR_FVG') list = list.filter(x => x.fvg === 'BEAR FVG');
+    else if (fSmc === 'SSL_SWEEP') list = list.filter(x => x.sweep === 'SSL SWEEP');
+    else if (fSmc === 'BSL_SWEEP') list = list.filter(x => x.sweep === 'BSL SWEEP');
+
+    sortStockArray(list, fSort);
 
     document.getElementById('count-filtered').textContent = list.length;
     document.getElementById('top-scr-count').textContent = list.length;
   }
 
-  // Float Pinned Tickers to top while preserving relative order
   list.sort((a, b) => (pinnedTickers.includes(b.ticker) ? 1 : 0) - (pinnedTickers.includes(a.ticker) ? 1 : 0));
   renderedTickersList = list.map(x => x.ticker);
 
   const hdr = document.getElementById('table-header-row');
   if (isScreenerFullscreen) {
     hdr.innerHTML = `
-      <div class="col-span-2">Ticker</div>
-      <div class="col-span-2 text-right">Last Price</div>
+      <div class="col-span-2">Ticker / Status</div>
+      <div class="col-span-1 text-right">Price</div>
       <div class="col-span-1 text-right">%Chg</div>
       <div class="col-span-1 text-right">Tx (M)</div>
+      <div class="col-span-1 text-right">Vol/MA20</div>
+      <div class="col-span-1 text-right">Beta</div>
       <div class="col-span-1 text-right">MA20</div>
-      <div class="col-span-1 text-right">MA50</div>
       <div class="col-span-1 text-right">RSI14</div>
-      <div class="col-span-1 text-right">Stoch K/D</div>
-      <div class="col-span-2 text-right">CRT Signal</div>
+      <div class="col-span-1 text-right">Stoch</div>
+      <div class="col-span-2 text-right">CRT / SMC</div>
     `;
   } else {
     hdr.innerHTML = `
-      <div class="col-span-5">Ticker / Status</div>
+      <div class="col-span-5">Ticker / Radar</div>
       <div class="col-span-3 text-right">Price / Chg</div>
-      <div class="col-span-2 text-right">Tx (M)</div>
-      <div class="col-span-2 text-right">Stoch</div>
+      <div class="col-span-2 text-right">Tx / Vol</div>
+      <div class="col-span-2 text-right">Beta / St</div>
     `;
   }
 
@@ -1643,11 +1837,24 @@ function renderStockList() {
     const isPin = pinnedTickers.includes(item.ticker);
     const chgCol = item.change_pct >= 0 ? 'var(--bull)' : 'var(--bear)';
     const sign = item.change_pct > 0 ? '+' : '';
-    const pill = item.crt_status === 'POTENTIAL'
-      ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(251,139,30,0.2);color:#fb8b1e">POTENTIAL</span>`
-      : (item.crt_status === 'CONFIRMED'
-        ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(74,246,195,0.2);color:var(--bull)">CONFIRMED</span>`
-        : '');
+
+    let pill = '';
+    if (item.crt_bear) {
+      pill = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(255,67,61,0.22);color:var(--bear)">⚠️ AVOID</span>`;
+    } else if (item.crt_status === 'POTENTIAL') {
+      pill = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(251,139,30,0.2);color:#fb8b1e">POTENTIAL</span>`;
+    } else if (item.crt_status === 'CONFIRMED') {
+      pill = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(74,246,195,0.2);color:var(--bull)">CONFIRMED</span>`;
+    }
+
+    const smcTags = [item.fvg, item.sweep].filter(Boolean).join(' · ');
+    const subInfo = item.crt_sig
+      ? `${item.crt_sig}${smcTags ? ' | ' + smcTags : ''}`
+      : (smcTags || screenerTF.toUpperCase());
+
+    const volRatio = item.vol_ratio || 1;
+    const volBadge = volRatio >= 2.0 ? `<span style="color:var(--accent)" class="font-bold">${volRatio.toFixed(1)}x</span>` : `${volRatio.toFixed(1)}x`;
+    const betaStr = (item.beta !== null && item.beta !== undefined) ? item.beta.toFixed(2) : '-';
 
     const onSelectRow = `currentTicker='${item.ticker}'; if(isScreenerFullscreen){isScreenerFullscreen=false;applyScreenerLayout();} selectTimeframe('${screenerTF}'); renderStockList();`;
     const pinBtn = `<button onclick="togglePinTicker(event, '${item.ticker}')" class="mr-1.5 t-text-muted hover:opacity-100" title="Pin ke Atas"><svg class="w-3 h-3 ${isPin ? 'fill-[#fb8b1e] text-[#fb8b1e]' : ''}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>`;
@@ -1656,14 +1863,15 @@ function renderStockList() {
       return `
       <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row text-xs tabular-nums ${sel ? 't-row-active' : ''}">
         <div class="col-span-2 font-bold t-accent-text flex items-center">${pinBtn}<span>${item.ticker}</span><span class="ml-1.5">${pill}</span></div>
-        <div class="col-span-2 text-right font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+        <div class="col-span-1 text-right font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
         <div class="col-span-1 text-right font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
         <div class="col-span-1 text-right t-text-muted">${(item.tx_miliar || 0).toFixed(1)}B</div>
+        <div class="col-span-1 text-right t-text-muted">${volBadge}</div>
+        <div class="col-span-1 text-right t-text-main">${betaStr}</div>
         <div class="col-span-1 text-right t-text-main">${item.ma20 ? item.ma20.toLocaleString('id-ID') : '-'}</div>
-        <div class="col-span-1 text-right t-text-main">${item.ma50 ? item.ma50.toLocaleString('id-ID') : '-'}</div>
         <div class="col-span-1 text-right t-text-main">${item.rsi14 ?? '-'}</div>
         <div class="col-span-1 text-right t-text-muted">${item.stoch_k}/${item.stoch_d}</div>
-        <div class="col-span-2 text-right text-[11px] t-text-main">${item.crt_sig || '-'}</div>
+        <div class="col-span-2 text-right text-[10px] t-text-main truncate">${subInfo}</div>
       </div>`;
     }
 
@@ -1673,17 +1881,20 @@ function renderStockList() {
         ${pinBtn}
         <div class="min-w-0">
           <div class="font-bold text-xs t-accent-text flex items-center space-x-1.5"><span>${item.ticker}</span>${pill}</div>
-          <div class="text-[10px] t-text-muted truncate">${item.crt_sig || screenerTF.toUpperCase()}</div>
+          <div class="text-[9.5px] t-text-muted truncate" style="${item.crt_bear ? 'color:var(--bear)' : ''}">${subInfo}</div>
         </div>
       </div>
       <div class="col-span-3 text-right tabular-nums">
         <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
         <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
       </div>
-      <div class="col-span-2 text-right text-[10px] t-text-muted tabular-nums">${(item.tx_miliar || 0).toFixed(1)}B</div>
+      <div class="col-span-2 text-right text-[10px] t-text-muted tabular-nums">
+        <div>${(item.tx_miliar || 0).toFixed(1)}B</div>
+        <div>${volBadge}</div>
+      </div>
       <div class="col-span-2 text-right text-[10px] tabular-nums">
-        <div class="t-text-main">${item.stoch_k}</div>
-        <div class="t-text-muted">${item.stoch_d}</div>
+        <div class="t-text-main">β ${betaStr}</div>
+        <div class="t-text-muted">K ${item.stoch_k}</div>
       </div>
     </div>`;
   }).join('');
@@ -1726,6 +1937,16 @@ async function initApp() {
     const res = await fetch('data/screener_idx.json?t=' + Date.now());
     screenerData = await res.json();
     document.getElementById('last-updated').textContent = `Update: ${screenerData.last_updated}`;
+
+    if (screenerData.breadth) {
+      document.getElementById('brd-up').textContent = screenerData.breadth.up ?? 0;
+      document.getElementById('brd-down').textContent = screenerData.breadth.down ?? 0;
+      document.getElementById('brd-flat').textContent = screenerData.breadth.flat ?? 0;
+      document.getElementById('brd-ma20').textContent = (screenerData.breadth.above_ma20_pct ?? 0) + '%';
+      document.getElementById('brd-ma50').textContent = (screenerData.breadth.above_ma50_pct ?? 0) + '%';
+      document.getElementById('brd-bear-crt').textContent = screenerData.breadth.bear_crt_count ?? 0;
+    }
+
     renderStockList();
     loadHTFChart('BBCA', '1d');
   } catch (err) { console.error(err); }
