@@ -1,5 +1,6 @@
 import yfinance as yf
 import pandas as pd
+import numpy as np
 import json
 import os
 import time
@@ -40,6 +41,43 @@ def get_all_idx_tickers():
         return ["BBCA.JK", "BBRI.JK", "BMRI.JK", "BBNI.JK", "TLKM.JK"]
 
 
+def get_ihsg_returns():
+    """Mengunduh data IHSG (^JKSE) 1 tahun untuk kalkulasi Beta masing-masing emiten"""
+    try:
+        ihsg = yf.download("^JKSE", period="1y", interval="1d", progress=False)
+        if ihsg is not None and not ihsg.empty:
+            close_col = ihsg["Close"]
+            if isinstance(close_col, pd.DataFrame):
+                close_col = close_col.iloc[:, 0]
+            ret = close_col.pct_change().dropna()
+            ret.index = pd.to_datetime(ret.index).tz_localize(None)
+            print(f"Data IHSG (^JKSE) berhasil dimuat ({len(ret)} hari bursa).")
+            return ret
+    except Exception as e:
+        print(f"Gagal memuat data IHSG untuk Beta: {e}")
+    return None
+
+
+def calculate_beta(df_daily, ihsg_ret):
+    """Menghitung Beta 1 tahun saham terhadap IHSG (^JKSE)"""
+    if ihsg_ret is None or len(df_daily) < 60:
+        return None
+    try:
+        stock_close = df_daily["Close"].tail(252).copy()
+        stock_close.index = pd.to_datetime(stock_close.index).tz_localize(None)
+        stock_ret = stock_close.pct_change().dropna()
+        aligned = pd.concat([stock_ret, ihsg_ret], axis=1, join="inner").dropna()
+        if len(aligned) < 40:
+            return None
+        cov = np.cov(aligned.iloc[:, 0], aligned.iloc[:, 1])[0][1]
+        var = np.var(aligned.iloc[:, 1])
+        if var == 0:
+            return None
+        return round(float(cov / var), 2)
+    except Exception:
+        return None
+
+
 def calculate_rsi(close_series, rsi_len=14):
     """Menghitung RSI (Wilder's Smoothing / RMA) standar TradingView"""
     delta = close_series.diff()
@@ -67,6 +105,38 @@ def calculate_stoch_rsi(close_series, rsi_len=10, stoch_len=10, smooth_k=5, smoo
     return stoch_rsi_k, stoch_rsi_d
 
 
+def detect_smc_patterns(df):
+    """Deteksi FVG (Fair Value Gap) 3-candle terbaru & Liquidity Sweep 20-bar"""
+    fvg_type = ""
+    sweep_type = ""
+    if len(df) < 25:
+        return fvg_type, sweep_type
+
+    # 1. Deteksi FVG pada 3 candle terakhir (c0 = i-2, c1 = i-1, c2 = i)
+    c0 = df.iloc[-3]
+    c2 = df.iloc[-1]
+    if float(c2["Low"]) > float(c0["High"]):
+        fvg_type = "BULL FVG"
+    elif float(c2["High"]) < float(c0["Low"]):
+        fvg_type = "BEAR FVG"
+
+    # 2. Deteksi Liquidity Sweep terhadap High/Low 20 bar sebelumnya
+    prev_20 = df.iloc[-21:-1]
+    prev_high_20 = float(prev_20["High"].max())
+    prev_low_20 = float(prev_20["Low"].min())
+
+    last_high = float(c2["High"])
+    last_low = float(c2["Low"])
+    last_close = float(c2["Close"])
+
+    if last_low < prev_low_20 and last_close > prev_low_20:
+        sweep_type = "SSL SWEEP"
+    elif last_high > prev_high_20 and last_close < prev_high_20:
+        sweep_type = "BSL SWEEP"
+
+    return fvg_type, sweep_type
+
+
 def is_last_candle_closed(last_daily_date, tf_name):
     """Mengecek apakah candle terakhir di TF tersebut sudah resmi closing"""
     dt = pd.to_datetime(last_daily_date)
@@ -86,7 +156,7 @@ def is_last_candle_closed(last_daily_date, tf_name):
 
 
 def analyze_crt(df, tf_name="1d", last_bar_closed=True, scan_bars=60, min_ticks_ratio=0.001, block_opposite=True):
-    """Logika CRT V12 Dynamic dengan deteksi CONFIRMED vs POTENTIAL"""
+    """Logika CRT V12 Dynamic dengan deteksi CONFIRMED vs POTENTIAL (Bullish & Bearish)"""
     if len(df) < 5:
         return None
 
@@ -196,7 +266,7 @@ def analyze_crt(df, tf_name="1d", last_bar_closed=True, scan_bars=60, min_ticks_
     }
 
 
-def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=12):
+def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=12, beta_val=None):
     """Memproses data chart & ringkasan lengkap untuk screener multi-filter"""
     df = df_raw.dropna().copy()
     if len(df) < min_bars:
@@ -204,6 +274,7 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
 
     df["MA20"] = df["Close"].rolling(window=20).mean()
     df["MA50"] = df["Close"].rolling(window=50).mean()
+    df["VOL_MA20"] = df["Volume"].rolling(window=20).mean()
     df["RSI14"] = calculate_rsi(df["Close"], rsi_len=14)
     df["STOCH_K"], df["STOCH_D"] = calculate_stoch_rsi(
         df["Close"], rsi_len=10, stoch_len=10, smooth_k=5, smooth_d=5
@@ -223,6 +294,7 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
 
     closed_flag = is_last_candle_closed(last_daily_date, tf_name)
     crt_info = analyze_crt(df, tf_name=tf_name, last_bar_closed=closed_flag)
+    fvg_type, sweep_type = detect_smc_patterns(df)
 
     chart_data = {
         "candles": candles,
@@ -236,10 +308,14 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
     prev_close = round(float(yesterday["Close"]), 2)
     change_pct = round(((close_price - prev_close) / prev_close) * 100, 2) if prev_close != 0 else 0
 
-    # Nilai transaksi (Rp Miliar) & rata-rata 20 bar
+    # Nilai transaksi (Rp Miliar) & Volume Spike Ratio (vs rata-rata 20 bar)
     val_series = df["Close"] * df["Volume"]
     tx_val_miliar = round(float(val_series.iloc[-1]) / 1_000_000_000, 2)
     avg_tx_miliar = round(float(val_series.tail(20).mean()) / 1_000_000_000, 2)
+
+    vol_now = float(today["Volume"])
+    vol_ma20 = float(today["VOL_MA20"]) if pd.notna(today["VOL_MA20"]) else 0
+    vol_ratio = round(vol_now / vol_ma20, 2) if vol_ma20 > 0 else 1.0
 
     ma20_val = round(float(today["MA20"]), 2) if pd.notna(today["MA20"]) else 0
     ma50_val = round(float(today["MA50"]), 2) if pd.notna(today["MA50"]) else 0
@@ -253,13 +329,17 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
 
     is_golden_cross = (k_prev <= d_prev) and (k_now > d_now) and (k_now > 0)
     is_oversold = (k_prev <= 20 or d_prev <= 20) and (k_now <= 25)
+
     is_crt_bull = bool(crt_info and crt_info["active_bias"] == "BULLISH OPEN")
+    is_crt_bear = bool(crt_info and crt_info["active_bias"] == "BEARISH OPEN")
 
     crt_status = ""
     crt_sig = ""
-    if is_crt_bull and crt_info["latest_setup"]:
+    crt_dir = 0
+    if (is_crt_bull or is_crt_bear) and crt_info["latest_setup"]:
         crt_status = crt_info["latest_setup"]["status"]
         crt_sig = crt_info["latest_setup"]["signal"]
+        crt_dir = crt_info["latest_setup"]["dir"]
 
     summary = {
         "ticker": clean_ticker,
@@ -267,6 +347,8 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
         "change_pct": change_pct,
         "tx_miliar": tx_val_miliar,
         "avg_tx_miliar": avg_tx_miliar,
+        "vol_ratio": vol_ratio,
+        "beta": beta_val,
         "ma20": ma20_val,
         "ma50": ma50_val,
         "dist_ma20": dist_ma20_pct,
@@ -277,8 +359,12 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
         "above_ma50": (ma50_val > 0 and close_price > ma50_val),
         "stoch_os_cross": bool(is_golden_cross and is_oversold),
         "crt_bull": is_crt_bull,
+        "crt_bear": is_crt_bear,
+        "crt_dir": crt_dir,
         "crt_status": crt_status,
         "crt_sig": crt_sig,
+        "fvg": fvg_type,
+        "sweep": sweep_type,
     }
 
     return chart_data, summary
@@ -286,9 +372,11 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
 
 def run_screener():
     all_tickers = get_all_idx_tickers()
+    ihsg_ret = get_ihsg_returns()
 
     results = {
         "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "breadth": {"up": 0, "down": 0, "flat": 0, "above_ma20_pct": 0, "above_ma50_pct": 0, "bear_crt_count": 0},
         "1d": {"all_data": {}},
         "1w": {"all_data": {}},
         "1m": {"all_data": {}},
@@ -318,21 +406,22 @@ def run_screener():
 
                 clean_ticker = ticker.replace(".JK", "")
                 last_daily_date = df_daily.index[-1]
+                beta_val = calculate_beta(df_daily, ihsg_ret)
 
                 # 1. Daily (1D - 320 bar terakhir untuk chart & MA200 dinamis)
-                chart_1d, sum_1d = process_timeframe(df_daily.tail(320), clean_ticker, "1d", last_daily_date, min_bars=30)
+                chart_1d, sum_1d = process_timeframe(df_daily.tail(320), clean_ticker, "1d", last_daily_date, min_bars=30, beta_val=beta_val)
 
                 # 2. Weekly (1W - tutup Jumat)
                 df_weekly = df_daily.resample("W-FRI").agg({
                     "Open": "first", "High": "max", "Low": "min", "Close": "last", "Volume": "sum"
                 }).dropna()
-                chart_1w, sum_1w = process_timeframe(df_weekly, clean_ticker, "1w", last_daily_date, min_bars=20)
+                chart_1w, sum_1w = process_timeframe(df_weekly, clean_ticker, "1w", last_daily_date, min_bars=20, beta_val=beta_val)
 
                 # 3. Monthly (1M - tutup akhir bulan)
                 df_monthly = df_daily.resample("ME").agg({
                     "Open": "first", "High": "max", "Low": "min", "Close": "last", "Volume": "sum"
                 }).dropna()
-                chart_1m, sum_1m = process_timeframe(df_monthly, clean_ticker, "1m", last_daily_date, min_bars=12)
+                chart_1m, sum_1m = process_timeframe(df_monthly, clean_ticker, "1m", last_daily_date, min_bars=12, beta_val=beta_val)
 
                 if not chart_1d or not sum_1d:
                     continue
@@ -354,6 +443,25 @@ def run_screener():
 
     for tf in ["1d", "1w", "1m"]:
         results[tf]["all_data"] = dict(sorted(results[tf]["all_data"].items()))
+
+    # Hitung Market Breadth dari data 1D
+    daily_items = list(results["1d"]["all_data"].values())
+    total_d = len(daily_items)
+    if total_d > 0:
+        up_cnt = sum(1 for x in daily_items if x["change_pct"] > 0)
+        down_cnt = sum(1 for x in daily_items if x["change_pct"] < 0)
+        flat_cnt = total_d - up_cnt - down_cnt
+        abv_20 = round((sum(1 for x in daily_items if x["above_ma20"]) / total_d) * 100, 1)
+        abv_50 = round((sum(1 for x in daily_items if x["above_ma50"]) / total_d) * 100, 1)
+        bear_crt_cnt = sum(1 for x in daily_items if x.get("crt_bear"))
+        results["breadth"] = {
+            "up": up_cnt,
+            "down": down_cnt,
+            "flat": flat_cnt,
+            "above_ma20_pct": abv_20,
+            "above_ma50_pct": abv_50,
+            "bear_crt_count": bear_crt_cnt,
+        }
 
     with open(os.path.join(OUTPUT_DIR, "screener_idx.json"), "w") as f:
         json.dump(results, f)
