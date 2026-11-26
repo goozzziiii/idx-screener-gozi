@@ -1,10 +1,10 @@
-# 📊 GOZI TERMINAL | IDX Market & Technical Workspace
+# GOZI TERMINAL | IDX Market & Technical Workspace
 
 Web terminal analisis teknikal dan *screener* saham Bursa Efek Indonesia (IDX) bergaya Bloomberg & TradingView. Dilengkapi dengan pembaruan data harian otomatis via GitHub Actions, dukungan *multi-timeframe* (`1D`, `1W`, `1M`), indikator teknikal dinamis, deteksi **Candle Range Theory (CRT)**, serta *drawing tools* interaktif.
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 
 * **Interactive Technical Chart (TradingView Lightweight Charts)**
   * Mendukung timeframe **Daily (`1D`)**, **Weekly (`1W`)**, dan **Monthly (`1M`)**.
