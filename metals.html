@@ -1,343 +1,1781 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>GOZI TERMINAL | XAUUSD & Metals Divergence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOZI TERMINAL | Metals & XAU Desk</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-main: #000000;
-    --bg-panel: #090b0f;
-    --bg-sub: #10141c;
-    --border-main: #1f2633;
-    --text-main: #f0f4f8;
-    --text-muted: #8892a0;
-    --accent: #fb8b1e;
-    --blue: #0068ff;
-    --bull: #4af6c3;
-    --bear: #ff433d;
+    --bg-main: #dbdbdb;
+    --bg-panel: #d2d2d2;
+    --bg-sub: #c8c8c8;
+    --bg-hover: #bdbdbd;
+    --border-main: #b0b4b1;
+    --text-main: #262c28;
+    --text-muted: #525c6d;
+    --accent: #424c45;
+    --accent-fg: #f4f5f9;
   }
   body {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     background-color: var(--bg-main);
     color: var(--text-main);
-    height: 100dvh;
-    overflow-x: hidden;
+    overflow: hidden;
+    user-select: none;
   }
-  .t-bg-main { background-color: var(--bg-main); }
-  .t-bg-panel { background-color: var(--bg-panel); }
-  .t-bg-sub { background-color: var(--bg-sub); }
-  .t-border { border-color: var(--border-main); }
-  .t-accent-text { color: var(--accent); }
-  .t-accent-bg { background-color: var(--accent); color: #000; }
+  .m-bg-main { background-color: var(--bg-main); }
+  .m-bg-panel { background-color: var(--bg-panel); }
+  .m-bg-sub { background-color: var(--bg-sub); }
+  .m-border { border-color: var(--border-main); }
+  .m-text-main { color: var(--text-main); }
+  .m-text-muted { color: var(--text-muted); }
+  .m-accent-bg { background-color: var(--accent); color: var(--accent-fg); }
+  .m-row:hover { background-color: var(--bg-hover); }
   .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-main); border-radius: 2px; }
+  input, select {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    border: 1px solid var(--border-main);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .tool-btn {
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; color: var(--text-muted); transition: all 0.12s;
+  }
+  .tool-btn:hover { background-color: var(--bg-hover); color: var(--text-main); }
+  .tool-btn.active { background-color: var(--accent); color: var(--accent-fg); }
+  .tool-btn.magnet-on { background-color: #525c6d; color: #f4f5f9; }
+
+  body.zen-mode #top-header,
+  body.zen-mode #left-toolbar,
+  body.zen-mode #primary-legend,
+  body.zen-mode #replay-bar,
+  body.zen-mode #draw-hint-bar {
+    display: none !important;
+  }
 </style>
 </head>
-<body class="flex flex-col">
+<body class="h-screen flex flex-col">
 
 <!-- TOP HEADER -->
-<header class="h-10 t-bg-panel border-b t-border px-3 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
+<header id="top-header" class="h-10 m-bg-panel border-b m-border px-2.5 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
   <div class="flex items-center space-x-2 shrink-0">
-    <a href="terminal.html" class="px-2 py-0.5 text-[10px] font-bold rounded-xs t-bg-sub border t-border hover:border-[#fb8b1e]">← IDX</a>
-    <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider t-accent-bg rounded-xs">SPOT CFD</span>
-    <span class="font-bold text-xs tracking-widest uppercase">GOZI METALS DESK</span>
+    <a href="index.html" onclick="goBackToIdx(event)" class="px-2 py-0.5 text-[10px] font-bold rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Kembali ke IDX Workspace">
+      <span>← IDX</span>
+    </a>
+    <div class="flex items-center space-x-1.5">
+      <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider m-accent-bg rounded-xs">METALS</span>
+      <span class="font-bold text-xs tracking-widest m-text-main uppercase hidden sm:inline">GOZI DESK</span>
+    </div>
+    <span class="m-text-muted opacity-40">|</span>
+
+    <!-- Primary Pair Selector -->
+    <select id="primary-pair-select" onchange="changePrimaryPair(this.value)" class="px-2 py-0.5 text-xs font-bold rounded-xs uppercase">
+      <option value="XAUUSD" selected>XAUUSD</option>
+      <option value="XAUEUR">XAUEUR</option>
+      <option value="XAGUSD">XAGUSD</option>
+    </select>
+
+    <!-- Multi-Timeframe Selector -->
+    <div class="flex items-center m-bg-main p-0.5 rounded-xs border m-border">
+      <button onclick="selectTimeframe('1w')" id="btn-tf-1w" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1W</button>
+      <button onclick="selectTimeframe('1d')" id="btn-tf-1d" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1D</button>
+      <button onclick="selectTimeframe('4h')" id="btn-tf-4h" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">4H</button>
+      <button onclick="selectTimeframe('1h')" id="btn-tf-1h" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1H</button>
+      <button onclick="selectTimeframe('15m')" id="btn-tf-15m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-bold rounded-xs m-accent-bg">15M</button>
+      <button onclick="selectTimeframe('5m')" id="btn-tf-5m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">5M</button>
+      <button onclick="selectTimeframe('1m')" id="btn-tf-1m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1M</button>
+    </div>
+
+    <!-- Layout Toggle: 1 Chart vs 3 Charts -->
+    <div class="flex items-center m-bg-main p-0.5 rounded-xs border m-border">
+      <button onclick="setLayoutMode(1)" id="btn-layout-1" class="px-2 py-0.5 text-[10px] font-bold rounded-xs m-accent-bg" title="Fokus 1 Pair">1 Chart</button>
+      <button onclick="setLayoutMode(3)" id="btn-layout-3" class="px-2 py-0.5 text-[10px] font-semibold rounded-xs m-text-muted" title="Tampilkan 3 Pair (XAUUSD, XAUEUR, XAGUSD)">3 Pair</button>
+    </div>
   </div>
 
-  <div class="flex items-center space-x-2 shrink-0 text-[11px]">
-    <!-- Timeframe Selector -->
-    <div class="flex items-center t-bg-main p-0.5 rounded-xs border t-border">
-      <button onclick="setTF('15m')" id="btn-15m" class="px-2 py-0.5 font-bold rounded-xs t-accent-bg">15M</button>
-      <button onclick="setTF('1h')" id="btn-1h" class="px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]">1H</button>
-    </div>
+  <!-- Right Controls: Replay, Templates, Style, Zen, Snap -->
+  <div class="flex items-center space-x-1.5 shrink-0">
+    <button onclick="toggleReplayBar()" id="btn-toggle-replay" class="px-2 py-1 text-[10.5px] font-bold rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Mode Bar Replay & Session Replay">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
+      <span>Replay</span>
+    </button>
 
-    <!-- Mode Chart: Dukascopy Feed vs Live Tick OANDA -->
-    <div class="flex items-center t-bg-main p-0.5 rounded-xs border t-border">
-      <button onclick="setChartMode('feed')" id="mode-feed" class="px-2 py-0.5 font-bold rounded-xs bg-[#0068ff] text-white">Dukascopy 15m</button>
-      <button onclick="setChartMode('live')" id="mode-live" class="px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]">Live Tick (OANDA)</button>
-    </div>
+    <button onclick="toggleTemplatesModal()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Custom Drawing Templates (FVG, iFVG, OB, dll.)">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="hidden md:inline">Templates</span>
+    </button>
 
-    <button onclick="fetchMetalsData()" class="px-2 py-0.5 rounded-xs t-bg-sub border t-border hover:border-[#fb8b1e] font-bold" title="Refresh JSON">↻</button>
+    <button onclick="toggleStyleModal()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Ubah Background & Warna Chart">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg>
+      <span class="hidden sm:inline">Style / BG</span>
+    </button>
+
+    <button onclick="toggleZenMode()" class="px-2 py-1 text-[10.5px] font-bold rounded-xs border m-border m-bg-sub m-text-main m-row" title="Mode Zen Fokus Chart (Shortcut: Z)">
+      Zen
+    </button>
+
+    <button onclick="captureChartScreenshot()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border m-border m-bg-sub m-text-main m-row" title="Salin Screenshot Chart ke Clipboard">
+      Snap
+    </button>
   </div>
 </header>
 
-<!-- RADAR BAR: SESSION, GSR & DIVERGENCE STATUS -->
-<div class="t-bg-sub border-b t-border px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[10.5px] shrink-0">
-  <div class="flex items-center flex-wrap gap-3 tabular-nums">
-    <span>SESSION: <b id="lbl-session" class="t-accent-text">-</b></span>
-    <span class="opacity-30">|</span>
-    <span>GSR (XAU/XAG): <b id="lbl-gsr" class="text-white">-</b></span>
-    <span class="opacity-30">|</span>
-    <span>DIV vs XAGUSD: <b id="lbl-div-xag" class="px-1.5 py-0.5 rounded-xs">-</b></span>
-    <span>DIV vs XAUEUR: <b id="lbl-div-eur" class="px-1.5 py-0.5 rounded-xs">-</b></span>
-  </div>
-  <div id="lbl-updated" class="text-[10px] text-[#8892a0] tabular-nums">Update: -</div>
-</div>
+<!-- REPLAY CONTROL BAR (2 CONCEPTS: BAR-BY-BAR & SESSION JUMP) -->
+<div id="replay-bar" class="hidden h-9 m-bg-sub border-b m-border px-3 flex items-center justify-between text-[11px] shrink-0 overflow-x-auto gap-3">
+  <div class="flex items-center space-x-2 shrink-0">
+    <span class="px-1.5 py-0.5 text-[9.5px] font-bold rounded-xs m-accent-bg uppercase">Replay Engine</span>
 
-<!-- PAIR SUMMARY CARDS (XAUUSD, XAUEUR, XAGUSD) -->
-<div class="grid grid-cols-1 md:grid-cols-3 border-b t-border t-bg-panel shrink-0 divide-y md:divide-y-0 md:divide-x divide-[#1f2633]">
-  <!-- XAUUSD -->
-  <div class="p-2.5 flex items-center justify-between">
-    <div>
-      <div class="flex items-center space-x-2">
-        <span class="font-bold text-xs t-accent-text">XAU/USD</span>
-        <span id="xau-sweep" class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs bg-[#10141c] text-[#8892a0]">NONE</span>
-      </div>
-      <div class="text-[10px] text-[#8892a0] mt-0.5 tabular-nums">H: <span id="xau-h">-</span> | L: <span id="xau-l">-</span></div>
-    </div>
-    <div class="text-right tabular-nums">
-      <div id="xau-price" class="font-bold text-sm">-</div>
-      <div id="xau-chg" class="text-[10.5px] font-semibold">-</div>
-    </div>
-  </div>
+    <!-- Mode 1: Cut / Bar-by-Bar -->
+    <button onclick="activateReplayCutMode()" id="btn-replay-cut" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-text-main font-semibold m-row" title="Klik candle mana saja di chart untuk memotong masa depan">
+      ✂ Cut Bar
+    </button>
 
-  <!-- XAUEUR -->
-  <div class="p-2.5 flex items-center justify-between">
-    <div>
-      <div class="flex items-center space-x-2">
-        <span class="font-bold text-xs text-[#0068ff]">XAU/EUR</span>
-        <span id="eur-sweep" class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs bg-[#10141c] text-[#8892a0]">NONE</span>
-      </div>
-      <div class="text-[10px] text-[#8892a0] mt-0.5 tabular-nums">H: <span id="eur-h">-</span> | L: <span id="eur-l">-</span></div>
+    <div class="flex items-center space-x-1 m-bg-main border m-border rounded-xs px-1 py-0.5">
+      <button onclick="stepReplay(-1)" class="px-1.5 py-0.2 m-row rounded-xs font-bold" title="Mundur 1 Bar">‹</button>
+      <button onclick="toggleReplayPlay()" id="btn-replay-play" class="px-2 py-0.2 m-accent-bg rounded-xs font-bold">▶ Play</button>
+      <button onclick="stepReplay(1)" class="px-1.5 py-0.2 m-row rounded-xs font-bold" title="Maju 1 Bar (+1 Candle)">Step ›</button>
+      <select id="replay-speed" onchange="updateReplaySpeed()" class="text-[10px] border-0 bg-transparent font-bold px-1">
+        <option value="1200">0.5x</option>
+        <option value="700" selected>1x</option>
+        <option value="350">2x</option>
+        <option value="140">5x</option>
+      </select>
     </div>
-    <div class="text-right tabular-nums">
-      <div id="eur-price" class="font-bold text-sm">-</div>
-      <div id="eur-chg" class="text-[10.5px] font-semibold">-</div>
+
+    <span class="m-text-muted opacity-40">|</span>
+
+    <!-- Mode 2: Session Block Replay -->
+    <div class="flex items-center space-x-1 shrink-0">
+      <span class="text-[10px] font-bold m-text-muted">Session Replay:</span>
+      <button onclick="jumpToSessionReplay('ASIA')" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-row text-[10px] font-semibold">Asia</button>
+      <button onclick="jumpToSessionReplay('LONDON')" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-row text-[10px] font-semibold">London</button>
+      <button onclick="jumpToSessionReplay('NY')" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-row text-[10px] font-semibold">New York</button>
     </div>
   </div>
 
-  <!-- XAGUSD -->
-  <div class="p-2.5 flex items-center justify-between">
-    <div>
-      <div class="flex items-center space-x-2">
-        <span class="font-bold text-xs text-[#4af6c3]">XAG/USD</span>
-        <span id="xag-sweep" class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs bg-[#10141c] text-[#8892a0]">NONE</span>
-      </div>
-      <div class="text-[10px] text-[#8892a0] mt-0.5 tabular-nums">H: <span id="xag-h">-</span> | L: <span id="xag-l">-</span></div>
-    </div>
-    <div class="text-right tabular-nums">
-      <div id="xag-price" class="font-bold text-sm">-</div>
-      <div id="xag-chg" class="text-[10.5px] font-semibold">-</div>
-    </div>
+  <div class="flex items-center space-x-2 shrink-0">
+    <span id="replay-status-txt" class="text-[10px] font-bold m-text-muted tabular-nums">Live / Full Data</span>
+    <button onclick="exitReplayMode()" class="px-2 py-0.5 rounded-xs bg-[#424c45] text-[#f4f5f9] text-[10px] font-bold">Reset Live</button>
   </div>
 </div>
 
-<!-- TRIPLE-MIRROR WORKSPACE -->
-<main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-  <!-- LEFT 60%: PRIMARY XAUUSD CHART -->
-  <div class="w-full lg:w-[58%] h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r t-border relative flex flex-col">
-    <div class="px-2.5 py-1 t-bg-sub border-b t-border flex items-center justify-between text-[10px] font-bold shrink-0">
-      <span class="t-accent-text">PRIMARY: XAU/USD (GOLD SPOT)</span>
-      <span id="xau-src" class="text-[#8892a0]">-</span>
-    </div>
-    <div id="wrap-xau" class="flex-1 w-full relative"></div>
-  </div>
+<!-- ZEN EXIT FLOATING PILL -->
+<button id="zen-exit-btn" onclick="toggleZenMode()" class="hidden fixed top-2.5 right-3 z-50 px-2.5 py-1 rounded-xs text-[10px] font-bold shadow-lg border m-border m-bg-panel m-text-main opacity-75 hover:opacity-100">
+  Exit Zen (Z)
+</button>
 
-  <!-- RIGHT 42%: STACKED XAUEUR & XAGUSD -->
-  <div class="w-full lg:w-[42%] h-1/2 lg:h-full flex flex-col">
-    <!-- TOP: XAUEUR -->
-    <div class="h-1/2 w-full border-b t-border relative flex flex-col">
-      <div class="px-2.5 py-1 t-bg-sub border-b t-border flex items-center justify-between text-[10px] font-bold shrink-0">
-        <span class="text-[#0068ff]">CORRELATION 1: XAU/EUR</span>
-        <span id="eur-src" class="text-[#8892a0]">-</span>
+<!-- TOAST BANNER -->
+<div id="toast-banner" class="hidden fixed bottom-4 right-4 z-50 px-3 py-1.5 rounded-xs text-xs font-bold shadow-xl border m-border m-bg-panel m-text-main"></div>
+
+<!-- MAIN WORKSPACE -->
+<div class="flex-1 flex relative overflow-hidden">
+
+  <!-- LEFT DRAWING TOOLBAR -->
+  <aside id="left-toolbar" class="w-10 m-bg-panel border-r m-border flex flex-col items-center py-1.5 space-y-1 shrink-0 z-20 overflow-y-auto">
+    <button onclick="setDrawTool('cursor')" id="tool-cursor" class="tool-btn active" title="Cursor / Pilih Objek (Esc)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>
+    </button>
+    <button onclick="setDrawTool('line')" id="tool-line" class="tool-btn" title="Line (Tahan Shift = Horizontal Rata | Tahan Ctrl = Magnet Candle)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M6.5 17.5 17.5 6.5"/></svg>
+    </button>
+    <button onclick="setDrawTool('ray')" id="tool-ray" class="tool-btn" title="Extended Ray (Shift = Horizontal | Ctrl = Magnet)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 21 21 3"/><circle cx="8" cy="16" r="1.5"/></svg>
+    </button>
+    <button onclick="setDrawTool('hline')" id="tool-hline" class="tool-btn" title="Horizontal Level (Ctrl = Magnet)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="2"/></svg>
+    </button>
+    <button onclick="setDrawTool('vline')" id="tool-vline" class="tool-btn" title="Vertical Time Line">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v18"/><circle cx="12" cy="12" r="2"/></svg>
+    </button>
+    <button onclick="setDrawTool('box')" id="tool-box" class="tool-btn" title="Zone Box (FVG / iFVG / OB - Ctrl = Magnet)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>
+    </button>
+    <button onclick="setDrawTool('fib')" id="tool-fib" class="tool-btn" title="Fibonacci Retracement (Ctrl = Magnet)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h16M4 19h16"/></svg>
+    </button>
+    <button onclick="setDrawTool('rr_long')" id="tool-rr_long" class="tool-btn" title="Long Position (TP / Entry / SL bebas geser)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 4h16v8H4z"/><path d="M4 12h16v8H4z" stroke-dasharray="2 2"/></svg>
+    </button>
+    <button onclick="setDrawTool('rr_short')" id="tool-rr_short" class="tool-btn" title="Short Position (SL / Entry / TP bebas geser)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 4h16v8H4z" stroke-dasharray="2 2"/><path d="M4 12h16v8H4z"/></svg>
+    </button>
+    <button onclick="setDrawTool('measure')" id="tool-measure" class="tool-btn" title="Penggaris Ukur Pips/Poin & Bars">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2"/></svg>
+    </button>
+    <button onclick="setDrawTool('text')" id="tool-text" class="tool-btn" title="Text Label (Atas / Tengah / Bawah)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+    </button>
+
+    <div class="w-5 border-t m-border my-0.5"></div>
+
+    <button onclick="toggleMagnetLock()" id="tool-magnet" class="tool-btn" title="Toggle Magnet Permanen (Atau cukup tahan Ctrl saat gambar)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"/><path d="m5 8 4 4"/><path d="m12 15 4 4"/></svg>
+    </button>
+    <label class="tool-btn cursor-pointer" title="Default Warna Stroke">
+      <span id="default-color-dot" class="w-3.5 h-3.5 rounded-full border border-black/30" style="background-color:#424c45"></span>
+      <input type="color" id="default-color-input" value="#424c45" class="hidden" onchange="updateDefaultStroke(this.value)">
+    </label>
+    <button onclick="toggleHideDrawings()" id="tool-hide-draw" class="tool-btn" title="Sembunyikan/Tampilkan Semua Gambar">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button onclick="clearAllDrawings()" class="tool-btn hover:text-red-700" title="Hapus Semua Gambar di Pair & TF ini">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+    </button>
+  </aside>
+
+  <!-- CENTER CHART WORKSPACE -->
+  <div class="flex-1 flex flex-col relative overflow-hidden">
+
+    <!-- PRIMARY LEGEND BAR -->
+    <div id="primary-legend" class="px-3 py-1 border-b m-border m-bg-main flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+      <div class="flex items-center space-x-2.5">
+        <span id="leg-pair" class="font-bold text-sm tracking-wider m-text-main">XAUUSD</span>
+        <span id="leg-tf" class="px-1.5 py-0.5 rounded-xs m-bg-sub text-[10px] font-bold">15M</span>
+        <span id="leg-price" class="font-bold tabular-nums">-</span>
+        <span id="leg-chg" class="font-semibold tabular-nums">-</span>
+        <span id="leg-div-badge" class="hidden px-2 py-0.5 rounded-xs text-[10px] font-bold m-bg-sub border m-border">-</span>
+        <div class="hidden md:flex items-center space-x-2 text-[11px] m-text-muted pl-2 border-l m-border tabular-nums">
+          <span>O <b id="leg-o" class="font-semibold m-text-main">-</b></span>
+          <span>H <b id="leg-h" class="font-semibold m-text-main">-</b></span>
+          <span>L <b id="leg-l" class="font-semibold m-text-main">-</b></span>
+          <span>C <b id="leg-c" class="font-semibold m-text-main">-</b></span>
+        </div>
       </div>
-      <div id="wrap-eur" class="flex-1 w-full relative"></div>
+
+      <div class="flex items-center space-x-2 text-[10px] m-text-muted">
+        <span class="hidden lg:inline">Line: <b>Shift</b>=Horizontal · <b>Ctrl</b>=Magnet</span>
+        <button onclick="zoomChart(90)" class="px-1.5 py-0.5 rounded-xs m-bg-sub border m-border font-semibold m-text-main m-row">Focus</button>
+        <button onclick="fitAllChart()" class="px-1.5 py-0.5 rounded-xs m-bg-sub border m-border font-semibold m-text-main m-row">Fit</button>
+      </div>
     </div>
 
-    <!-- BOTTOM: XAGUSD -->
-    <div class="h-1/2 w-full relative flex flex-col">
-      <div class="px-2.5 py-1 t-bg-sub border-b t-border flex items-center justify-between text-[10px] font-bold shrink-0">
-        <span class="text-[#4af6c3]">CORRELATION 2: XAG/USD (SILVER)</span>
-        <span id="xag-src" class="text-[#8892a0]">-</span>
+    <!-- DRAW HINT BAR -->
+    <div id="draw-hint-bar" class="hidden m-bg-sub border-b m-border px-3 py-1 text-[11px] font-semibold m-text-main flex items-center justify-between shrink-0">
+      <span id="draw-hint-text">Klik titik pertama pada chart...</span>
+      <button onclick="setDrawTool('cursor')" class="text-[10px] underline">Batal (Esc)</button>
+    </div>
+
+    <!-- TRADINGVIEW-STYLE FLOATING OBJECT TOOLBAR -->
+    <div id="floating-obj-toolbar" class="hidden absolute top-11 left-1/2 -translate-x-1/2 z-30 m-bg-panel border m-border rounded-xs shadow-xl px-2.5 py-1.5 flex flex-wrap items-center gap-2 text-[11px]">
+      <span id="flt-obj-label" class="font-bold uppercase text-[10px] pr-1.5 border-r m-border">OBJECT</span>
+
+      <!-- Stroke Color -->
+      <label class="flex items-center space-x-1 cursor-pointer" title="Warna Garis / Teks">
+        <span class="text-[9.5px] m-text-muted">Stroke</span>
+        <input type="color" id="obj-stroke-col" onchange="updateSelectedProp('color', this.value)" class="w-5 h-5 border-0 p-0 bg-transparent cursor-pointer">
+      </label>
+
+      <!-- Fill Color & Opacity (for Box / RR) -->
+      <label id="wrap-obj-fill" class="flex items-center space-x-1 cursor-pointer" title="Warna Isi (Fill)">
+        <span class="text-[9.5px] m-text-muted">Fill</span>
+        <input type="color" id="obj-fill-col" onchange="updateSelectedProp('fillColor', this.value)" class="w-5 h-5 border-0 p-0 bg-transparent cursor-pointer">
+      </label>
+      <div id="wrap-obj-alpha" class="flex items-center space-x-1" title="Opasitas Fill (%)">
+        <input type="number" id="obj-fill-alpha" min="0" max="100" step="5" onchange="updateSelectedProp('fillAlpha', Number(this.value)/100)" class="w-11 px-1 py-0.5 rounded-xs text-[10px] text-right tabular-nums">
+        <span class="text-[9.5px] m-text-muted">%</span>
       </div>
-      <div id="wrap-xag" class="flex-1 w-full relative"></div>
+
+      <!-- Line Width & Style -->
+      <select id="obj-width" onchange="updateSelectedProp('width', parseFloat(this.value))" class="px-1 py-0.5 rounded-xs text-[10px]">
+        <option value="1">1px</option>
+        <option value="1.5">1.5px</option>
+        <option value="2">2px</option>
+        <option value="3">3px</option>
+      </select>
+      <select id="obj-dash" onchange="updateSelectedProp('dash', this.value)" class="px-1 py-0.5 rounded-xs text-[10px]">
+        <option value="">Solid</option>
+        <option value="6 4">Dashed</option>
+        <option value="2 3">Dotted</option>
+      </select>
+
+      <!-- Text & Position (Atas / Tengah / Bawah) -->
+      <button onclick="promptSelectedText()" class="px-2 py-0.5 rounded-xs m-bg-sub border m-border font-semibold m-row" title="Ketik atau ubah label teks pada objek ini">
+        Teks
+      </button>
+      <select id="obj-text-pos" onchange="updateSelectedProp('textPos', this.value)" class="px-1.5 py-0.5 rounded-xs text-[10px]" title="Posisi Teks (Atas / Tengah / Bawah)">
+        <option value="top">Teks: Atas</option>
+        <option value="middle">Teks: Tengah</option>
+        <option value="bottom">Teks: Bawah</option>
+      </select>
+
+      <!-- Save As Custom Template -->
+      <button onclick="saveSelectedAsTemplate()" class="px-2 py-0.5 rounded-xs m-accent-bg font-bold" title="Simpan gaya & teks ini sebagai Template">
+        + Template
+      </button>
+
+      <button onclick="deleteSelectedDrawing()" class="px-2 py-0.5 rounded-xs bg-[#424c45]/20 text-[#262c28] font-bold hover:bg-[#424c45]/35" title="Hapus (Del)">
+        Hapus
+      </button>
+      <button onclick="deselectDrawing()" class="m-text-muted px-1">✕</button>
+    </div>
+
+    <!-- CHART AREA: SINGLE OR 3-PAIR GRID -->
+    <div id="charts-grid" class="flex-1 flex w-full h-full relative overflow-hidden">
+      <!-- PANE 1 (PRIMARY + SVG DRAWING LAYER) -->
+      <div id="pane-1" class="flex-1 h-full relative overflow-hidden">
+        <div id="pane-1-badge" class="hidden absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs m-bg-panel/90 border m-border text-[10px] font-bold flex items-center space-x-1.5">
+          <select id="pane-1-pair" onchange="changeTriplePanePair(0, this.value)" class="bg-transparent border-0 font-bold text-[10px] p-0">
+            <option value="XAUUSD" selected>XAUUSD</option>
+            <option value="XAUEUR">XAUEUR</option>
+            <option value="XAGUSD">XAGUSD</option>
+          </select>
+          <span id="pane-1-price" class="tabular-nums m-text-muted">-</span>
+        </div>
+        <div id="chart-container-1" class="w-full h-full"></div>
+        <svg id="drawing-svg" class="absolute inset-0 w-full h-full z-10"></svg>
+      </div>
+
+      <!-- PANE 2 (3-PAIR MODE) -->
+      <div id="pane-2" class="hidden flex-1 h-full border-l m-border relative overflow-hidden">
+        <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs m-bg-panel/90 border m-border text-[10px] font-bold flex items-center space-x-1.5">
+          <select id="pane-2-pair" onchange="changeTriplePanePair(1, this.value)" class="bg-transparent border-0 font-bold text-[10px] p-0">
+            <option value="XAUUSD">XAUUSD</option>
+            <option value="XAUEUR" selected>XAUEUR</option>
+            <option value="XAGUSD">XAGUSD</option>
+          </select>
+          <span id="pane-2-price" class="tabular-nums m-text-muted">-</span>
+        </div>
+        <div id="chart-container-2" class="w-full h-full"></div>
+      </div>
+
+      <!-- PANE 3 (3-PAIR MODE) -->
+      <div id="pane-3" class="hidden flex-1 h-full border-l m-border relative overflow-hidden">
+        <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs m-bg-panel/90 border m-border text-[10px] font-bold flex items-center space-x-1.5">
+          <select id="pane-3-pair" onchange="changeTriplePanePair(2, this.value)" class="bg-transparent border-0 font-bold text-[10px] p-0">
+            <option value="XAUUSD">XAUUSD</option>
+            <option value="XAUEUR">XAUEUR</option>
+            <option value="XAGUSD" selected>XAGUSD</option>
+          </select>
+          <span id="pane-3-price" class="tabular-nums m-text-muted">-</span>
+        </div>
+        <div id="chart-container-3" class="w-full h-full"></div>
+      </div>
     </div>
   </div>
-</main>
+</div>
+
+<!-- STYLE & BACKGROUND CUSTOMIZER MODAL -->
+<div id="style-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="m-bg-panel border m-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
+    <div class="flex items-center justify-between border-b m-border pb-2">
+      <h3 class="font-bold text-sm uppercase">Appearance & Background</h3>
+      <button onclick="toggleStyleModal()" class="m-text-muted">✕</button>
+    </div>
+
+    <!-- Quick Presets -->
+    <div>
+      <span class="block text-[10px] font-bold m-text-muted uppercase mb-1.5">Theme Presets</span>
+      <div class="grid grid-cols-3 gap-1.5">
+        <button onclick="applyPresetTheme('white_olive')" class="px-2 py-1.5 rounded-xs border m-border m-bg-main font-bold text-[10.5px] m-row">White Olive (Default)</button>
+        <button onclick="applyPresetTheme('charcoal_desk')" class="px-2 py-1.5 rounded-xs border m-border m-bg-main font-bold text-[10.5px] m-row">Charcoal Desk</button>
+        <button onclick="applyPresetTheme('pure_paper')" class="px-2 py-1.5 rounded-xs border m-border m-bg-main font-bold text-[10.5px] m-row">Pure Paper</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2">
+      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+        <span>Background</span>
+        <input type="color" id="st-bg-main" onchange="applyCustomStyle()">
+      </label>
+      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+        <span>Grid Lines</span>
+        <input type="color" id="st-grid-col" onchange="applyCustomStyle()">
+      </label>
+      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+        <span>Bull Candle</span>
+        <input type="color" id="st-bull-body" onchange="applyCustomStyle()">
+      </label>
+      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+        <span>Bear Candle</span>
+        <input type="color" id="st-bear-body" onchange="applyCustomStyle()">
+      </label>
+      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+        <span>Candle Border/Wick</span>
+        <input type="color" id="st-wick-col" onchange="applyCustomStyle()">
+      </label>
+      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+        <span>Scale Text</span>
+        <input type="color" id="st-text-col" onchange="applyCustomStyle()">
+      </label>
+    </div>
+
+    <div class="flex items-center justify-between pt-2 border-t m-border">
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input type="checkbox" id="st-show-grid" onchange="applyCustomStyle()">
+        <span>Tampilkan Grid</span>
+      </label>
+      <button onclick="toggleStyleModal()" class="px-4 py-1 rounded-xs m-accent-bg font-bold">Selesai</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DRAWING TEMPLATES MODAL -->
+<div id="templates-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="m-bg-panel border m-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
+    <div class="flex items-center justify-between border-b m-border pb-2">
+      <h3 class="font-bold text-sm uppercase">Drawing Templates (White Olive & Custom)</h3>
+      <button onclick="toggleTemplatesModal()" class="m-text-muted">✕</button>
+    </div>
+    <p class="text-[10.5px] m-text-muted">Pilih template untuk langsung menggambar dengan warna, opasitas, dan posisi teks preset, atau simpan objek yang sedang dipilih di chart menjadi template baru.</p>
+
+    <div id="templates-list" class="max-h-64 overflow-y-auto space-y-1.5"></div>
+
+    <div class="flex justify-between items-center pt-2 border-t m-border">
+      <button onclick="resetDefaultTemplates()" class="text-[10px] m-text-muted hover:underline">Reset Preset Bawaan</button>
+      <button onclick="toggleTemplatesModal()" class="px-4 py-1 rounded-xs m-accent-bg font-bold">Tutup</button>
+    </div>
+  </div>
+</div>
 
 <script>
-// Ganti URL di bawah jika file JSON berada di path lokal 'data/metals_divergence.json'
-const FEED_URL = 'https://raw.githubusercontent.com/goozzziiii/idx-screener-gozi/main/data/metals_divergence.json';
+// ==========================================
+// 0. NAVIGATION FALLBACK TO IDX
+// ==========================================
+function goBackToIdx(e) {
+  if (e) e.preventDefault();
+  window.location.href = 'index.html';
+}
 
-let metalsData = null;
+// ==========================================
+// 1. WHITE OLIVE DEFAULT THEME & PRESETS
+// ==========================================
+const whiteOlivePreset = {
+  bgMain: '#dbdbdb',
+  bgPanel: '#d2d2d2',
+  bgSub: '#c8c8c8',
+  borderMain: '#b0b4b1',
+  textMain: '#262c28',
+  textMuted: '#525c6d',
+  gridColor: '#cfd2cf',
+  showGrid: false,
+  bullBody: '#f4f5f9',
+  bullAlpha: 0.71,
+  bearBody: '#424c45',
+  bearAlpha: 0.83,
+  wickColor: '#424c45',
+  borderColor: '#424c45'
+};
+
+const themePresets = {
+  white_olive: { ...whiteOlivePreset },
+  charcoal_desk: {
+    bgMain: '#121417',
+    bgPanel: '#181b20',
+    bgSub: '#20242b',
+    borderMain: '#2d333d',
+    textMain: '#e5e7eb',
+    textMuted: '#9ca3af',
+    gridColor: '#1d2128',
+    showGrid: true,
+    bullBody: '#f4f5f9',
+    bullAlpha: 0.90,
+    bearBody: '#525c6d',
+    bearAlpha: 0.90,
+    wickColor: '#9ca3af',
+    borderColor: '#9ca3af'
+  },
+  pure_paper: {
+    bgMain: '#f4f5f9',
+    bgPanel: '#eaecf2',
+    bgSub: '#dfe2ea',
+    borderMain: '#c5cad6',
+    textMain: '#1e242b',
+    textMuted: '#525c6d',
+    gridColor: '#e4e7ef',
+    showGrid: true,
+    bullBody: '#ffffff',
+    bullAlpha: 1.0,
+    bearBody: '#424c45',
+    bearAlpha: 0.90,
+    wickColor: '#424c45',
+    borderColor: '#424c45'
+  }
+};
+
+let uiStyle = JSON.parse(localStorage.getItem('gozi_metals_style_v1')) || { ...whiteOlivePreset };
+
+function hexToRgba(hex, alpha = 1) {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function applyCssVars() {
+  const root = document.documentElement.style;
+  root.setProperty('--bg-main', uiStyle.bgMain);
+  root.setProperty('--bg-panel', uiStyle.bgPanel || uiStyle.bgMain);
+  root.setProperty('--bg-sub', uiStyle.bgSub || uiStyle.bgMain);
+  root.setProperty('--border-main', uiStyle.borderMain || '#9ca3af');
+  root.setProperty('--text-main', uiStyle.textMain);
+  root.setProperty('--text-muted', uiStyle.textMuted || uiStyle.textMain);
+}
+
+// ==========================================
+// 2. STATE & DATA FEED
+// ==========================================
+let metalsFeed = null;
+let primaryPair = 'XAUUSD';
 let activeTF = '15m';
-let chartMode = 'feed'; // 'feed' (Dukascopy Lightweight Charts) atau 'live' (TradingView OANDA Tick)
-let charts = {};
+let layoutMode = 1; // 1 = Single Chart, 3 = 3-Pair (XAUUSD, XAUEUR, XAGUSD)
+let triplePairs = ['XAUUSD', 'XAUEUR', 'XAGUSD'];
 
-function createLWChart(containerId) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = '';
-  const chart = LightweightCharts.createChart(el, {
-    layout: {
-      background: { type: 'solid', color: '#000000' },
-      textColor: '#8892a0',
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: 10
-    },
-    grid: {
-      vertLines: { color: '#0f131a' },
-      horzLines: { color: '#0f131a' }
-    },
-    rightPriceScale: { borderColor: '#1f2633', scaleMargins: { top: 0.1, bottom: 0.1 } },
-    timeScale: { borderColor: '#1f2633', timeVisible: true, rightOffset: 8 },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
-  });
-  const series = chart.addCandlestickSeries({
-    upColor: '#4af6c3',
-    downColor: '#ff433d',
-    wickUpColor: '#4af6c3',
-    wickDownColor: '#ff433d',
-    borderVisible: false
-  });
-  return { chart, series, el };
-}
+let charts = [null, null, null];
+let candleSeriesArr = [null, null, null];
 
-function createTVLiveWidget(containerId, symbol) {
-  const el = document.getElementById(containerId);
-  const interval = activeTF === '15m' ? '15' : '60';
-  el.innerHTML = `
-    <iframe
-      src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(symbol)}&interval=${interval}&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=090b0f&studies=[]&theme=dark&style=1&timezone=Asia%2FJakarta"
-      style="width:100%; height:100%; border:0;"
-      loading="lazy">
-    </iframe>
-  `;
-}
+// Replay State
+let isReplayOpen = false;
+let isReplayCutSelecting = false;
+let replayCutIndex = null; // null = Live / Full data
+let replayPlayTimer = null;
 
-function styleDivBadge(el, text) {
-  el.textContent = text;
-  if (text.includes('BULLISH')) {
-    el.style.backgroundColor = 'rgba(74, 246, 195, 0.18)';
-    el.style.color = '#4af6c3';
-  } else if (text.includes('BEARISH')) {
-    el.style.backgroundColor = 'rgba(255, 67, 61, 0.18)';
-    el.style.color = '#ff433d';
-  } else {
-    el.style.backgroundColor = '#19202c';
-    el.style.color = '#8892a0';
-  }
-}
+// Drawing & Modifier Keys State
+let activeDrawTool = 'cursor';
+let activeTemplate = null;
+let defaultStrokeColor = '#424c45';
+let isMagnetLocked = false;
+let hideAllDrawings = false;
+let pendingPoint = null;
+let measurePreview = null;
+let selectedDrawId = null;
+let dragState = null;
 
-function styleSweepBadge(el, sweep) {
-  el.textContent = sweep;
-  if (sweep === 'SSL SWEEP') {
-    el.style.backgroundColor = 'rgba(74, 246, 195, 0.2)';
-    el.style.color = '#4af6c3';
-  } else if (sweep === 'BSL SWEEP') {
-    el.style.backgroundColor = 'rgba(255, 67, 61, 0.2)';
-    el.style.color = '#ff433d';
-  } else {
-    el.style.backgroundColor = '#10141c';
-    el.style.color = '#8892a0';
-  }
-}
+let isShiftDown = false;
+let isCtrlDown = false;
 
-function renderPairCard(prefix, pairObj) {
-  const m = pairObj.metrics;
-  document.getElementById(`${prefix}-price`).textContent = m.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
-  document.getElementById(`${prefix}-h`).textContent = m.day_high;
-  document.getElementById(`${prefix}-l`).textContent = m.day_low;
-  document.getElementById(`${prefix}-src`).textContent = pairObj.source;
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift') isShiftDown = true;
+  if (e.key === 'Control' || e.key === 'Meta') isCtrlDown = true;
 
-  const chgEl = document.getElementById(`${prefix}-chg`);
-  const sign = m.day_chg_pct > 0 ? '+' : '';
-  chgEl.textContent = `${sign}${m.day_chg_pct}% (Today)`;
-  chgEl.style.color = m.day_chg_pct >= 0 ? '#4af6c3' : '#ff433d';
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
-  styleSweepBadge(document.getElementById(`${prefix}-sweep`), m.sweep);
-}
-
-function renderCharts() {
-  if (!metalsData) return;
-
-  if (chartMode === 'live') {
-    createTVLiveWidget('wrap-xau', 'OANDA:XAUUSD');
-    createTVLiveWidget('wrap-eur', 'OANDA:XAUEUR');
-    createTVLiveWidget('wrap-xag', 'OANDA:XAGUSD');
-    return;
-  }
-
-  charts.xau = createLWChart('wrap-xau');
-  charts.eur = createLWChart('wrap-eur');
-  charts.xag = createLWChart('wrap-xag');
-
-  charts.xau.series.setData(metalsData.pairs.XAUUSD[activeTF]);
-  charts.eur.series.setData(metalsData.pairs.XAUEUR[activeTF]);
-  charts.xag.series.setData(metalsData.pairs.XAGUSD[activeTF]);
-
-  [charts.xau, charts.eur, charts.xag].forEach(c => {
-    c.chart.timeScale().fitContent();
-  });
-
-  // Sinkronisasi crosshair antar 3 chart
-  const all = [charts.xau, charts.eur, charts.xag];
-  all.forEach((srcObj, idx) => {
-    srcObj.chart.subscribeCrosshairMove(param => {
-      if (!param.time) return;
-      all.forEach((targetObj, tIdx) => {
-        if (idx !== tIdx) {
-          targetObj.chart.setCrosshairPosition(0, param.time, targetObj.series);
-        }
-      });
-    });
-  });
-}
-
-function updateUI() {
-  if (!metalsData) return;
-  document.getElementById('lbl-session').textContent = metalsData.session;
-  document.getElementById('lbl-gsr').textContent = metalsData.gold_silver_ratio;
-  document.getElementById('lbl-updated').textContent = `Update: ${metalsData.last_updated}`;
-
-  const divObj = metalsData.divergence[activeTF];
-  styleDivBadge(document.getElementById('lbl-div-xag'), divObj.vs_xagusd);
-  styleDivBadge(document.getElementById('lbl-div-eur'), divObj.vs_xaueur);
-
-  renderPairCard('xau', metalsData.pairs.XAUUSD);
-  renderPairCard('eur', metalsData.pairs.XAUEUR);
-  renderPairCard('xag', metalsData.pairs.XAGUSD);
-
-  renderCharts();
-}
-
-function setTF(tf) {
-  activeTF = tf;
-  document.getElementById('btn-15m').className = tf === '15m' ? 'px-2 py-0.5 font-bold rounded-xs t-accent-bg' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
-  document.getElementById('btn-1h').className = tf === '1h' ? 'px-2 py-0.5 font-bold rounded-xs t-accent-bg' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
-  updateUI();
-}
-
-function setChartMode(mode) {
-  chartMode = mode;
-  document.getElementById('mode-feed').className = mode === 'feed' ? 'px-2 py-0.5 font-bold rounded-xs bg-[#0068ff] text-white' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
-  document.getElementById('mode-live').className = mode === 'live' ? 'px-2 py-0.5 font-bold rounded-xs bg-[#0068ff] text-white' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
-  renderCharts();
-}
-
-async function fetchMetalsData() {
-  try {
-    const res = await fetch(`${FEED_URL}?t=${Date.now()}`);
-    metalsData = await res.json();
-    updateUI();
-  } catch (err) {
-    console.error('Gagal memuat metals_divergence.json:', err);
-  }
-}
-
-window.addEventListener('resize', () => {
-  if (chartMode === 'feed' && charts.xau) {
-    ['xau', 'eur', 'xag'].forEach(k => {
-      const el = charts[k].el;
-      charts[k].chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
-    });
+  if (e.key === 'Escape') {
+    setDrawTool('cursor');
+    deselectDrawing();
+    if (isReplayCutSelecting) {
+      isReplayCutSelecting = false;
+      document.getElementById('btn-replay-cut').classList.remove('m-accent-bg');
+    }
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedDrawId) {
+    deleteSelectedDrawing();
+  } else if (e.key.toLowerCase() === 'z') {
+    toggleZenMode();
+  } else if (e.key === 'ArrowRight' && replayCutIndex !== null) {
+    e.preventDefault();
+    stepReplay(1);
+  } else if (e.key === 'ArrowLeft' && replayCutIndex !== null) {
+    e.preventDefault();
+    stepReplay(-1);
   }
 });
 
-fetchMetalsData();
-// Auto-refresh JSON tiap 5 menit di latar belakang
-setInterval(fetchMetalsData, 300000);
+window.addEventListener('keyup', (e) => {
+  if (e.key === 'Shift') isShiftDown = false;
+  if (e.key === 'Control' || e.key === 'Meta') isCtrlDown = false;
+});
+
+function showToast(msg) {
+  const el = document.getElementById('toast-banner');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(window._mToast);
+  window._mToast = setTimeout(() => el.classList.add('hidden'), 2400);
+}
+
+// ==========================================
+// 3. CUSTOM TEMPLATES (WHITE OLIVE PALETTE)
+// ==========================================
+const defaultTemplates = [
+  {
+    id: 'tpl_fvg',
+    name: 'FVG Zone (#525c6d | 10%)',
+    type: 'box',
+    color: '#525c6d',
+    fillColor: '#525c6d',
+    fillAlpha: 0.10,
+    width: 1,
+    dash: '',
+    text: 'FVG',
+    textPos: 'middle'
+  },
+  {
+    id: 'tpl_ifvg',
+    name: 'iFVG Zone (#424c45 | 28%)',
+    type: 'box',
+    color: '#424c45',
+    fillColor: '#424c45',
+    fillAlpha: 0.28,
+    width: 1.5,
+    dash: '',
+    text: 'iFVG',
+    textPos: 'top'
+  },
+  {
+    id: 'tpl_bsl',
+    name: 'BSL Liquidity Line (Teks Atas)',
+    type: 'line',
+    color: '#424c45',
+    width: 1.5,
+    dash: '6 4',
+    text: 'BSL',
+    textPos: 'top'
+  },
+  {
+    id: 'tpl_ssl',
+    name: 'SSL Liquidity Line (Teks Bawah)',
+    type: 'line',
+    color: '#424c45',
+    width: 1.5,
+    dash: '6 4',
+    text: 'SSL',
+    textPos: 'bottom'
+  },
+  {
+    id: 'tpl_cisd',
+    name: 'CISD Level (Teks Tengah)',
+    type: 'line',
+    color: '#525c6d',
+    width: 2,
+    dash: '',
+    text: 'CISD',
+    textPos: 'middle'
+  }
+];
+
+let customTemplates = JSON.parse(localStorage.getItem('gozi_metals_templates_v1')) || [...defaultTemplates];
+
+function saveTemplatesStore() {
+  localStorage.setItem('gozi_metals_templates_v1', JSON.stringify(customTemplates));
+}
+
+function resetDefaultTemplates() {
+  customTemplates = [...defaultTemplates];
+  saveTemplatesStore();
+  renderTemplatesModal();
+  showToast('Preset template White Olive dipulihkan.');
+}
+
+function toggleTemplatesModal() {
+  const m = document.getElementById('templates-modal');
+  m.classList.toggle('hidden');
+  if (!m.classList.contains('hidden')) renderTemplatesModal();
+}
+
+function renderTemplatesModal() {
+  const wrap = document.getElementById('templates-list');
+  wrap.innerHTML = customTemplates.map(tpl => `
+    <div class="flex items-center justify-between px-2.5 py-2 rounded-xs m-bg-sub border m-border">
+      <div class="flex items-center space-x-2 min-w-0">
+        <span class="w-3.5 h-3.5 rounded-xs border border-black/30 shrink-0" style="background:${tpl.fillColor || tpl.color}"></span>
+        <div class="truncate">
+          <div class="font-bold m-text-main truncate">${tpl.name}</div>
+          <div class="text-[9.5px] m-text-muted">${tpl.type.toUpperCase()} · Label: "${tpl.text || '-'}" (${tpl.textPos || 'top'})</div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-1.5 shrink-0">
+        <button onclick="useTemplate('${tpl.id}')" class="px-2.5 py-1 rounded-xs m-accent-bg font-bold text-[10px]">Pakai</button>
+        <button onclick="deleteTemplate('${tpl.id}')" class="px-1.5 py-1 rounded-xs m-bg-main border m-border text-[10px] hover:text-red-700">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function useTemplate(tplId) {
+  const tpl = customTemplates.find(x => x.id === tplId);
+  if (!tpl) return;
+  activeTemplate = { ...tpl };
+  toggleTemplatesModal();
+  setDrawTool(tpl.type);
+  showToast(`Template aktif: ${tpl.name}`);
+}
+
+function deleteTemplate(tplId) {
+  customTemplates = customTemplates.filter(x => x.id !== tplId);
+  saveTemplatesStore();
+  renderTemplatesModal();
+}
+
+function saveSelectedAsTemplate() {
+  if (!selectedDrawId) return;
+  const obj = loadDrawingsList().find(x => x.id === selectedDrawId);
+  if (!obj) return;
+  const name = prompt('Nama Template Baru:', `${obj.text || obj.type.toUpperCase()} Custom`);
+  if (!name || !name.trim()) return;
+
+  customTemplates.push({
+    id: 'tpl_' + Date.now(),
+    name: name.trim(),
+    type: obj.type,
+    color: obj.color || '#424c45',
+    fillColor: obj.fillColor || obj.color || '#525c6d',
+    fillAlpha: obj.fillAlpha ?? 0.15,
+    width: obj.width || 1.5,
+    dash: obj.dash || '',
+    text: obj.text || '',
+    textPos: obj.textPos || 'top'
+  });
+  saveTemplatesStore();
+  showToast(`Template "${name.trim()}" tersimpan!`);
+}
+
+// ==========================================
+// 4. CHART INITIALIZATION & LAYOUT (1 OR 3)
+// ==========================================
+function getChartOptions() {
+  return {
+    layout: {
+      background: { type: 'solid', color: uiStyle.bgMain },
+      textColor: uiStyle.textMain,
+      fontFamily: "'JetBrains Mono', monospace"
+    },
+    grid: {
+      vertLines: { visible: uiStyle.showGrid, color: uiStyle.gridColor },
+      horzLines: { visible: uiStyle.showGrid, color: uiStyle.gridColor }
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine: { color: uiStyle.textMuted, width: 1, style: 2, labelBackgroundColor: '#424c45' },
+      horzLine: { color: uiStyle.textMuted, width: 1, style: 2, labelBackgroundColor: '#424c45' }
+    },
+    rightPriceScale: { borderColor: uiStyle.borderMain, autoScale: true, scaleMargins: { top: 0.08, bottom: 0.10 } },
+    timeScale: { borderColor: uiStyle.borderMain, timeVisible: true, rightOffset: 24 }
+  };
+}
+
+function getCandleStyleOptions() {
+  return {
+    upColor: hexToRgba(uiStyle.bullBody, uiStyle.bullAlpha),
+    downColor: hexToRgba(uiStyle.bearBody, uiStyle.bearAlpha),
+    wickUpColor: uiStyle.wickColor,
+    wickDownColor: uiStyle.wickColor,
+    borderVisible: true,
+    borderUpColor: uiStyle.borderColor,
+    borderDownColor: uiStyle.borderColor
+  };
+}
+
+function initCharts() {
+  applyCssVars();
+  const opts = getChartOptions();
+  const cOpts = getCandleStyleOptions();
+
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById(`chart-container-${i + 1}`);
+    charts[i] = LightweightCharts.createChart(el, opts);
+    candleSeriesArr[i] = charts[i].addCandlestickSeries(cOpts);
+  }
+
+  charts[0].timeScale().subscribeVisibleLogicalRangeChange(() => renderDrawings());
+
+  charts[0].subscribeCrosshairMove((p) => {
+    if (!p.time || !p.seriesData) return;
+    const bar = p.seriesData.get(candleSeriesArr[0]);
+    if (bar) {
+      document.getElementById('leg-o').textContent = bar.open;
+      document.getElementById('leg-h').textContent = bar.high;
+      document.getElementById('leg-l').textContent = bar.low;
+      document.getElementById('leg-c').textContent = bar.close;
+    }
+  });
+
+  // Replay Cut Click Listener
+  document.getElementById('chart-container-1').addEventListener('click', (e) => {
+    if (isReplayCutSelecting) {
+      const rect = document.getElementById('chart-container-1').getBoundingClientRect();
+      const logical = charts[0].timeScale().coordinateToLogical(e.clientX - rect.left);
+      const rawCandles = getRawCandles(primaryPair, activeTF);
+      if (logical !== null && rawCandles.length > 0) {
+        const idx = Math.max(5, Math.min(rawCandles.length - 1, Math.round(logical)));
+        replayCutIndex = idx;
+        isReplayCutSelecting = false;
+        document.getElementById('btn-replay-cut').classList.remove('m-accent-bg');
+        renderAllPanes();
+        showToast(`Replay dimulai dari bar ke-${idx + 1}`);
+      }
+      return;
+    }
+    if (activeDrawTool === 'cursor' && selectedDrawId) deselectDrawing();
+  });
+
+  window.addEventListener('resize', resizeAllCharts);
+  syncStyleInputs();
+}
+
+function resizeAllCharts() {
+  for (let i = 0; i < 3; i++) {
+    if (layoutMode === 1 && i > 0) continue;
+    const el = document.getElementById(`chart-container-${i + 1}`);
+    if (el && charts[i]) {
+      charts[i].applyOptions({ width: el.clientWidth, height: el.clientHeight });
+    }
+  }
+  renderDrawings();
+}
+
+function setLayoutMode(mode) {
+  layoutMode = mode;
+  document.getElementById('btn-layout-1').className = mode === 1 ? 'px-2 py-0.5 text-[10px] font-bold rounded-xs m-accent-bg' : 'px-2 py-0.5 text-[10px] font-semibold rounded-xs m-text-muted';
+  document.getElementById('btn-layout-3').className = mode === 3 ? 'px-2 py-0.5 text-[10px] font-bold rounded-xs m-accent-bg' : 'px-2 py-0.5 text-[10px] font-semibold rounded-xs m-text-muted';
+
+  document.getElementById('pane-1-badge').classList.toggle('hidden', mode === 1);
+  document.getElementById('pane-2').classList.toggle('hidden', mode === 1);
+  document.getElementById('pane-3').classList.toggle('hidden', mode === 1);
+
+  if (mode === 3) {
+    triplePairs[0] = primaryPair;
+    document.getElementById('pane-1-pair').value = triplePairs[0];
+  }
+
+  renderAllPanes();
+  setTimeout(() => { resizeAllCharts(); zoomChart(90); }, 30);
+}
+
+function changePrimaryPair(pair) {
+  primaryPair = pair;
+  triplePairs[0] = pair;
+  document.getElementById('pane-1-pair').value = pair;
+  deselectDrawing();
+  renderAllPanes();
+  zoomChart(90);
+}
+
+function changeTriplePanePair(paneIdx, pair) {
+  triplePairs[paneIdx] = pair;
+  if (paneIdx === 0) {
+    primaryPair = pair;
+    document.getElementById('primary-pair-select').value = pair;
+    deselectDrawing();
+  }
+  renderAllPanes();
+}
+
+function selectTimeframe(tf) {
+  activeTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => {
+    b.classList.remove('m-accent-bg', 'font-bold');
+    b.classList.add('m-text-muted', 'font-semibold');
+  });
+  const btn = document.getElementById(`btn-tf-${tf}`);
+  if (btn) {
+    btn.classList.remove('m-text-muted', 'font-semibold');
+    btn.classList.add('m-accent-bg', 'font-bold');
+  }
+  deselectDrawing();
+  renderAllPanes();
+  zoomChart(90);
+}
+
+function zoomChart(bars = 90) {
+  const total = candleSeriesArr[0].data().length;
+  if (total > 0) {
+    charts[0].timeScale().setVisibleLogicalRange({ from: Math.max(0, total - bars), to: total + 14 });
+  }
+  setTimeout(renderDrawings, 30);
+}
+
+function fitAllChart() {
+  charts[0].timeScale().fitContent();
+  setTimeout(renderDrawings, 30);
+}
+
+function toggleZenMode() {
+  document.body.classList.toggle('zen-mode');
+  const isZen = document.body.classList.contains('zen-mode');
+  document.getElementById('zen-exit-btn').classList.toggle('hidden', !isZen);
+  setTimeout(resizeAllCharts, 30);
+}
+
+// ==========================================
+// 5. DATA RENDERING & REPLAY ENGINE (2 MODES)
+// ==========================================
+function generateFallbackCandles(pair, tf) {
+  const baseMap = { XAUUSD: 2680, XAUEUR: 2510, XAGUSD: 31.4 };
+  let price = baseMap[pair] || 2680;
+  const stepSec = { '1w': 604800, '1d': 86400, '4h': 14400, '1h': 3600, '15m': 900, '5m': 300, '1m': 60 }[tf] || 900;
+  const now = Math.floor(Date.now() / 1000);
+  const out = [];
+  for (let i = 180; i >= 0; i--) {
+    const t = now - i * stepSec;
+    const vol = pair === 'XAGUSD' ? 0.14 : 3.2;
+    const o = Number(price.toFixed(2));
+    const d1 = (Math.sin(i * 0.37) + Math.cos(i * 0.19)) * vol;
+    const c = Number((o + d1).toFixed(2));
+    const h = Number((Math.max(o, c) + Math.abs(Math.sin(i)) * vol * 0.8).toFixed(2));
+    const l = Number((Math.min(o, c) - Math.abs(Math.cos(i)) * vol * 0.8).toFixed(2));
+    out.push({ time: t, open: o, high: h, low: l, close: c });
+    price = c;
+  }
+  return out;
+}
+
+function getRawCandles(pair, tf) {
+  const arr = metalsFeed?.pairs?.[pair]?.timeframes?.[tf]?.candles;
+  if (arr && arr.length > 0) return arr;
+  if (!window._fallbackCache) window._fallbackCache = {};
+  const k = `${pair}_${tf}`;
+  if (!window._fallbackCache[k]) window._fallbackCache[k] = generateFallbackCandles(pair, tf);
+  return window._fallbackCache[k];
+}
+
+function getVisibleCandles(pair, tf) {
+  const raw = getRawCandles(pair, tf);
+  if (replayCutIndex === null) return raw;
+  return raw.slice(0, Math.min(raw.length, replayCutIndex + 1));
+}
+
+function renderAllPanes() {
+  const p1Candles = getVisibleCandles(primaryPair, activeTF);
+  candleSeriesArr[0].setData(p1Candles);
+
+  document.getElementById('leg-pair').textContent = primaryPair;
+  document.getElementById('leg-tf').textContent = activeTF.toUpperCase();
+
+  if (p1Candles.length > 0) {
+    const last = p1Candles[p1Candles.length - 1];
+    const prev = p1Candles[p1Candles.length - 2] || last;
+    const chgPct = (((last.close - prev.close) / prev.close) * 100).toFixed(2);
+    document.getElementById('leg-price').textContent = last.close;
+    document.getElementById('leg-chg').textContent = `${chgPct >= 0 ? '+' : ''}${chgPct}%`;
+    document.getElementById('leg-o').textContent = last.open;
+    document.getElementById('leg-h').textContent = last.high;
+    document.getElementById('leg-l').textContent = last.low;
+    document.getElementById('leg-c').textContent = last.close;
+    document.getElementById('pane-1-price').textContent = last.close;
+  }
+
+  // Divergence status badge if present in feed
+  const divInfo = metalsFeed?.divergence?.[activeTF];
+  const divBadge = document.getElementById('leg-div-badge');
+  if (divInfo?.vs_xagusd) {
+    divBadge.textContent = `XAG: ${divInfo.vs_xagusd}`;
+    divBadge.classList.remove('hidden');
+  } else {
+    divBadge.classList.add('hidden');
+  }
+
+  if (layoutMode === 3) {
+    for (let i = 1; i < 3; i++) {
+      const pName = triplePairs[i];
+      const cData = getVisibleCandles(pName, activeTF);
+      candleSeriesArr[i].setData(cData);
+      if (cData.length > 0) {
+        document.getElementById(`pane-${i + 1}-price`).textContent = cData[cData.length - 1].close;
+      }
+    }
+  }
+
+  updateReplayStatusUI();
+  renderDrawings();
+}
+
+// Replay Controls
+function toggleReplayBar() {
+  isReplayOpen = !isReplayOpen;
+  document.getElementById('replay-bar').classList.toggle('hidden', !isReplayOpen);
+  document.getElementById('btn-toggle-replay').classList.toggle('m-accent-bg', isReplayOpen);
+  setTimeout(resizeAllCharts, 30);
+}
+
+function activateReplayCutMode() {
+  isReplayCutSelecting = !isReplayCutSelecting;
+  document.getElementById('btn-replay-cut').classList.toggle('m-accent-bg', isReplayCutSelecting);
+  if (isReplayCutSelecting) {
+    setDrawTool('cursor');
+    showToast('Klik pada candle di chart untuk memulai Bar Replay...');
+  }
+}
+
+function stepReplay(delta) {
+  const raw = getRawCandles(primaryPair, activeTF);
+  if (!raw.length) return;
+  if (replayCutIndex === null) replayCutIndex = Math.max(10, raw.length - 30);
+  replayCutIndex = Math.max(5, Math.min(raw.length - 1, replayCutIndex + delta));
+  renderAllPanes();
+  if (replayCutIndex >= raw.length - 1) stopReplayTimer();
+}
+
+function toggleReplayPlay() {
+  if (replayPlayTimer) {
+    stopReplayTimer();
+  } else {
+    const raw = getRawCandles(primaryPair, activeTF);
+    if (replayCutIndex === null || replayCutIndex >= raw.length - 1) {
+      replayCutIndex = Math.max(10, raw.length - 35);
+      renderAllPanes();
+    }
+    const ms = parseInt(document.getElementById('replay-speed').value) || 700;
+    document.getElementById('btn-replay-play').textContent = '⏸ Pause';
+    replayPlayTimer = setInterval(() => stepReplay(1), ms);
+  }
+}
+
+function stopReplayTimer() {
+  clearInterval(replayPlayTimer);
+  replayPlayTimer = null;
+  document.getElementById('btn-replay-play').textContent = '▶ Play';
+}
+
+function updateReplaySpeed() {
+  if (replayPlayTimer) {
+    stopReplayTimer();
+    toggleReplayPlay();
+  }
+}
+
+// Concept 2: Session Block Replay (Asia / London / NY)
+function jumpToSessionReplay(sessionName) {
+  stopReplayTimer();
+  const raw = getRawCandles(primaryPair, activeTF);
+  if (!raw.length) return;
+
+  // Target UTC start hour: Asia ~00:00 UTC, London ~07:00 UTC, NY ~13:00 UTC
+  const targetHourUTC = { ASIA: 0, LONDON: 7, NY: 13 }[sessionName] ?? 7;
+  let foundIdx = -1;
+
+  for (let i = raw.length - 2; i >= Math.max(5, raw.length - 120); i--) {
+    const t = raw[i].time;
+    const d = typeof t === 'number' ? new Date(t * 1000) : new Date(t);
+    if (!isNaN(d.getTime()) && d.getUTCHours() === targetHourUTC) {
+      foundIdx = i;
+      break;
+    }
+  }
+
+  replayCutIndex = foundIdx !== -1 ? foundIdx : Math.max(10, raw.length - 24);
+  renderAllPanes();
+  zoomChart(65);
+  showToast(`Session Replay: ${sessionName} Open`);
+}
+
+function exitReplayMode() {
+  stopReplayTimer();
+  isReplayCutSelecting = false;
+  replayCutIndex = null;
+  document.getElementById('btn-replay-cut').classList.remove('m-accent-bg');
+  renderAllPanes();
+  zoomChart(90);
+}
+
+function updateReplayStatusUI() {
+  const raw = getRawCandles(primaryPair, activeTF);
+  const lbl = document.getElementById('replay-status-txt');
+  if (replayCutIndex === null) {
+    lbl.textContent = `Live / Full (${raw.length} bars)`;
+  } else {
+    lbl.textContent = `Replay Bar ${replayCutIndex + 1} / ${raw.length}`;
+  }
+}
+
+// ==========================================
+// 6. DRAWING ENGINE (SHIFT=HORIZONTAL, CTRL=MAGNET, TEXT TOP/MID/BOT)
+// ==========================================
+function getDrawKey() {
+  return `gozi_metals_draw_${primaryPair}_${activeTF}`;
+}
+function loadDrawingsList() {
+  return JSON.parse(localStorage.getItem(getDrawKey())) || [];
+}
+function saveDrawingsList(l) {
+  localStorage.setItem(getDrawKey(), JSON.stringify(l));
+}
+
+function toggleMagnetLock() {
+  isMagnetLocked = !isMagnetLocked;
+  document.getElementById('tool-magnet').classList.toggle('magnet-on', isMagnetLocked);
+  showToast(isMagnetLocked ? 'Magnet Permanen: ON' : 'Magnet Permanen: OFF (Tahan Ctrl untuk snap sementara)');
+}
+
+function updateDefaultStroke(hex) {
+  defaultStrokeColor = hex;
+  document.getElementById('default-color-dot').style.backgroundColor = hex;
+}
+
+function toggleHideDrawings() {
+  hideAllDrawings = !hideAllDrawings;
+  document.getElementById('tool-hide-draw').style.opacity = hideAllDrawings ? '0.4' : '1';
+  if (hideAllDrawings) deselectDrawing();
+  renderDrawings();
+}
+
+function setDrawTool(tool) {
+  activeDrawTool = tool;
+  if (tool === 'cursor') activeTemplate = null;
+  pendingPoint = null;
+  measurePreview = null;
+  if (tool !== 'cursor') deselectDrawing();
+
+  document.querySelectorAll('.tool-btn').forEach(b => {
+    if (b.id !== 'tool-magnet') b.classList.remove('active');
+  });
+  document.getElementById(`tool-${tool}`)?.classList.add('active');
+
+  const svg = document.getElementById('drawing-svg');
+  const hint = document.getElementById('draw-hint-bar');
+  if (tool === 'cursor') {
+    svg.style.pointerEvents = 'none';
+    svg.style.cursor = 'default';
+    hint.classList.add('hidden');
+  } else {
+    svg.style.pointerEvents = 'auto';
+    svg.style.cursor = 'crosshair';
+    hint.classList.remove('hidden');
+    if (tool === 'line' || tool === 'ray') {
+      document.getElementById('draw-hint-text').textContent = 'Line: Klik titik 1 & 2 (Tahan Shift = Horizontal Rata · Tahan Ctrl = Magnet Candle)';
+    } else if (['hline', 'vline', 'text'].includes(tool)) {
+      document.getElementById('draw-hint-text').textContent = 'Klik pada chart (Tahan Ctrl = Magnet OHLC)';
+    } else {
+      document.getElementById('draw-hint-text').textContent = 'Klik titik pertama, lalu titik kedua (Tahan Ctrl = Magnet OHLC)';
+    }
+  }
+  renderDrawings();
+}
+
+function selectDrawing(id) {
+  selectedDrawId = id;
+  const obj = loadDrawingsList().find(x => x.id === id);
+  const bar = document.getElementById('floating-obj-toolbar');
+  if (!obj) { deselectDrawing(); return; }
+
+  bar.classList.remove('hidden');
+  document.getElementById('flt-obj-label').textContent = obj.type.toUpperCase();
+  document.getElementById('obj-stroke-col').value = obj.color || '#424c45';
+  document.getElementById('obj-width').value = String(obj.width || 1.5);
+  document.getElementById('obj-dash').value = obj.dash || '';
+  document.getElementById('obj-text-pos').value = obj.textPos || 'top';
+
+  const hasFill = ['box', 'rr_long', 'rr_short'].includes(obj.type);
+  document.getElementById('wrap-obj-fill').classList.toggle('hidden', !hasFill);
+  document.getElementById('wrap-obj-alpha').classList.toggle('hidden', !hasFill);
+  if (hasFill) {
+    document.getElementById('obj-fill-col').value = obj.fillColor || '#525c6d';
+    document.getElementById('obj-fill-alpha').value = Math.round((obj.fillAlpha ?? 0.15) * 100);
+  }
+  renderDrawings();
+}
+
+function deselectDrawing() {
+  selectedDrawId = null;
+  document.getElementById('floating-obj-toolbar').classList.add('hidden');
+  renderDrawings();
+}
+
+function updateSelectedProp(prop, val) {
+  if (!selectedDrawId) return;
+  const list = loadDrawingsList();
+  const idx = list.findIndex(x => x.id === selectedDrawId);
+  if (idx !== -1) {
+    list[idx][prop] = val;
+    saveDrawingsList(list);
+    renderDrawings();
+  }
+}
+
+function promptSelectedText() {
+  if (!selectedDrawId) return;
+  const list = loadDrawingsList();
+  const idx = list.findIndex(x => x.id === selectedDrawId);
+  if (idx !== -1) {
+    const val = prompt('Ketik label teks (kosongkan untuk menghapus teks):', list[idx].text || '');
+    if (val !== null) {
+      list[idx].text = val.trim();
+      saveDrawingsList(list);
+      renderDrawings();
+    }
+  }
+}
+
+function deleteSelectedDrawing() {
+  if (!selectedDrawId) return;
+  saveDrawingsList(loadDrawingsList().filter(x => x.id !== selectedDrawId));
+  deselectDrawing();
+}
+
+function clearAllDrawings() {
+  saveDrawingsList([]);
+  deselectDrawing();
+}
+
+function pixelToCoord(x, y, forceMagnet = false) {
+  const candles = getVisibleCandles(primaryPair, activeTF);
+  if (!candles.length) return null;
+
+  const logical = charts[0].timeScale().coordinateToLogical(x);
+  const rawPrice = candleSeriesArr[0].coordinateToPrice(y);
+  if (logical === null || rawPrice === null) return null;
+
+  const exactLogical = Number(logical.toFixed(2));
+  const barIdx = Math.round(logical);
+  let finalPrice = Number(rawPrice.toFixed(2));
+
+  // Magnet if Ctrl held OR permanent magnet toggled
+  const useMagnet = forceMagnet || isCtrlDown || isMagnetLocked;
+  if (useMagnet && barIdx >= 0 && barIdx < candles.length) {
+    const c = candles[barIdx];
+    const ohlc = [c.open, c.high, c.low, c.close];
+    finalPrice = ohlc.reduce((prev, curr) => Math.abs(curr - rawPrice) < Math.abs(prev - rawPrice) ? curr : prev);
+  }
+
+  const timeVal = (barIdx >= 0 && barIdx < candles.length) ? candles[barIdx].time : null;
+  return { logical: exactLogical, time: timeVal, price: finalPrice };
+}
+
+function coordToPixel(pt) {
+  const candles = getVisibleCandles(primaryPair, activeTF);
+  if (!candles.length || !pt) return null;
+
+  let targetLogical = pt.logical;
+  if (pt.time) {
+    const idx = candles.findIndex(c => c.time === pt.time);
+    if (idx !== -1) targetLogical = idx;
+  }
+  if (targetLogical === undefined || targetLogical === null) return null;
+
+  const x = charts[0].timeScale().logicalToCoordinate(targetLogical);
+  const y = candleSeriesArr[0].priceToCoordinate(pt.price);
+  return (x === null || y === null) ? null : { x, y };
+}
+
+const svgCanvas = document.getElementById('drawing-svg');
+
+function handleObjPointerDown(e, id, mode) {
+  e.stopPropagation();
+  if (activeDrawTool !== 'cursor') return;
+  selectDrawing(id);
+  const rect = svgCanvas.getBoundingClientRect();
+  const obj = loadDrawingsList().find(x => x.id === id);
+  if (!obj) return;
+
+  dragState = {
+    id,
+    mode,
+    startX: e.clientX - rect.left,
+    startY: e.clientY - rect.top,
+    origP1: { ...obj.p1 },
+    origP2: obj.p2 ? { ...obj.p2 } : null,
+    origEntry: obj.entryPrice,
+    origTp: obj.tpPrice,
+    origSl: obj.slPrice
+  };
+  svgCanvas.style.pointerEvents = 'auto';
+}
+
+window.addEventListener('pointermove', (e) => {
+  const rect = svgCanvas.getBoundingClientRect();
+  const curX = e.clientX - rect.left;
+  const curY = e.clientY - rect.top;
+
+  if (activeDrawTool === 'measure' && pendingPoint) {
+    const curPt = pixelToCoord(curX, curY, e.ctrlKey || e.metaKey);
+    if (curPt) {
+      measurePreview = { p1: pendingPoint, p2: curPt };
+      renderDrawings();
+    }
+    return;
+  }
+
+  if (!dragState) return;
+  const list = loadDrawingsList();
+  const idx = list.findIndex(x => x.id === dragState.id);
+  if (idx === -1) return;
+
+  const item = list[idx];
+  const forceMag = e.ctrlKey || e.metaKey;
+
+  if (item.type === 'rr_long' || item.type === 'rr_short') {
+    const pt = pixelToCoord(curX, curY, forceMag);
+    if (!pt) return;
+    const isLong = item.type === 'rr_long';
+    const minStep = primaryPair === 'XAGUSD' ? 0.01 : 0.1;
+
+    if (dragState.mode === 'rr_tp') {
+      item.tpPrice = isLong ? Math.max(item.entryPrice + minStep, pt.price) : Math.min(item.entryPrice - minStep, pt.price);
+      item.p2.logical = pt.logical;
+    } else if (dragState.mode === 'rr_sl') {
+      item.slPrice = isLong ? Math.min(item.entryPrice - minStep, pt.price) : Math.max(item.entryPrice + minStep, pt.price);
+      item.p2.logical = pt.logical;
+    } else if (dragState.mode === 'rr_entry') {
+      item.entryPrice = pt.price;
+    } else if (dragState.mode === 'move') {
+      const sPt = pixelToCoord(dragState.startX, dragState.startY, false);
+      const cPt = pixelToCoord(curX, curY, false);
+      if (sPt && cPt) {
+        const dL = cPt.logical - sPt.logical;
+        const dP = cPt.price - sPt.price;
+        item.p1.logical = Number((dragState.origP1.logical + dL).toFixed(2));
+        item.p2.logical = Number((dragState.origP2.logical + dL).toFixed(2));
+        item.entryPrice = Number((dragState.origEntry + dP).toFixed(2));
+        item.tpPrice = Number((dragState.origTp + dP).toFixed(2));
+        item.slPrice = Number((dragState.origSl + dP).toFixed(2));
+      }
+    }
+    saveDrawingsList(list);
+    renderDrawings();
+    return;
+  }
+
+  if (dragState.mode === 'p1') {
+    const pt = pixelToCoord(curX, curY, forceMag);
+    if (pt) {
+      if ((item.type === 'line' || item.type === 'ray') && (e.shiftKey || isShiftDown) && item.p2) {
+        pt.price = item.p2.price;
+      }
+      item.p1 = pt;
+    }
+  } else if (dragState.mode === 'p2') {
+    const pt = pixelToCoord(curX, curY, forceMag);
+    if (pt) {
+      if ((item.type === 'line' || item.type === 'ray') && (e.shiftKey || isShiftDown) && item.p1) {
+        pt.price = item.p1.price;
+      }
+      item.p2 = pt;
+    }
+  } else if (dragState.mode === 'move') {
+    const sPt = pixelToCoord(dragState.startX, dragState.startY, false);
+    const cPt = pixelToCoord(curX, curY, false);
+    if (sPt && cPt) {
+      const dL = cPt.logical - sPt.logical;
+      const dP = cPt.price - sPt.price;
+      const candles = getVisibleCandles(primaryPair, activeTF);
+
+      const nL1 = Number((dragState.origP1.logical + dL).toFixed(2));
+      const b1 = Math.round(nL1);
+      item.p1 = {
+        logical: nL1,
+        time: (b1 >= 0 && b1 < candles.length) ? candles[b1].time : null,
+        price: Number((dragState.origP1.price + dP).toFixed(2))
+      };
+
+      if (dragState.origP2) {
+        const nL2 = Number((dragState.origP2.logical + dL).toFixed(2));
+        const b2 = Math.round(nL2);
+        item.p2 = {
+          logical: nL2,
+          time: (b2 >= 0 && b2 < candles.length) ? candles[b2].time : null,
+          price: Number((dragState.origP2.price + dP).toFixed(2))
+        };
+      }
+    }
+  }
+  saveDrawingsList(list);
+  renderDrawings();
+});
+
+window.addEventListener('pointerup', () => {
+  if (dragState) {
+    dragState = null;
+    if (activeDrawTool === 'cursor') svgCanvas.style.pointerEvents = 'none';
+  }
+});
+
+svgCanvas.addEventListener('click', (e) => {
+  if (activeDrawTool === 'cursor') return;
+  const rect = svgCanvas.getBoundingClientRect();
+  const pt = pixelToCoord(e.clientX - rect.left, e.clientY - rect.top, e.ctrlKey || e.metaKey);
+  if (!pt) return;
+
+  if (activeDrawTool === 'measure') {
+    if (!pendingPoint) {
+      pendingPoint = pt;
+      document.getElementById('draw-hint-text').textContent = 'Klik titik kedua untuk selesai mengukur...';
+    } else {
+      pendingPoint = null;
+      measurePreview = null;
+      setDrawTool('cursor');
+    }
+    return;
+  }
+
+  const list = loadDrawingsList();
+  const newId = 'mobj_' + Date.now();
+  const tpl = activeTemplate || {};
+
+  if (activeDrawTool === 'hline' || activeDrawTool === 'vline') {
+    list.push({
+      id: newId,
+      type: activeDrawTool,
+      p1: pt,
+      color: tpl.color || defaultStrokeColor,
+      width: tpl.width || 1.5,
+      dash: tpl.dash ?? '6 4',
+      text: tpl.text || '',
+      textPos: tpl.textPos || 'top'
+    });
+    saveDrawingsList(list);
+    setDrawTool('cursor');
+    selectDrawing(newId);
+    return;
+  }
+
+  if (activeDrawTool === 'text') {
+    const txt = prompt('Ketik teks label:', tpl.text || '');
+    if (txt && txt.trim()) {
+      list.push({
+        id: newId,
+        type: 'text',
+        p1: pt,
+        text: txt.trim(),
+        textPos: tpl.textPos || 'middle',
+        color: tpl.color || defaultStrokeColor,
+        width: 1.5,
+        dash: ''
+      });
+      saveDrawingsList(list);
+      setDrawTool('cursor');
+      selectDrawing(newId);
+    } else {
+      setDrawTool('cursor');
+    }
+    return;
+  }
+
+  if (!pendingPoint) {
+    pendingPoint = pt;
+    document.getElementById('draw-hint-text').textContent = 'Klik titik kedua (Shift = Horizontal rata · Ctrl = Magnet)...';
+  } else {
+    // Shift locks Line / Ray perfectly horizontal (price2 = price1)
+    if ((activeDrawTool === 'line' || activeDrawTool === 'ray') && (e.shiftKey || isShiftDown)) {
+      pt.price = pendingPoint.price;
+    }
+
+    if (activeDrawTool === 'rr_long' || activeDrawTool === 'rr_short') {
+      const isLong = activeDrawTool === 'rr_long';
+      const entryP = pendingPoint.price;
+      const dist = Math.max(primaryPair === 'XAGUSD' ? 0.15 : 3.5, Math.abs(pt.price - entryP));
+      const tpP = isLong ? Number((entryP + dist * 2.5).toFixed(2)) : Number((entryP - dist * 2.5).toFixed(2));
+      const slP = isLong ? Number((entryP - dist).toFixed(2)) : Number((entryP + dist).toFixed(2));
+
+      list.push({
+        id: newId,
+        type: activeDrawTool,
+        p1: { logical: Math.min(pendingPoint.logical, pt.logical), price: entryP },
+        p2: { logical: Math.max(pendingPoint.logical + 8, pt.logical), price: tpP },
+        entryPrice: entryP,
+        tpPrice: tpP,
+        slPrice: slP,
+        color: '#424c45',
+        fillColor: '#424c45',
+        fillAlpha: 0.24,
+        width: 1.2,
+        dash: '',
+        text: '',
+        textPos: 'top'
+      });
+    } else {
+      list.push({
+        id: newId,
+        type: activeDrawTool,
+        p1: pendingPoint,
+        p2: pt,
+        color: tpl.color || defaultStrokeColor,
+        fillColor: tpl.fillColor || '#525c6d',
+        fillAlpha: tpl.fillAlpha ?? 0.10,
+        width: tpl.width || 1.5,
+        dash: tpl.dash || '',
+        text: tpl.text || '',
+        textPos: tpl.textPos || 'top'
+      });
+    }
+
+    saveDrawingsList(list);
+    pendingPoint = null;
+    setDrawTool('cursor');
+    selectDrawing(newId);
+  }
+});
+
+function renderObjLabel(x, y, text, color) {
+  if (!text) return '';
+  return `<text x="${x}" y="${y}" fill="${color}" font-size="10.5" font-weight="700" text-anchor="middle">${text}</text>`;
+}
+
+function renderDrawings() {
+  svgCanvas.innerHTML = '';
+
+  // Measure preview
+  if (measurePreview) {
+    const a = coordToPixel(measurePreview.p1);
+    const b = coordToPixel(measurePreview.p2);
+    if (a && b) {
+      const rx = Math.min(a.x, b.x), ry = Math.min(a.y, b.y);
+      const rw = Math.abs(b.x - a.x), rh = Math.abs(b.y - a.y);
+      const dP = measurePreview.p2.price - measurePreview.p1.price;
+      const dPct = ((dP / measurePreview.p1.price) * 100).toFixed(2);
+      const bars = Math.abs(Math.round(measurePreview.p2.logical - measurePreview.p1.logical));
+      const label = `${dP >= 0 ? '+' : ''}${dP.toFixed(2)} (${dPct}%) | ${bars} bars`;
+      svgCanvas.innerHTML += `
+        <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="rgba(66,76,69,0.16)" stroke="#424c45" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <rect x="${rx}" y="${Math.max(4, ry - 20)}" width="${label.length * 6.8 + 10}" height="17" rx="2" fill="#424c45"/>
+        <text x="${rx + 5}" y="${Math.max(15, ry - 8)}" fill="#f4f5f9" font-size="9.5" font-weight="700">${label}</text>
+      `;
+    }
+  }
+
+  if (hideAllDrawings) return;
+  const list = loadDrawingsList();
+  const w = svgCanvas.clientWidth;
+  const h = svgCanvas.clientHeight;
+
+  list.forEach(item => {
+    const a = coordToPixel(item.p1);
+    if (!a) return;
+    const col = item.color || '#424c45';
+    const sw = item.width || 1.5;
+    const dash = item.dash || '';
+    const isSel = item.id === selectedDrawId;
+    const tPos = item.textPos || 'top';
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.style.pointerEvents = 'all';
+    g.style.cursor = 'move';
+    g.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, 'move'));
+
+    if (item.type === 'hline') {
+      const ty = tPos === 'bottom' ? a.y + 13 : (tPos === 'middle' ? a.y - 3 : a.y - 6);
+      g.innerHTML = `
+        <line x1="0" y1="${a.y}" x2="${w}" y2="${a.y}" stroke="transparent" stroke-width="14"/>
+        <line x1="0" y1="${a.y}" x2="${w}" y2="${a.y}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+        ${renderObjLabel(w * 0.5, ty, item.text, col)}
+      `;
+      if (isSel) g.innerHTML += `<circle cx="${w * 0.5}" cy="${a.y}" r="5" fill="#f4f5f9" stroke="#424c45" stroke-width="2"/>`;
+    } else if (item.type === 'vline') {
+      g.innerHTML = `
+        <line x1="${a.x}" y1="0" x2="${a.x}" y2="${h}" stroke="transparent" stroke-width="14"/>
+        <line x1="${a.x}" y1="0" x2="${a.x}" y2="${h}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+        ${renderObjLabel(a.x + 28, tPos === 'bottom' ? h - 14 : (tPos === 'middle' ? h * 0.5 : 18), item.text, col)}
+      `;
+      if (isSel) g.innerHTML += `<circle cx="${a.x}" cy="${h * 0.5}" r="5" fill="#f4f5f9" stroke="#424c45" stroke-width="2"/>`;
+    } else if (item.type === 'text') {
+      const dy = tPos === 'top' ? -10 : (tPos === 'bottom' ? 14 : 4);
+      g.innerHTML = `
+        <rect x="${a.x - 45}" y="${a.y + dy - 12}" width="90" height="16" fill="${isSel ? 'rgba(66,76,69,0.16)' : 'transparent'}" rx="2"/>
+        ${renderObjLabel(a.x, a.y + dy, item.text, col)}
+      `;
+    } else if (item.type === 'rr_long' || item.type === 'rr_short') {
+      // White Olive palette: TP #424c45 (24%), SL #525c6d (19%)
+      const xStart = charts[0].timeScale().logicalToCoordinate(item.p1.logical);
+      const xEnd = charts[0].timeScale().logicalToCoordinate(item.p2.logical);
+      const tpY = candleSeriesArr[0].priceToCoordinate(item.tpPrice);
+      const entryY = candleSeriesArr[0].priceToCoordinate(item.entryPrice);
+      const slY = candleSeriesArr[0].priceToCoordinate(item.slPrice);
+      if (xStart === null || xEnd === null || tpY === null || entryY === null || slY === null) return;
+
+      const x1 = Math.min(xStart, xEnd);
+      const rw = Math.max(95, Math.abs(xEnd - xStart));
+      const x2 = x1 + rw;
+
+      const risk = Math.max(0.0001, Math.abs(item.entryPrice - item.slPrice));
+      const reward = Math.abs(item.tpPrice - item.entryPrice);
+      const rr = (reward / risk).toFixed(2);
+
+      const tpTop = Math.min(tpY, entryY);
+      const tpH = Math.max(2, Math.abs(entryY - tpY));
+      const slTop = Math.min(slY, entryY);
+      const slH = Math.max(2, Math.abs(slY - entryY));
+
+      g.innerHTML = `
+        <rect x="${x1}" y="${tpTop}" width="${rw}" height="${tpH}" fill="rgba(66, 76, 69, 0.24)" stroke="#424c45" stroke-width="1"/>
+        <rect x="${x1}" y="${slTop}" width="${rw}" height="${slH}" fill="rgba(82, 92, 109, 0.19)" stroke="#525c6d" stroke-width="1"/>
+        <line x1="${x1}" y1="${entryY}" x2="${x2}" y2="${entryY}" stroke="#424c45" stroke-width="1.5"/>
+        <rect x="${x1}" y="${Math.min(tpTop, slTop) - 18}" width="${Math.max(rw, 130)}" height="16" rx="2" fill="#424c45"/>
+        <text x="${x1 + 5}" y="${Math.min(tpTop, slTop) - 7}" fill="#f4f5f9" font-size="9" font-weight="700">R:R 1:${rr} | E:${item.entryPrice}</text>
+      `;
+
+      if (isSel) {
+        const makeHandle = (cx, cy, fill, mode) => {
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', '5.5');
+          c.setAttribute('fill', fill); c.setAttribute('stroke', '#f4f5f9'); c.setAttribute('stroke-width', '2');
+          c.style.cursor = 'ns-resize';
+          c.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, mode));
+          return c;
+        };
+        g.appendChild(makeHandle(x2, tpY, '#424c45', 'rr_tp'));
+        g.appendChild(makeHandle(x1, entryY, '#262c28', 'rr_entry'));
+        g.appendChild(makeHandle(x2, slY, '#525c6d', 'rr_sl'));
+      }
+    } else if (item.p2) {
+      const b = coordToPixel(item.p2);
+      if (!b) return;
+
+      if (item.type === 'line') {
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const ty = tPos === 'bottom' ? midY + 14 : (tPos === 'middle' ? midY - 3 : midY - 7);
+        g.innerHTML = `
+          <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="transparent" stroke-width="14"/>
+          <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+          ${renderObjLabel(midX, ty, item.text, col)}
+        `;
+      } else if (item.type === 'ray') {
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const sc = dx !== 0 ? (w - a.x) / dx : 1;
+        const endY = a.y + dy * sc;
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const ty = tPos === 'bottom' ? midY + 14 : (tPos === 'middle' ? midY - 3 : midY - 7);
+        g.innerHTML = `
+          <line x1="${a.x}" y1="${a.y}" x2="${w}" y2="${endY}" stroke="transparent" stroke-width="14"/>
+          <line x1="${a.x}" y1="${a.y}" x2="${w}" y2="${endY}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+          ${renderObjLabel(midX, ty, item.text, col)}
+        `;
+      } else if (item.type === 'box') {
+        const rx = Math.min(a.x, b.x), ry = Math.min(a.y, b.y);
+        const rw = Math.abs(b.x - a.x), rh = Math.abs(b.y - a.y);
+        const fillRgba = hexToRgba(item.fillColor || '#525c6d', item.fillAlpha ?? 0.10);
+        const ty = tPos === 'top' ? ry - 5 : (tPos === 'bottom' ? ry + rh + 13 : ry + rh / 2 + 4);
+        g.innerHTML = `
+          <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="${fillRgba}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>
+          ${renderObjLabel(rx + rw / 2, ty, item.text, col)}
+        `;
+      } else if (item.type === 'fib') {
+        const x1 = Math.min(a.x, b.x), x2 = Math.max(a.x, b.x, a.x + 110);
+        let fibHtml = `<rect x="${x1}" y="${Math.min(a.y, b.y)}" width="${x2 - x1}" height="${Math.abs(b.y - a.y)}" fill="transparent"/>`;
+        [0, 0.236, 0.382, 0.5, 0.618, 0.705, 0.786, 1].forEach(lvl => {
+          const yL = a.y + (b.y - a.y) * lvl;
+          const pL = (item.p1.price + (item.p2.price - item.p1.price) * lvl).toFixed(2);
+          fibHtml += `<line x1="${x1}" y1="${yL}" x2="${x2}" y2="${yL}" stroke="${col}" stroke-width="1"/><text x="${x1 + 4}" y="${yL - 2}" fill="${col}" font-size="9" font-weight="600">${lvl} (${pL})</text>`;
+        });
+        g.innerHTML = fibHtml;
+      }
+
+      if (isSel) {
+        const h1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        h1.setAttribute('cx', a.x); h1.setAttribute('cy', a.y); h1.setAttribute('r', '5');
+        h1.setAttribute('fill', '#f4f5f9'); h1.setAttribute('stroke', '#424c45'); h1.setAttribute('stroke-width', '2');
+        h1.style.cursor = 'nwse-resize';
+        h1.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, 'p1'));
+
+        const h2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        h2.setAttribute('cx', b.x); h2.setAttribute('cy', b.y); h2.setAttribute('r', '5');
+        h2.setAttribute('fill', '#f4f5f9'); h2.setAttribute('stroke', '#424c45'); h2.setAttribute('stroke-width', '2');
+        h2.style.cursor = 'nwse-resize';
+        h2.addEventListener('pointerdown', (e) => handleObjPointerDown(e, item.id, 'p2'));
+
+        g.appendChild(h1);
+        g.appendChild(h2);
+      }
+    }
+
+    svgCanvas.appendChild(g);
+  });
+}
+
+// ==========================================
+// 7. STYLE MODAL & SNAPSHOT
+// ==========================================
+function toggleStyleModal() {
+  document.getElementById('style-modal').classList.toggle('hidden');
+}
+
+function syncStyleInputs() {
+  document.getElementById('st-bg-main').value = uiStyle.bgMain;
+  document.getElementById('st-grid-col').value = uiStyle.gridColor;
+  document.getElementById('st-bull-body').value = uiStyle.bullBody;
+  document.getElementById('st-bear-body').value = uiStyle.bearBody;
+  document.getElementById('st-wick-col').value = uiStyle.wickColor;
+  document.getElementById('st-text-col').value = uiStyle.textMain;
+  document.getElementById('st-show-grid').checked = uiStyle.showGrid;
+}
+
+function applyPresetTheme(key) {
+  if (!themePresets[key]) return;
+  uiStyle = { ...themePresets[key] };
+  localStorage.setItem('gozi_metals_style_v1', JSON.stringify(uiStyle));
+  syncStyleInputs();
+  refreshChartStyles();
+}
+
+function applyCustomStyle() {
+  uiStyle.bgMain = document.getElementById('st-bg-main').value;
+  uiStyle.bgPanel = uiStyle.bgMain;
+  uiStyle.bgSub = uiStyle.bgMain;
+  uiStyle.gridColor = document.getElementById('st-grid-col').value;
+  uiStyle.bullBody = document.getElementById('st-bull-body').value;
+  uiStyle.bearBody = document.getElementById('st-bear-body').value;
+  uiStyle.wickColor = document.getElementById('st-wick-col').value;
+  uiStyle.borderColor = uiStyle.wickColor;
+  uiStyle.textMain = document.getElementById('st-text-col').value;
+  uiStyle.showGrid = document.getElementById('st-show-grid').checked;
+
+  localStorage.setItem('gozi_metals_style_v1', JSON.stringify(uiStyle));
+  refreshChartStyles();
+}
+
+function refreshChartStyles() {
+  applyCssVars();
+  const opts = getChartOptions();
+  const cOpts = getCandleStyleOptions();
+  for (let i = 0; i < 3; i++) {
+    if (charts[i]) charts[i].applyOptions(opts);
+    if (candleSeriesArr[i]) candleSeriesArr[i].applyOptions(cOpts);
+  }
+  renderDrawings();
+}
+
+async function captureChartScreenshot() {
+  try {
+    const chartCanvas = charts[0].takeScreenshot();
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = chartCanvas.width;
+    outCanvas.height = chartCanvas.height;
+    const ctx = outCanvas.getContext('2d');
+    ctx.drawImage(chartCanvas, 0, 0);
+
+    const svgData = new XMLSerializer().serializeToString(svgCanvas);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, outCanvas.width, outCanvas.height);
+      URL.revokeObjectURL(url);
+      outCanvas.toBlob(async (blob) => {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showToast('Screenshot chart disalin ke Clipboard!');
+        } catch {
+          const link = document.createElement('a');
+          link.download = `${primaryPair}_${activeTF}.png`;
+          link.href = outCanvas.toDataURL('image/png');
+          link.click();
+          showToast('Gambar chart diunduh!');
+        }
+      }, 'image/png');
+    };
+    img.src = url;
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal mengambil screenshot.');
+  }
+}
+
+// ==========================================
+// 8. INIT APPLICATION
+// ==========================================
+async function initMetalsApp() {
+  initCharts();
+  try {
+    const res = await fetch('data/metals_divergence.json?t=' + Date.now());
+    if (res.ok) metalsFeed = await res.json();
+  } catch (err) {
+    console.warn('Using local fallback candles until feed loads:', err);
+  }
+  renderAllPanes();
+  zoomChart(90);
+}
+
+initMetalsApp();
 </script>
 </body>
 </html>
