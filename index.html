@@ -1,3 +1,4 @@
+Siap! Ini versi index.html lengkap yang sudah langsung dipasangi tombol biru XAU / METALS di header, badge mini status XAU di bar atas, dan fungsi pengambil data dari data/metals_divergence.json—tinggal select all dan paste menggantikan isi index.html kamu di repository idx-screener-gozi.
 <!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
@@ -85,6 +86,7 @@
     <div class="flex items-center space-x-1.5 pr-1">
       <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider t-accent-bg rounded-xs">IDX</span>
       <span class="font-bold text-xs tracking-widest t-text-main uppercase">GOZI TERMINAL</span>
+      <a href="metals.html" class="px-2 py-0.5 text-[10px] font-bold rounded-xs bg-[#0068ff] text-white hover:opacity-90 shrink-0">XAU / METALS</a>
     </div>
     <span class="t-text-muted opacity-30">|</span>
 
@@ -161,6 +163,11 @@
       <span>⚠️ Bearish CRT (Hindari):</span>
       <b id="brd-bear-crt" class="tabular-nums">0</b>
     </button>
+    <a href="metals.html" id="xau-mini-link" class="px-2 py-0.5 rounded-xs font-bold text-[9.5px] flex items-center space-x-1.5 hover:opacity-80" style="background:rgba(0,104,255,0.18); color:#60a5fa" title="Buka GOZI Metals Desk">
+      <span>XAU: <b id="mini-xau-price">-</b></span>
+      <span>|</span>
+      <span id="mini-xau-div">DIV: -</span>
+    </a>
   </div>
 </div>
 
@@ -183,7 +190,6 @@
     <button onclick="setDrawTool('rr')" id="tool-rr" class="tool-btn" title="Long Position R:R & Lot Calculator (TP, Entry, SL bebas geser)"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 5h16v7H4z"/><path d="M4 12h16v7H4z" stroke-dasharray="2 2"/></svg></button>
     <button onclick="setDrawTool('text')" id="tool-text" class="tool-btn" title="Text Note"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
     <div class="w-5 border-t t-border my-0.5"></div>
-    <!-- Magnet OHLC Toggle -->
     <button onclick="toggleMagnetMode()" id="tool-magnet" class="tool-btn" title="Magnet Mode (Snap ke OHLC Candle)"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"/><path d="m5 8 4 4"/><path d="m12 15 4 4"/></svg></button>
     <label class="tool-btn cursor-pointer" title="Default Stroke Color"><span id="draw-color-dot" class="w-3.5 h-3.5 rounded-full border border-white/40" style="background-color:#fb8b1e"></span><input type="color" id="draw-color-input" value="#fb8b1e" class="hidden" onchange="updateDefaultDrawColor(this.value)"></label>
     <button onclick="toggleHideDrawings()" id="tool-hide-draw" class="tool-btn" title="Hide/Show All Drawings"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -271,7 +277,6 @@
 
     <!-- DUAL / SINGLE CHART CONTAINER -->
     <div class="flex-1 flex w-full relative overflow-hidden">
-      <!-- LEFT SPLIT PANE (HTF 1W - HIDDEN BY DEFAULT) -->
       <div id="split-left-wrap" class="hidden w-1/2 h-full border-r t-border relative overflow-hidden">
         <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs t-bg-panel/90 border t-border text-[10px] font-bold flex items-center space-x-1.5">
           <span class="t-blue-text">HTF STRUCTURE</span>
@@ -280,7 +285,6 @@
         <div id="split-left-container" class="w-full h-full"></div>
       </div>
 
-      <!-- PRIMARY CHART + INTERACTIVE SVG CANVAS (SUPPORTS RIGHT EMPTY FUTURE SPACE) -->
       <div id="chart-wrapper" class="flex-1 h-full relative overflow-hidden">
         <div id="htf-chart-container" class="w-full h-full"></div>
         <svg id="drawing-svg" class="absolute inset-0 w-full h-full z-10"></svg>
@@ -300,9 +304,8 @@
     </div>
   </div>
 
-  <!-- RIGHT SCREENER DRAWER (2 TABS + PIN + FULL SCREEN) -->
+  <!-- RIGHT SCREENER DRAWER -->
   <aside id="screener-drawer" class="hidden w-full sm:w-[510px] t-bg-panel border-l t-border flex flex-col h-full z-30 shadow-2xl">
-    <!-- Drawer Header -->
     <div class="px-3.5 py-2 border-b t-border flex items-center justify-between shrink-0">
       <div>
         <div class="flex items-center space-x-2">
@@ -324,7 +327,6 @@
       </div>
     </div>
 
-    <!-- 2 TABS: SEMUA SAHAM & SCREENER -->
     <div class="flex border-b t-border text-[11px] font-bold t-bg-sub shrink-0">
       <button onclick="switchScreenerTab('all')" id="tab-all" class="flex-1 py-2 text-center border-b-2" style="border-color:var(--accent); color:var(--accent)">
         Semua Saham (<span id="count-all" class="tabular-nums">0</span>)
@@ -334,7 +336,6 @@
       </button>
     </div>
 
-    <!-- Quick Search for "Semua Saham" -->
     <div id="panel-all-search" class="p-2 border-b t-border t-bg-panel flex items-center justify-between gap-2 text-[11px] shrink-0">
       <input type="text" id="all-quick-search" oninput="renderStockList()" placeholder="Cari kode saham..." class="flex-1 px-2.5 py-1 rounded-xs text-xs uppercase">
       <select id="all-sort" onchange="renderStockList()" class="px-2 py-1 rounded-xs text-[11px]">
@@ -348,7 +349,6 @@
       </select>
     </div>
 
-    <!-- Editable Filter Panel for "Screener" -->
     <div id="panel-screener-filters" class="hidden p-2.5 border-b t-border t-bg-panel space-y-2 text-[11px] shrink-0">
       <div class="grid grid-cols-12 gap-1.5">
         <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Ticker</label><input type="text" id="flt-ticker" oninput="renderStockList()" placeholder="ALL" class="w-full px-2 py-1 rounded-xs uppercase"></div>
@@ -399,7 +399,6 @@
         </div>
       </div>
 
-      <!-- Row 3: Volume Spike, Beta vs IHSG, SMC/ICT Detector -->
       <div class="grid grid-cols-3 gap-1.5">
         <div>
           <label class="block text-[9px] t-text-muted uppercase mb-0.5">Vol Spike</label>
@@ -452,10 +451,7 @@
       </div>
     </div>
 
-    <!-- Dynamic Table Header -->
     <div id="table-header-row" class="grid grid-cols-12 px-3 py-1.5 text-[10px] font-bold t-text-muted border-b t-border t-bg-sub shrink-0 uppercase"></div>
-
-    <!-- Stock Rows -->
     <div id="stock-list" class="flex-1 overflow-y-auto divide-y" style="border-color:var(--border-main)">
       <div class="p-8 text-center text-xs t-text-muted">Loading market feed...</div>
     </div>
@@ -1022,8 +1018,6 @@ function resetAppearance() { appearance = { ...bloombergPalette }; localStorage.
 
 // ==========================================
 // 6. INTERACTIVE DRAWING ENGINE
-//    - INDEPENDENT LONG R:R HANDLES (TP, ENTRY, SL FREE DRAG)
-//    - LOT-BASED PROFIT/LOSS & MODAL CALCULATION
 // ==========================================
 let activeDrawTool = 'cursor', defaultDrawColor = '#fb8b1e', hideAllDrawings = false, isMagnetOn = false;
 let pendingPoint = null, measurePreview = null, selectedDrawId = null, dragState = null;
@@ -1224,7 +1218,6 @@ window.addEventListener('pointermove', (e) => {
   const item = list[idx];
   const useTickSnap = ['hline', 'rr'].includes(item.type);
 
-  // Dragging handles specifically for Long R:R (TP, Entry, SL, Width)
   if (item.type === 'rr') {
     const pt = pixelToChartCoord(curX, curY, true);
     if (!pt) return;
@@ -1363,7 +1356,6 @@ svgCanvas.addEventListener('click', (e) => {
     }
   } else {
     if (activeDrawTool === 'rr') {
-      // Independent Long R:R initialization: Entry at first click, initial TP & SL customizable freely
       const entryP = snapToIDXTick(pendingPoint.price);
       const tick = getIDXTickSize(entryP);
       const clickedP = snapToIDXTick(pt.price);
@@ -1452,7 +1444,6 @@ function renderDrawings() {
         <text x="${a.x}" y="${a.y}" fill="${col}" font-size="11" font-weight="700">${item.text}</text>
       `;
     } else if (item.type === 'rr') {
-      // Backward compatibility for older saved R:R drawings
       const entryP = snapToIDXTick(item.entryPrice ?? ((item.p1.price + item.p2.price) / 2));
       const tpP = snapToIDXTick(item.tpPrice ?? Math.max(item.p1.price, item.p2.price));
       const slP = snapToIDXTick(item.slPrice ?? Math.min(item.p1.price, item.p2.price));
@@ -1475,7 +1466,6 @@ function renderDrawings() {
       const slPct = (((entryP - slP) / entryP) * 100).toFixed(2);
       const tpPct = (((tpP - entryP) / entryP) * 100).toFixed(2);
 
-      // Lot-based calculation (1 Lot = 100 Lembar)
       const lots = tradeLotSize;
       const shares = lots * 100;
       const totalModal = shares * entryP;
@@ -1498,7 +1488,6 @@ function renderDrawings() {
         <text x="${x1 + 6}" y="${Math.max(27, tpY - 7)}" fill="#f0f4f8" font-size="8.5">${line2}</text>
       `;
 
-      // 3 Independent Drag Handles (TP Top, Entry Middle, SL Bottom) when selected
       if (isSel) {
         const makeHandle = (cx, cy, fillCol, modeName, titleTxt) => {
           const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -1611,7 +1600,7 @@ async function captureChartScreenshot() {
 }
 
 // ==========================================
-// 8. SCREENER (2 TABS, PINNING, FULL SCREEN, BEARISH CRT AVOID)
+// 8. SCREENER
 // ==========================================
 function toggleScreenerDrawer() {
   const drawer = document.getElementById('screener-drawer');
@@ -1901,7 +1890,7 @@ function renderStockList() {
 }
 
 // ==========================================
-// 9. KEYBOARD NAVIGATION (↑ / ↓ / SPACE / DEL / ESC)
+// 9. KEYBOARD NAVIGATION & METALS MINI STATUS
 // ==========================================
 document.getElementById('top-ticker-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
@@ -1931,8 +1920,24 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+async function loadXauMiniStatus() {
+  try {
+    const res = await fetch('data/metals_divergence.json?t=' + Date.now());
+    if (!res.ok) return;
+    const d = await res.json();
+    const xauPrice = d?.pairs?.XAUUSD?.metrics?.price;
+    const divXag = d?.divergence?.['15m']?.vs_xagusd || '';
+    if (xauPrice) document.getElementById('mini-xau-price').textContent = xauPrice;
+    if (divXag) {
+      const shortDiv = divXag.includes('BULLISH') ? 'BULL DIV' : (divXag.includes('BEARISH') ? 'BEAR DIV' : 'ALIGNED');
+      document.getElementById('mini-xau-div').textContent = shortDiv;
+    }
+  } catch (_) {}
+}
+
 async function initApp() {
   initCharts();
+  loadXauMiniStatus();
   try {
     const res = await fetch('data/screener_idx.json?t=' + Date.now());
     screenerData = await res.json();
