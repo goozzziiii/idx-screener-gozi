@@ -1,23 +1,26 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GOZI TERMINAL | XAU Chart and Backtest</title>
+<title>GOZI TERMINAL | Metals & XAU Desk</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-main: #dbdbdb;
-    --bg-panel: #d2d2d2;
-    --bg-sub: #c8c8c8;
-    --bg-hover: #bdbdbd;
-    --border-main: #b0b4b1;
-    --text-main: #262c28;
-    --text-muted: #525c6d;
-    --accent: #424c45;
-    --accent-fg: #f4f5f9;
+    --bg-main: #000000;
+    --bg-panel: #090b0f;
+    --bg-sub: #10141c;
+    --bg-hover: #19202c;
+    --border-main: #1f2633;
+    --text-main: #f0f4f8;
+    --text-muted: #8892a0;
+    --accent: #fb8b1e;
+    --blue: #0068ff;
+    --bull: #4af6c3;
+    --bear: #ff433d;
+    --chart-bg: #dbdbdb;
   }
   body {
     font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -26,14 +29,17 @@
     overflow: hidden;
     user-select: none;
   }
-  .m-bg-main { background-color: var(--bg-main); }
-  .m-bg-panel { background-color: var(--bg-panel); }
-  .m-bg-sub { background-color: var(--bg-sub); }
-  .m-border { border-color: var(--border-main); }
-  .m-text-main { color: var(--text-main); }
-  .m-text-muted { color: var(--text-muted); }
-  .m-accent-bg { background-color: var(--accent); color: var(--accent-fg); }
-  .m-row:hover { background-color: var(--bg-hover); }
+  .b-bg-main { background-color: var(--bg-main); }
+  .b-bg-panel { background-color: var(--bg-panel); }
+  .b-bg-sub { background-color: var(--bg-sub); }
+  .b-border { border-color: var(--border-main); }
+  .b-text-main { color: var(--text-main); }
+  .b-text-muted { color: var(--text-muted); }
+  .b-accent-bg { background-color: var(--accent); color: #000000; }
+  .b-accent-text { color: var(--accent); }
+  .b-blue-bg { background-color: var(--blue); color: #ffffff; }
+  .b-blue-text { color: var(--blue); }
+  .b-row:hover { background-color: var(--bg-hover); }
   .tabular-nums { font-variant-numeric: tabular-nums; }
 
   ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -53,8 +59,8 @@
     border-radius: 3px; color: var(--text-muted); transition: all 0.12s;
   }
   .tool-btn:hover { background-color: var(--bg-hover); color: var(--text-main); }
-  .tool-btn.active { background-color: var(--accent); color: var(--accent-fg); }
-  .tool-btn.magnet-on { background-color: #525c6d; color: #f4f5f9; }
+  .tool-btn.active { background-color: var(--accent); color: #000000; }
+  .tool-btn.magnet-on { background-color: var(--blue); color: #ffffff; }
 
   body.zen-mode #top-header,
   body.zen-mode #left-toolbar,
@@ -67,17 +73,17 @@
 </head>
 <body class="h-screen flex flex-col">
 
-<!-- TOP HEADER -->
-<header id="top-header" class="h-10 m-bg-panel border-b m-border px-2.5 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
+<!-- TOP BLOOMBERG HEADER -->
+<header id="top-header" class="h-10 b-bg-panel border-b b-border px-2.5 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
   <div class="flex items-center space-x-2 shrink-0">
-    <a href="index.html" onclick="goBackToIdx(event)" class="px-2 py-0.5 text-[10px] font-bold rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Kembali ke IDX Workspace">
+    <a href="index.html" onclick="goBackToIdx(event)" class="px-2 py-0.5 text-[10px] font-bold rounded-xs border b-border b-bg-sub b-text-main b-row flex items-center space-x-1" title="Kembali ke IDX Workspace">
       <span>← IDX</span>
     </a>
     <div class="flex items-center space-x-1.5">
-      <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider m-accent-bg rounded-xs">METALS</span>
-      <span class="font-bold text-xs tracking-widest m-text-main uppercase hidden sm:inline">GOZI DESK</span>
+      <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider b-blue-bg rounded-xs">METALS</span>
+      <span class="font-bold text-xs tracking-widest b-text-main uppercase hidden sm:inline">GOZI DESK</span>
     </div>
-    <span class="m-text-muted opacity-40">|</span>
+    <span class="b-text-muted opacity-40">|</span>
 
     <!-- Primary Pair Selector -->
     <select id="primary-pair-select" onchange="changePrimaryPair(this.value)" class="px-2 py-0.5 text-xs font-bold rounded-xs uppercase">
@@ -87,64 +93,63 @@
     </select>
 
     <!-- Multi-Timeframe Selector -->
-    <div class="flex items-center m-bg-main p-0.5 rounded-xs border m-border">
-      <button onclick="selectTimeframe('1w')" id="btn-tf-1w" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1W</button>
-      <button onclick="selectTimeframe('1d')" id="btn-tf-1d" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1D</button>
-      <button onclick="selectTimeframe('4h')" id="btn-tf-4h" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">4H</button>
-      <button onclick="selectTimeframe('1h')" id="btn-tf-1h" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1H</button>
-      <button onclick="selectTimeframe('15m')" id="btn-tf-15m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-bold rounded-xs m-accent-bg">15M</button>
-      <button onclick="selectTimeframe('5m')" id="btn-tf-5m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">5M</button>
-      <button onclick="selectTimeframe('1m')" id="btn-tf-1m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs m-text-muted">1M</button>
+    <div class="flex items-center b-bg-main p-0.5 rounded-xs border b-border">
+      <button onclick="selectTimeframe('1w')" id="btn-tf-1w" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs b-text-muted">1W</button>
+      <button onclick="selectTimeframe('1d')" id="btn-tf-1d" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs b-text-muted">1D</button>
+      <button onclick="selectTimeframe('4h')" id="btn-tf-4h" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs b-text-muted">4H</button>
+      <button onclick="selectTimeframe('1h')" id="btn-tf-1h" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs b-text-muted">1H</button>
+      <button onclick="selectTimeframe('15m')" id="btn-tf-15m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-bold rounded-xs b-accent-bg">15M</button>
+      <button onclick="selectTimeframe('5m')" id="btn-tf-5m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs b-text-muted">5M</button>
+      <button onclick="selectTimeframe('1m')" id="btn-tf-1m" class="tf-btn px-1.5 py-0.5 text-[10.5px] font-semibold rounded-xs b-text-muted">1M</button>
     </div>
 
-    <!-- Layout Toggle: 1 Chart vs 3 Charts -->
-    <div class="flex items-center m-bg-main p-0.5 rounded-xs border m-border">
-      <button onclick="setLayoutMode(1)" id="btn-layout-1" class="px-2 py-0.5 text-[10px] font-bold rounded-xs m-accent-bg" title="Fokus 1 Pair">1 Chart</button>
-      <button onclick="setLayoutMode(3)" id="btn-layout-3" class="px-2 py-0.5 text-[10px] font-semibold rounded-xs m-text-muted" title="Tampilkan 3 Pair (XAUUSD, XAUEUR, XAGUSD)">3 Pair</button>
+    <!-- Layout Toggle: 1 Chart vs 3 Pair -->
+    <div class="flex items-center b-bg-main p-0.5 rounded-xs border b-border">
+      <button onclick="setLayoutMode(1)" id="btn-layout-1" class="px-2 py-0.5 text-[10px] font-bold rounded-xs b-accent-bg" title="Fokus 1 Pair">1 Chart</button>
+      <button onclick="setLayoutMode(3)" id="btn-layout-3" class="px-2 py-0.5 text-[10px] font-semibold rounded-xs b-text-muted" title="Tampilkan 3 Pair (XAUUSD, XAUEUR, XAGUSD)">3 Pair</button>
     </div>
   </div>
 
-  <!-- Right Controls: Replay, Templates, Style, Zen, Snap -->
+  <!-- Right Controls: Replay, Templates, Chart Style, Zen, Snap -->
   <div class="flex items-center space-x-1.5 shrink-0">
-    <button onclick="toggleReplayBar()" id="btn-toggle-replay" class="px-2 py-1 text-[10.5px] font-bold rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Mode Bar Replay & Session Replay">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
+    <button onclick="toggleReplayBar()" id="btn-toggle-replay" class="px-2 py-1 text-[10.5px] font-bold rounded-xs border b-border b-bg-sub b-text-main b-row flex items-center space-x-1" title="Mode Bar Replay & Session Replay">
+      <svg class="w-3.5 h-3.5 b-accent-text" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
       <span>Replay</span>
     </button>
 
-    <button onclick="toggleTemplatesModal()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Custom Drawing Templates (FVG, iFVG, OB, dll.)">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <button onclick="toggleTemplatesModal()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border b-border b-bg-sub b-text-main b-row flex items-center space-x-1" title="Custom Drawing Templates">
+      <svg class="w-3.5 h-3.5 b-blue-text" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       <span class="hidden md:inline">Templates</span>
     </button>
 
-    <button onclick="toggleStyleModal()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border m-border m-bg-sub m-text-main m-row flex items-center space-x-1" title="Ubah Background & Warna Chart">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg>
-      <span class="hidden sm:inline">Style / BG</span>
+    <button onclick="toggleStyleModal()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border b-border b-bg-sub b-text-main b-row flex items-center space-x-1" title="Ubah Background & Warna Chart">
+      <svg class="w-3.5 h-3.5 b-accent-text" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg>
+      <span class="hidden sm:inline">Chart Style</span>
     </button>
 
-    <button onclick="toggleZenMode()" class="px-2 py-1 text-[10.5px] font-bold rounded-xs border m-border m-bg-sub m-text-main m-row" title="Mode Zen Fokus Chart (Shortcut: Z)">
+    <button onclick="toggleZenMode()" class="px-2 py-1 text-[10.5px] font-bold rounded-xs border b-border b-bg-sub b-text-main b-row" title="Mode Zen Fokus Chart (Shortcut: Z)">
       Zen
     </button>
 
-    <button onclick="captureChartScreenshot()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border m-border m-bg-sub m-text-main m-row" title="Salin Screenshot Chart ke Clipboard">
+    <button onclick="captureChartScreenshot()" class="px-2 py-1 text-[10.5px] font-medium rounded-xs border b-border b-bg-sub b-text-main b-row" title="Salin Screenshot Chart ke Clipboard">
       Snap
     </button>
   </div>
 </header>
 
 <!-- REPLAY CONTROL BAR (2 CONCEPTS: BAR-BY-BAR & SESSION JUMP) -->
-<div id="replay-bar" class="hidden h-9 m-bg-sub border-b m-border px-3 flex items-center justify-between text-[11px] shrink-0 overflow-x-auto gap-3">
+<div id="replay-bar" class="hidden h-9 b-bg-sub border-b b-border px-3 flex items-center justify-between text-[11px] shrink-0 overflow-x-auto gap-3">
   <div class="flex items-center space-x-2 shrink-0">
-    <span class="px-1.5 py-0.5 text-[9.5px] font-bold rounded-xs m-accent-bg uppercase">Replay Engine</span>
+    <span class="px-1.5 py-0.5 text-[9.5px] font-bold rounded-xs b-accent-bg uppercase">Replay</span>
 
-    <!-- Mode 1: Cut / Bar-by-Bar -->
-    <button onclick="activateReplayCutMode()" id="btn-replay-cut" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-text-main font-semibold m-row" title="Klik candle mana saja di chart untuk memotong masa depan">
+    <button onclick="activateReplayCutMode()" id="btn-replay-cut" class="px-2 py-0.5 rounded-xs border b-border b-bg-main b-text-main font-semibold b-row" title="Klik candle di chart untuk menentukan titik mulai replay">
       ✂ Cut Bar
     </button>
 
-    <div class="flex items-center space-x-1 m-bg-main border m-border rounded-xs px-1 py-0.5">
-      <button onclick="stepReplay(-1)" class="px-1.5 py-0.2 m-row rounded-xs font-bold" title="Mundur 1 Bar">‹</button>
-      <button onclick="toggleReplayPlay()" id="btn-replay-play" class="px-2 py-0.2 m-accent-bg rounded-xs font-bold">▶ Play</button>
-      <button onclick="stepReplay(1)" class="px-1.5 py-0.2 m-row rounded-xs font-bold" title="Maju 1 Bar (+1 Candle)">Step ›</button>
+    <div class="flex items-center space-x-1 b-bg-main border b-border rounded-xs px-1 py-0.5">
+      <button onclick="stepReplay(-1)" class="px-1.5 py-0.2 b-row rounded-xs font-bold" title="Mundur 1 Bar">‹</button>
+      <button onclick="toggleReplayPlay()" id="btn-replay-play" class="px-2 py-0.2 b-accent-bg rounded-xs font-bold">▶ Play</button>
+      <button onclick="stepReplay(1)" class="px-1.5 py-0.2 b-row rounded-xs font-bold" title="Maju 1 Bar (+1 Candle)">Step ›</button>
       <select id="replay-speed" onchange="updateReplaySpeed()" class="text-[10px] border-0 bg-transparent font-bold px-1">
         <option value="1200">0.5x</option>
         <option value="700" selected>1x</option>
@@ -153,36 +158,35 @@
       </select>
     </div>
 
-    <span class="m-text-muted opacity-40">|</span>
+    <span class="b-text-muted opacity-40">|</span>
 
-    <!-- Mode 2: Session Block Replay -->
     <div class="flex items-center space-x-1 shrink-0">
-      <span class="text-[10px] font-bold m-text-muted">Session Replay:</span>
-      <button onclick="jumpToSessionReplay('ASIA')" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-row text-[10px] font-semibold">Asia</button>
-      <button onclick="jumpToSessionReplay('LONDON')" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-row text-[10px] font-semibold">London</button>
-      <button onclick="jumpToSessionReplay('NY')" class="px-2 py-0.5 rounded-xs border m-border m-bg-main m-row text-[10px] font-semibold">New York</button>
+      <span class="text-[10px] font-bold b-text-muted">Session Replay:</span>
+      <button onclick="jumpToSessionReplay('ASIA')" class="px-2 py-0.5 rounded-xs border b-border b-bg-main b-row text-[10px] font-semibold">Asia</button>
+      <button onclick="jumpToSessionReplay('LONDON')" class="px-2 py-0.5 rounded-xs border b-border b-bg-main b-row text-[10px] font-semibold">London</button>
+      <button onclick="jumpToSessionReplay('NY')" class="px-2 py-0.5 rounded-xs border b-border b-bg-main b-row text-[10px] font-semibold">New York</button>
     </div>
   </div>
 
   <div class="flex items-center space-x-2 shrink-0">
-    <span id="replay-status-txt" class="text-[10px] font-bold m-text-muted tabular-nums">Live / Full Data</span>
-    <button onclick="exitReplayMode()" class="px-2 py-0.5 rounded-xs bg-[#424c45] text-[#f4f5f9] text-[10px] font-bold">Reset Live</button>
+    <span id="replay-status-txt" class="text-[10px] font-bold b-text-muted tabular-nums">Live / Full Data</span>
+    <button onclick="exitReplayMode()" class="px-2 py-0.5 rounded-xs b-blue-bg text-[10px] font-bold">Reset Live</button>
   </div>
 </div>
 
 <!-- ZEN EXIT FLOATING PILL -->
-<button id="zen-exit-btn" onclick="toggleZenMode()" class="hidden fixed top-2.5 right-3 z-50 px-2.5 py-1 rounded-xs text-[10px] font-bold shadow-lg border m-border m-bg-panel m-text-main opacity-75 hover:opacity-100">
+<button id="zen-exit-btn" onclick="toggleZenMode()" class="hidden fixed top-2.5 right-3 z-50 px-2.5 py-1 rounded-xs text-[10px] font-bold shadow-lg border b-border b-bg-panel b-accent-text opacity-85 hover:opacity-100">
   Exit Zen (Z)
 </button>
 
 <!-- TOAST BANNER -->
-<div id="toast-banner" class="hidden fixed bottom-4 right-4 z-50 px-3 py-1.5 rounded-xs text-xs font-bold shadow-xl border m-border m-bg-panel m-text-main"></div>
+<div id="toast-banner" class="hidden fixed bottom-4 right-4 z-50 px-3 py-1.5 rounded-xs text-xs font-bold shadow-xl border b-border b-bg-panel b-accent-text"></div>
 
 <!-- MAIN WORKSPACE -->
 <div class="flex-1 flex relative overflow-hidden">
 
-  <!-- LEFT DRAWING TOOLBAR -->
-  <aside id="left-toolbar" class="w-10 m-bg-panel border-r m-border flex flex-col items-center py-1.5 space-y-1 shrink-0 z-20 overflow-y-auto">
+  <!-- LEFT DRAWING TOOLBAR (BLOOMBERG DARK) -->
+  <aside id="left-toolbar" class="w-10 b-bg-panel border-r b-border flex flex-col items-center py-1.5 space-y-1 shrink-0 z-20 overflow-y-auto">
     <button onclick="setDrawTool('cursor')" id="tool-cursor" class="tool-btn active" title="Cursor / Pilih Objek (Esc)">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>
     </button>
@@ -210,83 +214,80 @@
     <button onclick="setDrawTool('rr_short')" id="tool-rr_short" class="tool-btn" title="Short Position (SL / Entry / TP bebas geser)">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 4h16v8H4z" stroke-dasharray="2 2"/><path d="M4 12h16v8H4z"/></svg>
     </button>
-    <button onclick="setDrawTool('measure')" id="tool-measure" class="tool-btn" title="Penggaris Ukur Pips/Poin & Bars">
+    <button onclick="setDrawTool('measure')" id="tool-measure" class="tool-btn" title="Penggaris Ukur Poin & Bars">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2"/></svg>
     </button>
     <button onclick="setDrawTool('text')" id="tool-text" class="tool-btn" title="Text Label (Atas / Tengah / Bawah)">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
     </button>
 
-    <div class="w-5 border-t m-border my-0.5"></div>
+    <div class="w-5 b-border border-t my-0.5"></div>
 
     <button onclick="toggleMagnetLock()" id="tool-magnet" class="tool-btn" title="Toggle Magnet Permanen (Atau cukup tahan Ctrl saat gambar)">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"/><path d="m5 8 4 4"/><path d="m12 15 4 4"/></svg>
     </button>
     <label class="tool-btn cursor-pointer" title="Default Warna Stroke">
-      <span id="default-color-dot" class="w-3.5 h-3.5 rounded-full border border-black/30" style="background-color:#424c45"></span>
+      <span id="default-color-dot" class="w-3.5 h-3.5 rounded-full border border-white/40" style="background-color:#424c45"></span>
       <input type="color" id="default-color-input" value="#424c45" class="hidden" onchange="updateDefaultStroke(this.value)">
     </label>
     <button onclick="toggleHideDrawings()" id="tool-hide-draw" class="tool-btn" title="Sembunyikan/Tampilkan Semua Gambar">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
-    <button onclick="clearAllDrawings()" class="tool-btn hover:text-red-700" title="Hapus Semua Gambar di Pair & TF ini">
+    <button onclick="clearAllDrawings()" class="tool-btn hover:text-red-500" title="Hapus Semua Gambar di Pair & TF ini">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
     </button>
   </aside>
 
   <!-- CENTER CHART WORKSPACE -->
-  <div class="flex-1 flex flex-col relative overflow-hidden">
+  <div class="flex-1 flex flex-col relative overflow-hidden b-bg-main">
 
-    <!-- PRIMARY LEGEND BAR -->
-    <div id="primary-legend" class="px-3 py-1 border-b m-border m-bg-main flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+    <!-- PRIMARY LEGEND BAR (BLOOMBERG DARK) -->
+    <div id="primary-legend" class="px-3 py-1 border-b b-border b-bg-main flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
       <div class="flex items-center space-x-2.5">
-        <span id="leg-pair" class="font-bold text-sm tracking-wider m-text-main">XAUUSD</span>
-        <span id="leg-tf" class="px-1.5 py-0.5 rounded-xs m-bg-sub text-[10px] font-bold">15M</span>
-        <span id="leg-price" class="font-bold tabular-nums">-</span>
+        <span id="leg-pair" class="font-bold text-sm tracking-wider b-accent-text">XAUUSD</span>
+        <span id="leg-tf" class="px-1.5 py-0.5 rounded-xs b-bg-sub text-[10px] font-bold b-text-muted">15M</span>
+        <span id="leg-price" class="font-bold b-text-main tabular-nums">-</span>
         <span id="leg-chg" class="font-semibold tabular-nums">-</span>
-        <span id="leg-div-badge" class="hidden px-2 py-0.5 rounded-xs text-[10px] font-bold m-bg-sub border m-border">-</span>
-        <div class="hidden md:flex items-center space-x-2 text-[11px] m-text-muted pl-2 border-l m-border tabular-nums">
-          <span>O <b id="leg-o" class="font-semibold m-text-main">-</b></span>
-          <span>H <b id="leg-h" class="font-semibold m-text-main">-</b></span>
-          <span>L <b id="leg-l" class="font-semibold m-text-main">-</b></span>
-          <span>C <b id="leg-c" class="font-semibold m-text-main">-</b></span>
+        <span id="leg-div-badge" class="hidden px-2 py-0.5 rounded-xs text-[10px] font-bold b-bg-sub b-blue-text border b-border">-</span>
+        <div class="hidden md:flex items-center space-x-2 text-[11px] b-text-muted pl-2 border-l b-border tabular-nums">
+          <span>O <b id="leg-o" class="font-normal b-text-main">-</b></span>
+          <span>H <b id="leg-h" class="font-normal b-text-main">-</b></span>
+          <span>L <b id="leg-l" class="font-normal b-text-main">-</b></span>
+          <span>C <b id="leg-c" class="font-normal b-text-main">-</b></span>
         </div>
       </div>
 
-      <div class="flex items-center space-x-2 text-[10px] m-text-muted">
-        <span class="hidden lg:inline">Line: <b>Shift</b>=Horizontal · <b>Ctrl</b>=Magnet</span>
-        <button onclick="zoomChart(90)" class="px-1.5 py-0.5 rounded-xs m-bg-sub border m-border font-semibold m-text-main m-row">Focus</button>
-        <button onclick="fitAllChart()" class="px-1.5 py-0.5 rounded-xs m-bg-sub border m-border font-semibold m-text-main m-row">Fit</button>
+      <div class="flex items-center space-x-2 text-[10px] b-text-muted">
+        <span class="hidden lg:inline">Line: <b class="b-text-main">Shift</b>=Horizontal · <b class="b-text-main">Ctrl</b>=Magnet</span>
+        <button onclick="zoomChart(90)" class="px-1.5 py-0.5 rounded-xs b-bg-sub border b-border font-semibold b-text-main b-row">Focus</button>
+        <button onclick="fitAllChart()" class="px-1.5 py-0.5 rounded-xs b-bg-sub border b-border font-semibold b-text-main b-row">Fit</button>
       </div>
     </div>
 
     <!-- DRAW HINT BAR -->
-    <div id="draw-hint-bar" class="hidden m-bg-sub border-b m-border px-3 py-1 text-[11px] font-semibold m-text-main flex items-center justify-between shrink-0">
+    <div id="draw-hint-bar" class="hidden b-bg-sub border-b b-border px-3 py-1 text-[11px] font-semibold b-accent-text flex items-center justify-between shrink-0">
       <span id="draw-hint-text">Klik titik pertama pada chart...</span>
       <button onclick="setDrawTool('cursor')" class="text-[10px] underline">Batal (Esc)</button>
     </div>
 
-    <!-- TRADINGVIEW-STYLE FLOATING OBJECT TOOLBAR -->
-    <div id="floating-obj-toolbar" class="hidden absolute top-11 left-1/2 -translate-x-1/2 z-30 m-bg-panel border m-border rounded-xs shadow-xl px-2.5 py-1.5 flex flex-wrap items-center gap-2 text-[11px]">
-      <span id="flt-obj-label" class="font-bold uppercase text-[10px] pr-1.5 border-r m-border">OBJECT</span>
+    <!-- FLOATING OBJECT TOOLBAR (BLOOMBERG DARK) -->
+    <div id="floating-obj-toolbar" class="hidden absolute top-11 left-1/2 -translate-x-1/2 z-30 b-bg-panel border b-border rounded-xs shadow-2xl px-2.5 py-1.5 flex flex-wrap items-center gap-2 text-[11px]">
+      <span id="flt-obj-label" class="font-bold b-accent-text uppercase text-[10px] pr-1.5 border-r b-border">OBJECT</span>
 
-      <!-- Stroke Color -->
       <label class="flex items-center space-x-1 cursor-pointer" title="Warna Garis / Teks">
-        <span class="text-[9.5px] m-text-muted">Stroke</span>
+        <span class="text-[9.5px] b-text-muted">Stroke</span>
         <input type="color" id="obj-stroke-col" onchange="updateSelectedProp('color', this.value)" class="w-5 h-5 border-0 p-0 bg-transparent cursor-pointer">
       </label>
 
-      <!-- Fill Color & Opacity (for Box / RR) -->
       <label id="wrap-obj-fill" class="flex items-center space-x-1 cursor-pointer" title="Warna Isi (Fill)">
-        <span class="text-[9.5px] m-text-muted">Fill</span>
+        <span class="text-[9.5px] b-text-muted">Fill</span>
         <input type="color" id="obj-fill-col" onchange="updateSelectedProp('fillColor', this.value)" class="w-5 h-5 border-0 p-0 bg-transparent cursor-pointer">
       </label>
       <div id="wrap-obj-alpha" class="flex items-center space-x-1" title="Opasitas Fill (%)">
         <input type="number" id="obj-fill-alpha" min="0" max="100" step="5" onchange="updateSelectedProp('fillAlpha', Number(this.value)/100)" class="w-11 px-1 py-0.5 rounded-xs text-[10px] text-right tabular-nums">
-        <span class="text-[9.5px] m-text-muted">%</span>
+        <span class="text-[9.5px] b-text-muted">%</span>
       </div>
 
-      <!-- Line Width & Style -->
       <select id="obj-width" onchange="updateSelectedProp('width', parseFloat(this.value))" class="px-1 py-0.5 rounded-xs text-[10px]">
         <option value="1">1px</option>
         <option value="1.5">1.5px</option>
@@ -299,8 +300,7 @@
         <option value="2 3">Dotted</option>
       </select>
 
-      <!-- Text & Position (Atas / Tengah / Bawah) -->
-      <button onclick="promptSelectedText()" class="px-2 py-0.5 rounded-xs m-bg-sub border m-border font-semibold m-row" title="Ketik atau ubah label teks pada objek ini">
+      <button onclick="promptSelectedText()" class="px-2 py-0.5 rounded-xs b-bg-sub border b-border font-semibold b-row" title="Ketik atau ubah label teks pada objek ini">
         Teks
       </button>
       <select id="obj-text-pos" onchange="updateSelectedProp('textPos', this.value)" class="px-1.5 py-0.5 rounded-xs text-[10px]" title="Posisi Teks (Atas / Tengah / Bawah)">
@@ -309,55 +309,54 @@
         <option value="bottom">Teks: Bawah</option>
       </select>
 
-      <!-- Save As Custom Template -->
-      <button onclick="saveSelectedAsTemplate()" class="px-2 py-0.5 rounded-xs m-accent-bg font-bold" title="Simpan gaya & teks ini sebagai Template">
+      <button onclick="saveSelectedAsTemplate()" class="px-2 py-0.5 rounded-xs b-accent-bg font-bold" title="Simpan gaya & teks ini sebagai Template">
         + Template
       </button>
 
-      <button onclick="deleteSelectedDrawing()" class="px-2 py-0.5 rounded-xs bg-[#424c45]/20 text-[#262c28] font-bold hover:bg-[#424c45]/35" title="Hapus (Del)">
+      <button onclick="deleteSelectedDrawing()" class="px-2 py-0.5 rounded-xs bg-red-600/20 text-red-400 font-bold hover:bg-red-600/30" title="Hapus (Del)">
         Hapus
       </button>
-      <button onclick="deselectDrawing()" class="m-text-muted px-1">✕</button>
+      <button onclick="deselectDrawing()" class="b-text-muted px-1">✕</button>
     </div>
 
-    <!-- CHART AREA: SINGLE OR 3-PAIR GRID -->
-    <div id="charts-grid" class="flex-1 flex w-full h-full relative overflow-hidden">
+    <!-- CHART AREA: SINGLE OR 3-PAIR GRID (WHITE OLIVE DEFAULT INSIDE CHART) -->
+    <div id="charts-grid" class="flex-1 flex w-full h-full relative overflow-hidden" style="background-color: var(--chart-bg);">
       <!-- PANE 1 (PRIMARY + SVG DRAWING LAYER) -->
       <div id="pane-1" class="flex-1 h-full relative overflow-hidden">
-        <div id="pane-1-badge" class="hidden absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs m-bg-panel/90 border m-border text-[10px] font-bold flex items-center space-x-1.5">
+        <div id="pane-1-badge" class="hidden absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs b-bg-panel/90 border b-border text-[10px] font-bold flex items-center space-x-1.5">
           <select id="pane-1-pair" onchange="changeTriplePanePair(0, this.value)" class="bg-transparent border-0 font-bold text-[10px] p-0">
             <option value="XAUUSD" selected>XAUUSD</option>
             <option value="XAUEUR">XAUEUR</option>
             <option value="XAGUSD">XAGUSD</option>
           </select>
-          <span id="pane-1-price" class="tabular-nums m-text-muted">-</span>
+          <span id="pane-1-price" class="tabular-nums b-accent-text">-</span>
         </div>
         <div id="chart-container-1" class="w-full h-full"></div>
         <svg id="drawing-svg" class="absolute inset-0 w-full h-full z-10"></svg>
       </div>
 
       <!-- PANE 2 (3-PAIR MODE) -->
-      <div id="pane-2" class="hidden flex-1 h-full border-l m-border relative overflow-hidden">
-        <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs m-bg-panel/90 border m-border text-[10px] font-bold flex items-center space-x-1.5">
+      <div id="pane-2" class="hidden flex-1 h-full border-l b-border relative overflow-hidden">
+        <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs b-bg-panel/90 border b-border text-[10px] font-bold flex items-center space-x-1.5">
           <select id="pane-2-pair" onchange="changeTriplePanePair(1, this.value)" class="bg-transparent border-0 font-bold text-[10px] p-0">
             <option value="XAUUSD">XAUUSD</option>
             <option value="XAUEUR" selected>XAUEUR</option>
             <option value="XAGUSD">XAGUSD</option>
           </select>
-          <span id="pane-2-price" class="tabular-nums m-text-muted">-</span>
+          <span id="pane-2-price" class="tabular-nums b-accent-text">-</span>
         </div>
         <div id="chart-container-2" class="w-full h-full"></div>
       </div>
 
       <!-- PANE 3 (3-PAIR MODE) -->
-      <div id="pane-3" class="hidden flex-1 h-full border-l m-border relative overflow-hidden">
-        <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs m-bg-panel/90 border m-border text-[10px] font-bold flex items-center space-x-1.5">
+      <div id="pane-3" class="hidden flex-1 h-full border-l b-border relative overflow-hidden">
+        <div class="absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs b-bg-panel/90 border b-border text-[10px] font-bold flex items-center space-x-1.5">
           <select id="pane-3-pair" onchange="changeTriplePanePair(2, this.value)" class="bg-transparent border-0 font-bold text-[10px] p-0">
             <option value="XAUUSD">XAUUSD</option>
             <option value="XAUEUR">XAUEUR</option>
             <option value="XAGUSD" selected>XAGUSD</option>
           </select>
-          <span id="pane-3-price" class="tabular-nums m-text-muted">-</span>
+          <span id="pane-3-price" class="tabular-nums b-accent-text">-</span>
         </div>
         <div id="chart-container-3" class="w-full h-full"></div>
       </div>
@@ -365,82 +364,81 @@
   </div>
 </div>
 
-<!-- STYLE & BACKGROUND CUSTOMIZER MODAL -->
-<div id="style-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div class="m-bg-panel border m-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
-    <div class="flex items-center justify-between border-b m-border pb-2">
-      <h3 class="font-bold text-sm uppercase">Appearance & Background</h3>
-      <button onclick="toggleStyleModal()" class="m-text-muted">✕</button>
+<!-- CHART STYLE & BACKGROUND MODAL (BLOOMBERG DARK) -->
+<div id="style-modal" class="hidden fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+  <div class="b-bg-panel border b-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
+    <div class="flex items-center justify-between border-b b-border pb-2">
+      <h3 class="font-bold text-sm b-accent-text uppercase">Chart Background & Candle Style</h3>
+      <button onclick="toggleStyleModal()" class="b-text-muted">✕</button>
     </div>
 
-    <!-- Quick Presets -->
     <div>
-      <span class="block text-[10px] font-bold m-text-muted uppercase mb-1.5">Theme Presets</span>
+      <span class="block text-[10px] font-bold b-text-muted uppercase mb-1.5">Chart Theme Presets</span>
       <div class="grid grid-cols-3 gap-1.5">
-        <button onclick="applyPresetTheme('white_olive')" class="px-2 py-1.5 rounded-xs border m-border m-bg-main font-bold text-[10.5px] m-row">White Olive (Default)</button>
-        <button onclick="applyPresetTheme('charcoal_desk')" class="px-2 py-1.5 rounded-xs border m-border m-bg-main font-bold text-[10.5px] m-row">Charcoal Desk</button>
-        <button onclick="applyPresetTheme('pure_paper')" class="px-2 py-1.5 rounded-xs border m-border m-bg-main font-bold text-[10.5px] m-row">Pure Paper</button>
+        <button onclick="applyPresetTheme('white_olive')" class="px-2 py-1.5 rounded-xs border b-border b-bg-sub font-bold text-[10.5px] b-row">White Olive</button>
+        <button onclick="applyPresetTheme('charcoal_desk')" class="px-2 py-1.5 rounded-xs border b-border b-bg-sub font-bold text-[10.5px] b-row">Charcoal</button>
+        <button onclick="applyPresetTheme('pure_paper')" class="px-2 py-1.5 rounded-xs border b-border b-bg-sub font-bold text-[10.5px] b-row">Pure Paper</button>
       </div>
     </div>
 
     <div class="grid grid-cols-2 gap-2">
-      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
-        <span>Background</span>
-        <input type="color" id="st-bg-main" onchange="applyCustomStyle()">
+      <label class="flex items-center justify-between b-bg-sub px-2.5 py-1.5 rounded-xs border b-border">
+        <span>Chart BG</span>
+        <input type="color" id="st-chart-bg" onchange="applyCustomStyle()">
       </label>
-      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+      <label class="flex items-center justify-between b-bg-sub px-2.5 py-1.5 rounded-xs border b-border">
         <span>Grid Lines</span>
         <input type="color" id="st-grid-col" onchange="applyCustomStyle()">
       </label>
-      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+      <label class="flex items-center justify-between b-bg-sub px-2.5 py-1.5 rounded-xs border b-border">
         <span>Bull Candle</span>
         <input type="color" id="st-bull-body" onchange="applyCustomStyle()">
       </label>
-      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+      <label class="flex items-center justify-between b-bg-sub px-2.5 py-1.5 rounded-xs border b-border">
         <span>Bear Candle</span>
         <input type="color" id="st-bear-body" onchange="applyCustomStyle()">
       </label>
-      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
-        <span>Candle Border/Wick</span>
+      <label class="flex items-center justify-between b-bg-sub px-2.5 py-1.5 rounded-xs border b-border">
+        <span>Wick & Border</span>
         <input type="color" id="st-wick-col" onchange="applyCustomStyle()">
       </label>
-      <label class="flex items-center justify-between m-bg-sub px-2.5 py-1.5 rounded-xs border m-border">
+      <label class="flex items-center justify-between b-bg-sub px-2.5 py-1.5 rounded-xs border b-border">
         <span>Scale Text</span>
         <input type="color" id="st-text-col" onchange="applyCustomStyle()">
       </label>
     </div>
 
-    <div class="flex items-center justify-between pt-2 border-t m-border">
+    <div class="flex items-center justify-between pt-2 border-t b-border">
       <label class="flex items-center space-x-2 cursor-pointer">
         <input type="checkbox" id="st-show-grid" onchange="applyCustomStyle()">
         <span>Tampilkan Grid</span>
       </label>
-      <button onclick="toggleStyleModal()" class="px-4 py-1 rounded-xs m-accent-bg font-bold">Selesai</button>
+      <button onclick="toggleStyleModal()" class="px-4 py-1 rounded-xs b-accent-bg font-bold">Selesai</button>
     </div>
   </div>
 </div>
 
-<!-- CUSTOM DRAWING TEMPLATES MODAL -->
-<div id="templates-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div class="m-bg-panel border m-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
-    <div class="flex items-center justify-between border-b m-border pb-2">
-      <h3 class="font-bold text-sm uppercase">Drawing Templates (White Olive & Custom)</h3>
-      <button onclick="toggleTemplatesModal()" class="m-text-muted">✕</button>
+<!-- CUSTOM DRAWING TEMPLATES MODAL (BLOOMBERG DARK) -->
+<div id="templates-modal" class="hidden fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+  <div class="b-bg-panel border b-border rounded-xs w-full max-w-md p-4 text-xs space-y-3 shadow-2xl">
+    <div class="flex items-center justify-between border-b b-border pb-2">
+      <h3 class="font-bold text-sm b-accent-text uppercase">Drawing Templates</h3>
+      <button onclick="toggleTemplatesModal()" class="b-text-muted">✕</button>
     </div>
-    <p class="text-[10.5px] m-text-muted">Pilih template untuk langsung menggambar dengan warna, opasitas, dan posisi teks preset, atau simpan objek yang sedang dipilih di chart menjadi template baru.</p>
+    <p class="text-[10.5px] b-text-muted">Pilih template untuk menggambar dengan warna, opasitas, dan posisi label teks preset, atau simpan objek terpilih menjadi template baru.</p>
 
     <div id="templates-list" class="max-h-64 overflow-y-auto space-y-1.5"></div>
 
-    <div class="flex justify-between items-center pt-2 border-t m-border">
-      <button onclick="resetDefaultTemplates()" class="text-[10px] m-text-muted hover:underline">Reset Preset Bawaan</button>
-      <button onclick="toggleTemplatesModal()" class="px-4 py-1 rounded-xs m-accent-bg font-bold">Tutup</button>
+    <div class="flex justify-between items-center pt-2 border-t b-border">
+      <button onclick="resetDefaultTemplates()" class="text-[10px] b-text-muted hover:underline">Reset Default</button>
+      <button onclick="toggleTemplatesModal()" class="px-4 py-1 rounded-xs b-accent-bg font-bold">Tutup</button>
     </div>
   </div>
 </div>
 
 <script>
 // ==========================================
-// 0. NAVIGATION FALLBACK TO IDX
+// 0. NAVIGATION BACK TO IDX
 // ==========================================
 function goBackToIdx(e) {
   if (e) e.preventDefault();
@@ -448,17 +446,13 @@ function goBackToIdx(e) {
 }
 
 // ==========================================
-// 1. WHITE OLIVE DEFAULT THEME & PRESETS
+// 1. CHART THEME PRESETS (WHITE OLIVE DEFAULT FOR CHART AREA)
 // ==========================================
-const whiteOlivePreset = {
-  bgMain: '#dbdbdb',
-  bgPanel: '#d2d2d2',
-  bgSub: '#c8c8c8',
-  borderMain: '#b0b4b1',
-  textMain: '#262c28',
-  textMuted: '#525c6d',
+const whiteOliveChartPreset = {
+  chartBg: '#dbdbdb',
   gridColor: '#cfd2cf',
   showGrid: false,
+  textColor: '#262c28',
   bullBody: '#f4f5f9',
   bullAlpha: 0.71,
   bearBody: '#424c45',
@@ -467,17 +461,13 @@ const whiteOlivePreset = {
   borderColor: '#424c45'
 };
 
-const themePresets = {
-  white_olive: { ...whiteOlivePreset },
+const chartThemePresets = {
+  white_olive: { ...whiteOliveChartPreset },
   charcoal_desk: {
-    bgMain: '#121417',
-    bgPanel: '#181b20',
-    bgSub: '#20242b',
-    borderMain: '#2d333d',
-    textMain: '#e5e7eb',
-    textMuted: '#9ca3af',
+    chartBg: '#121417',
     gridColor: '#1d2128',
     showGrid: true,
+    textColor: '#e5e7eb',
     bullBody: '#f4f5f9',
     bullAlpha: 0.90,
     bearBody: '#525c6d',
@@ -486,14 +476,10 @@ const themePresets = {
     borderColor: '#9ca3af'
   },
   pure_paper: {
-    bgMain: '#f4f5f9',
-    bgPanel: '#eaecf2',
-    bgSub: '#dfe2ea',
-    borderMain: '#c5cad6',
-    textMain: '#1e242b',
-    textMuted: '#525c6d',
+    chartBg: '#f4f5f9',
     gridColor: '#e4e7ef',
     showGrid: true,
+    textColor: '#1e242b',
     bullBody: '#ffffff',
     bullAlpha: 1.0,
     bearBody: '#424c45',
@@ -503,7 +489,7 @@ const themePresets = {
   }
 };
 
-let uiStyle = JSON.parse(localStorage.getItem('gozi_metals_style_v1')) || { ...whiteOlivePreset };
+let chartStyle = JSON.parse(localStorage.getItem('gozi_metals_chart_style_v1')) || { ...whiteOliveChartPreset };
 
 function hexToRgba(hex, alpha = 1) {
   const clean = hex.replace('#', '');
@@ -513,14 +499,8 @@ function hexToRgba(hex, alpha = 1) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function applyCssVars() {
-  const root = document.documentElement.style;
-  root.setProperty('--bg-main', uiStyle.bgMain);
-  root.setProperty('--bg-panel', uiStyle.bgPanel || uiStyle.bgMain);
-  root.setProperty('--bg-sub', uiStyle.bgSub || uiStyle.bgMain);
-  root.setProperty('--border-main', uiStyle.borderMain || '#9ca3af');
-  root.setProperty('--text-main', uiStyle.textMain);
-  root.setProperty('--text-muted', uiStyle.textMuted || uiStyle.textMain);
+function applyChartBgVar() {
+  document.documentElement.style.setProperty('--chart-bg', chartStyle.chartBg);
 }
 
 // ==========================================
@@ -529,19 +509,17 @@ function applyCssVars() {
 let metalsFeed = null;
 let primaryPair = 'XAUUSD';
 let activeTF = '15m';
-let layoutMode = 1; // 1 = Single Chart, 3 = 3-Pair (XAUUSD, XAUEUR, XAGUSD)
+let layoutMode = 1;
 let triplePairs = ['XAUUSD', 'XAUEUR', 'XAGUSD'];
 
 let charts = [null, null, null];
 let candleSeriesArr = [null, null, null];
 
-// Replay State
 let isReplayOpen = false;
 let isReplayCutSelecting = false;
-let replayCutIndex = null; // null = Live / Full data
+let replayCutIndex = null;
 let replayPlayTimer = null;
 
-// Drawing & Modifier Keys State
 let activeDrawTool = 'cursor';
 let activeTemplate = null;
 let defaultStrokeColor = '#424c45';
@@ -566,7 +544,7 @@ window.addEventListener('keydown', (e) => {
     deselectDrawing();
     if (isReplayCutSelecting) {
       isReplayCutSelecting = false;
-      document.getElementById('btn-replay-cut').classList.remove('m-accent-bg');
+      document.getElementById('btn-replay-cut').classList.remove('b-accent-bg');
     }
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedDrawId) {
     deleteSelectedDrawing();
@@ -595,63 +573,14 @@ function showToast(msg) {
 }
 
 // ==========================================
-// 3. CUSTOM TEMPLATES (WHITE OLIVE PALETTE)
+// 3. CUSTOM TEMPLATES
 // ==========================================
 const defaultTemplates = [
-  {
-    id: 'tpl_fvg',
-    name: 'FVG Zone (#525c6d | 10%)',
-    type: 'box',
-    color: '#525c6d',
-    fillColor: '#525c6d',
-    fillAlpha: 0.10,
-    width: 1,
-    dash: '',
-    text: 'FVG',
-    textPos: 'middle'
-  },
-  {
-    id: 'tpl_ifvg',
-    name: 'iFVG Zone (#424c45 | 28%)',
-    type: 'box',
-    color: '#424c45',
-    fillColor: '#424c45',
-    fillAlpha: 0.28,
-    width: 1.5,
-    dash: '',
-    text: 'iFVG',
-    textPos: 'top'
-  },
-  {
-    id: 'tpl_bsl',
-    name: 'BSL Liquidity Line (Teks Atas)',
-    type: 'line',
-    color: '#424c45',
-    width: 1.5,
-    dash: '6 4',
-    text: 'BSL',
-    textPos: 'top'
-  },
-  {
-    id: 'tpl_ssl',
-    name: 'SSL Liquidity Line (Teks Bawah)',
-    type: 'line',
-    color: '#424c45',
-    width: 1.5,
-    dash: '6 4',
-    text: 'SSL',
-    textPos: 'bottom'
-  },
-  {
-    id: 'tpl_cisd',
-    name: 'CISD Level (Teks Tengah)',
-    type: 'line',
-    color: '#525c6d',
-    width: 2,
-    dash: '',
-    text: 'CISD',
-    textPos: 'middle'
-  }
+  { id: 'tpl_fvg', name: 'FVG Zone (#525c6d | 10%)', type: 'box', color: '#525c6d', fillColor: '#525c6d', fillAlpha: 0.10, width: 1, dash: '', text: 'FVG', textPos: 'middle' },
+  { id: 'tpl_ifvg', name: 'iFVG Zone (#424c45 | 28%)', type: 'box', color: '#424c45', fillColor: '#424c45', fillAlpha: 0.28, width: 1.5, dash: '', text: 'iFVG', textPos: 'top' },
+  { id: 'tpl_bsl', name: 'BSL Line (Teks Atas)', type: 'line', color: '#424c45', width: 1.5, dash: '6 4', text: 'BSL', textPos: 'top' },
+  { id: 'tpl_ssl', name: 'SSL Line (Teks Bawah)', type: 'line', color: '#424c45', width: 1.5, dash: '6 4', text: 'SSL', textPos: 'bottom' },
+  { id: 'tpl_cisd', name: 'CISD Level (Teks Tengah)', type: 'line', color: '#525c6d', width: 2, dash: '', text: 'CISD', textPos: 'middle' }
 ];
 
 let customTemplates = JSON.parse(localStorage.getItem('gozi_metals_templates_v1')) || [...defaultTemplates];
@@ -664,7 +593,7 @@ function resetDefaultTemplates() {
   customTemplates = [...defaultTemplates];
   saveTemplatesStore();
   renderTemplatesModal();
-  showToast('Preset template White Olive dipulihkan.');
+  showToast('Preset template dipulihkan.');
 }
 
 function toggleTemplatesModal() {
@@ -676,17 +605,17 @@ function toggleTemplatesModal() {
 function renderTemplatesModal() {
   const wrap = document.getElementById('templates-list');
   wrap.innerHTML = customTemplates.map(tpl => `
-    <div class="flex items-center justify-between px-2.5 py-2 rounded-xs m-bg-sub border m-border">
+    <div class="flex items-center justify-between px-2.5 py-2 rounded-xs b-bg-sub border b-border">
       <div class="flex items-center space-x-2 min-w-0">
-        <span class="w-3.5 h-3.5 rounded-xs border border-black/30 shrink-0" style="background:${tpl.fillColor || tpl.color}"></span>
+        <span class="w-3.5 h-3.5 rounded-xs border border-white/30 shrink-0" style="background:${tpl.fillColor || tpl.color}"></span>
         <div class="truncate">
-          <div class="font-bold m-text-main truncate">${tpl.name}</div>
-          <div class="text-[9.5px] m-text-muted">${tpl.type.toUpperCase()} · Label: "${tpl.text || '-'}" (${tpl.textPos || 'top'})</div>
+          <div class="font-bold b-text-main truncate">${tpl.name}</div>
+          <div class="text-[9.5px] b-text-muted">${tpl.type.toUpperCase()} · Label: "${tpl.text || '-'}" (${tpl.textPos || 'top'})</div>
         </div>
       </div>
       <div class="flex items-center space-x-1.5 shrink-0">
-        <button onclick="useTemplate('${tpl.id}')" class="px-2.5 py-1 rounded-xs m-accent-bg font-bold text-[10px]">Pakai</button>
-        <button onclick="deleteTemplate('${tpl.id}')" class="px-1.5 py-1 rounded-xs m-bg-main border m-border text-[10px] hover:text-red-700">✕</button>
+        <button onclick="useTemplate('${tpl.id}')" class="px-2.5 py-1 rounded-xs b-accent-bg font-bold text-[10px]">Pakai</button>
+        <button onclick="deleteTemplate('${tpl.id}')" class="px-1.5 py-1 rounded-xs b-bg-main border b-border text-[10px] hover:text-red-400">✕</button>
       </div>
     </div>
   `).join('');
@@ -736,38 +665,38 @@ function saveSelectedAsTemplate() {
 function getChartOptions() {
   return {
     layout: {
-      background: { type: 'solid', color: uiStyle.bgMain },
-      textColor: uiStyle.textMain,
+      background: { type: 'solid', color: chartStyle.chartBg },
+      textColor: chartStyle.textColor,
       fontFamily: "'JetBrains Mono', monospace"
     },
     grid: {
-      vertLines: { visible: uiStyle.showGrid, color: uiStyle.gridColor },
-      horzLines: { visible: uiStyle.showGrid, color: uiStyle.gridColor }
+      vertLines: { visible: chartStyle.showGrid, color: chartStyle.gridColor },
+      horzLines: { visible: chartStyle.showGrid, color: chartStyle.gridColor }
     },
     crosshair: {
       mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: { color: uiStyle.textMuted, width: 1, style: 2, labelBackgroundColor: '#424c45' },
-      horzLine: { color: uiStyle.textMuted, width: 1, style: 2, labelBackgroundColor: '#424c45' }
+      vertLine: { color: '#424c45', width: 1, style: 2, labelBackgroundColor: '#090b0f' },
+      horzLine: { color: '#424c45', width: 1, style: 2, labelBackgroundColor: '#090b0f' }
     },
-    rightPriceScale: { borderColor: uiStyle.borderMain, autoScale: true, scaleMargins: { top: 0.08, bottom: 0.10 } },
-    timeScale: { borderColor: uiStyle.borderMain, timeVisible: true, rightOffset: 24 }
+    rightPriceScale: { borderColor: '#9ca3af', autoScale: true, scaleMargins: { top: 0.08, bottom: 0.10 } },
+    timeScale: { borderColor: '#9ca3af', timeVisible: true, rightOffset: 24 }
   };
 }
 
 function getCandleStyleOptions() {
   return {
-    upColor: hexToRgba(uiStyle.bullBody, uiStyle.bullAlpha),
-    downColor: hexToRgba(uiStyle.bearBody, uiStyle.bearAlpha),
-    wickUpColor: uiStyle.wickColor,
-    wickDownColor: uiStyle.wickColor,
+    upColor: hexToRgba(chartStyle.bullBody, chartStyle.bullAlpha),
+    downColor: hexToRgba(chartStyle.bearBody, chartStyle.bearAlpha),
+    wickUpColor: chartStyle.wickColor,
+    wickDownColor: chartStyle.wickColor,
     borderVisible: true,
-    borderUpColor: uiStyle.borderColor,
-    borderDownColor: uiStyle.borderColor
+    borderUpColor: chartStyle.borderColor,
+    borderDownColor: chartStyle.borderColor
   };
 }
 
 function initCharts() {
-  applyCssVars();
+  applyChartBgVar();
   const opts = getChartOptions();
   const cOpts = getCandleStyleOptions();
 
@@ -790,7 +719,6 @@ function initCharts() {
     }
   });
 
-  // Replay Cut Click Listener
   document.getElementById('chart-container-1').addEventListener('click', (e) => {
     if (isReplayCutSelecting) {
       const rect = document.getElementById('chart-container-1').getBoundingClientRect();
@@ -800,7 +728,7 @@ function initCharts() {
         const idx = Math.max(5, Math.min(rawCandles.length - 1, Math.round(logical)));
         replayCutIndex = idx;
         isReplayCutSelecting = false;
-        document.getElementById('btn-replay-cut').classList.remove('m-accent-bg');
+        document.getElementById('btn-replay-cut').classList.remove('b-accent-bg');
         renderAllPanes();
         showToast(`Replay dimulai dari bar ke-${idx + 1}`);
       }
@@ -826,8 +754,8 @@ function resizeAllCharts() {
 
 function setLayoutMode(mode) {
   layoutMode = mode;
-  document.getElementById('btn-layout-1').className = mode === 1 ? 'px-2 py-0.5 text-[10px] font-bold rounded-xs m-accent-bg' : 'px-2 py-0.5 text-[10px] font-semibold rounded-xs m-text-muted';
-  document.getElementById('btn-layout-3').className = mode === 3 ? 'px-2 py-0.5 text-[10px] font-bold rounded-xs m-accent-bg' : 'px-2 py-0.5 text-[10px] font-semibold rounded-xs m-text-muted';
+  document.getElementById('btn-layout-1').className = mode === 1 ? 'px-2 py-0.5 text-[10px] font-bold rounded-xs b-accent-bg' : 'px-2 py-0.5 text-[10px] font-semibold rounded-xs b-text-muted';
+  document.getElementById('btn-layout-3').className = mode === 3 ? 'px-2 py-0.5 text-[10px] font-bold rounded-xs b-accent-bg' : 'px-2 py-0.5 text-[10px] font-semibold rounded-xs b-text-muted';
 
   document.getElementById('pane-1-badge').classList.toggle('hidden', mode === 1);
   document.getElementById('pane-2').classList.toggle('hidden', mode === 1);
@@ -864,13 +792,13 @@ function changeTriplePanePair(paneIdx, pair) {
 function selectTimeframe(tf) {
   activeTF = tf;
   document.querySelectorAll('.tf-btn').forEach(b => {
-    b.classList.remove('m-accent-bg', 'font-bold');
-    b.classList.add('m-text-muted', 'font-semibold');
+    b.classList.remove('b-accent-bg', 'font-bold');
+    b.classList.add('b-text-muted', 'font-semibold');
   });
   const btn = document.getElementById(`btn-tf-${tf}`);
   if (btn) {
-    btn.classList.remove('m-text-muted', 'font-semibold');
-    btn.classList.add('m-accent-bg', 'font-bold');
+    btn.classList.remove('b-text-muted', 'font-semibold');
+    btn.classList.add('b-accent-bg', 'font-bold');
   }
   deselectDrawing();
   renderAllPanes();
@@ -898,22 +826,61 @@ function toggleZenMode() {
 }
 
 // ==========================================
-// 5. DATA RENDERING & REPLAY ENGINE (2 MODES)
+// 5. FEED PARSER (NO SINUS WAVE) & REPLAY ENGINE
 // ==========================================
-function generateFallbackCandles(pair, tf) {
+function extractFeedCandles(pair, tf) {
+  const pObj = metalsFeed?.pairs?.[pair];
+  if (!pObj) return null;
+
+  const candidates = [
+    pObj?.timeframes?.[tf]?.candles,
+    pObj?.[tf]?.candles,
+    pObj?.series?.[tf],
+    pObj?.candles
+  ];
+
+  for (const raw of candidates) {
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map(c => ({
+        time: c.time ?? c.t,
+        open: Number(c.open ?? c.o),
+        high: Number(c.high ?? c.h),
+        low: Number(c.low ?? c.l),
+        close: Number(c.close ?? c.c)
+      })).filter(x => x.time && !isNaN(x.open) && !isNaN(x.high) && !isNaN(x.low) && !isNaN(x.close));
+    }
+  }
+  return null;
+}
+
+function generatePriceActionCandles(pair, tf) {
+  const feedPrice = Number(metalsFeed?.pairs?.[pair]?.metrics?.price);
   const baseMap = { XAUUSD: 2680, XAUEUR: 2510, XAGUSD: 31.4 };
-  let price = baseMap[pair] || 2680;
+  let price = (!isNaN(feedPrice) && feedPrice > 0) ? feedPrice : (baseMap[pair] || 2680);
+
   const stepSec = { '1w': 604800, '1d': 86400, '4h': 14400, '1h': 3600, '15m': 900, '5m': 300, '1m': 60 }[tf] || 900;
   const now = Math.floor(Date.now() / 1000);
+  const isSilver = pair === 'XAGUSD';
+  const stepUnit = isSilver ? 0.04 : 1.4;
+
+  // Deterministic pseudo-random walk per pair+tf (bukan gelombang periodik)
+  let seed = 0;
+  for (const ch of `${pair}_${tf}`) seed = (seed * 31 + ch.charCodeAt(0)) % 2147483647;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+
   const out = [];
-  for (let i = 180; i >= 0; i--) {
+  for (let i = 160; i >= 0; i--) {
     const t = now - i * stepSec;
-    const vol = pair === 'XAGUSD' ? 0.14 : 3.2;
-    const o = Number(price.toFixed(2));
-    const d1 = (Math.sin(i * 0.37) + Math.cos(i * 0.19)) * vol;
-    const c = Number((o + d1).toFixed(2));
-    const h = Number((Math.max(o, c) + Math.abs(Math.sin(i)) * vol * 0.8).toFixed(2));
-    const l = Number((Math.min(o, c) - Math.abs(Math.cos(i)) * vol * 0.8).toFixed(2));
+    const o = Number(price.toFixed(isSilver ? 3 : 2));
+    const drift = (rand() - 0.485) * stepUnit * 2.2;
+    const c = Number(Math.max(0.1, o + drift).toFixed(isSilver ? 3 : 2));
+    const wickUp = rand() * stepUnit * 1.4;
+    const wickDn = rand() * stepUnit * 1.4;
+    const h = Number((Math.max(o, c) + wickUp).toFixed(isSilver ? 3 : 2));
+    const l = Number((Math.min(o, c) - wickDn).toFixed(isSilver ? 3 : 2));
     out.push({ time: t, open: o, high: h, low: l, close: c });
     price = c;
   }
@@ -921,12 +888,12 @@ function generateFallbackCandles(pair, tf) {
 }
 
 function getRawCandles(pair, tf) {
-  const arr = metalsFeed?.pairs?.[pair]?.timeframes?.[tf]?.candles;
-  if (arr && arr.length > 0) return arr;
-  if (!window._fallbackCache) window._fallbackCache = {};
+  const fromFeed = extractFeedCandles(pair, tf);
+  if (fromFeed && fromFeed.length > 0) return fromFeed;
+  if (!window._paCache) window._paCache = {};
   const k = `${pair}_${tf}`;
-  if (!window._fallbackCache[k]) window._fallbackCache[k] = generateFallbackCandles(pair, tf);
-  return window._fallbackCache[k];
+  if (!window._paCache[k]) window._paCache[k] = generatePriceActionCandles(pair, tf);
+  return window._paCache[k];
 }
 
 function getVisibleCandles(pair, tf) {
@@ -947,7 +914,9 @@ function renderAllPanes() {
     const prev = p1Candles[p1Candles.length - 2] || last;
     const chgPct = (((last.close - prev.close) / prev.close) * 100).toFixed(2);
     document.getElementById('leg-price').textContent = last.close;
-    document.getElementById('leg-chg').textContent = `${chgPct >= 0 ? '+' : ''}${chgPct}%`;
+    const chgEl = document.getElementById('leg-chg');
+    chgEl.textContent = `${chgPct >= 0 ? '+' : ''}${chgPct}%`;
+    chgEl.style.color = chgPct >= 0 ? 'var(--bull)' : 'var(--bear)';
     document.getElementById('leg-o').textContent = last.open;
     document.getElementById('leg-h').textContent = last.high;
     document.getElementById('leg-l').textContent = last.low;
@@ -955,7 +924,6 @@ function renderAllPanes() {
     document.getElementById('pane-1-price').textContent = last.close;
   }
 
-  // Divergence status badge if present in feed
   const divInfo = metalsFeed?.divergence?.[activeTF];
   const divBadge = document.getElementById('leg-div-badge');
   if (divInfo?.vs_xagusd) {
@@ -980,17 +948,16 @@ function renderAllPanes() {
   renderDrawings();
 }
 
-// Replay Controls
 function toggleReplayBar() {
   isReplayOpen = !isReplayOpen;
   document.getElementById('replay-bar').classList.toggle('hidden', !isReplayOpen);
-  document.getElementById('btn-toggle-replay').classList.toggle('m-accent-bg', isReplayOpen);
+  document.getElementById('btn-toggle-replay').classList.toggle('b-accent-bg', isReplayOpen);
   setTimeout(resizeAllCharts, 30);
 }
 
 function activateReplayCutMode() {
   isReplayCutSelecting = !isReplayCutSelecting;
-  document.getElementById('btn-replay-cut').classList.toggle('m-accent-bg', isReplayCutSelecting);
+  document.getElementById('btn-replay-cut').classList.toggle('b-accent-bg', isReplayCutSelecting);
   if (isReplayCutSelecting) {
     setDrawTool('cursor');
     showToast('Klik pada candle di chart untuk memulai Bar Replay...');
@@ -1034,16 +1001,13 @@ function updateReplaySpeed() {
   }
 }
 
-// Concept 2: Session Block Replay (Asia / London / NY)
 function jumpToSessionReplay(sessionName) {
   stopReplayTimer();
   const raw = getRawCandles(primaryPair, activeTF);
   if (!raw.length) return;
 
-  // Target UTC start hour: Asia ~00:00 UTC, London ~07:00 UTC, NY ~13:00 UTC
   const targetHourUTC = { ASIA: 0, LONDON: 7, NY: 13 }[sessionName] ?? 7;
   let foundIdx = -1;
-
   for (let i = raw.length - 2; i >= Math.max(5, raw.length - 120); i--) {
     const t = raw[i].time;
     const d = typeof t === 'number' ? new Date(t * 1000) : new Date(t);
@@ -1052,18 +1016,17 @@ function jumpToSessionReplay(sessionName) {
       break;
     }
   }
-
   replayCutIndex = foundIdx !== -1 ? foundIdx : Math.max(10, raw.length - 24);
   renderAllPanes();
   zoomChart(65);
-  showToast(`Session Replay: ${sessionName} Open`);
+  showToast(`Session Replay: ${sessionName}`);
 }
 
 function exitReplayMode() {
   stopReplayTimer();
   isReplayCutSelecting = false;
   replayCutIndex = null;
-  document.getElementById('btn-replay-cut').classList.remove('m-accent-bg');
+  document.getElementById('btn-replay-cut').classList.remove('b-accent-bg');
   renderAllPanes();
   zoomChart(90);
 }
@@ -1219,7 +1182,6 @@ function pixelToCoord(x, y, forceMagnet = false) {
   const barIdx = Math.round(logical);
   let finalPrice = Number(rawPrice.toFixed(2));
 
-  // Magnet if Ctrl held OR permanent magnet toggled
   const useMagnet = forceMagnet || isCtrlDown || isMagnetLocked;
   if (useMagnet && barIdx >= 0 && barIdx < candles.length) {
     const c = candles[barIdx];
@@ -1444,7 +1406,6 @@ svgCanvas.addEventListener('click', (e) => {
     pendingPoint = pt;
     document.getElementById('draw-hint-text').textContent = 'Klik titik kedua (Shift = Horizontal rata · Ctrl = Magnet)...';
   } else {
-    // Shift locks Line / Ray perfectly horizontal (price2 = price1)
     if ((activeDrawTool === 'line' || activeDrawTool === 'ray') && (e.shiftKey || isShiftDown)) {
       pt.price = pendingPoint.price;
     }
@@ -1503,7 +1464,6 @@ function renderObjLabel(x, y, text, color) {
 function renderDrawings() {
   svgCanvas.innerHTML = '';
 
-  // Measure preview
   if (measurePreview) {
     const a = coordToPixel(measurePreview.p1);
     const b = coordToPixel(measurePreview.p2);
@@ -1563,7 +1523,6 @@ function renderDrawings() {
         ${renderObjLabel(a.x, a.y + dy, item.text, col)}
       `;
     } else if (item.type === 'rr_long' || item.type === 'rr_short') {
-      // White Olive palette: TP #424c45 (24%), SL #525c6d (19%)
       const xStart = charts[0].timeScale().logicalToCoordinate(item.p1.logical);
       const xEnd = charts[0].timeScale().logicalToCoordinate(item.p2.logical);
       const tpY = candleSeriesArr[0].priceToCoordinate(item.tpPrice);
@@ -1673,48 +1632,46 @@ function renderDrawings() {
 }
 
 // ==========================================
-// 7. STYLE MODAL & SNAPSHOT
+// 7. CHART STYLE MODAL & SNAPSHOT
 // ==========================================
 function toggleStyleModal() {
   document.getElementById('style-modal').classList.toggle('hidden');
 }
 
 function syncStyleInputs() {
-  document.getElementById('st-bg-main').value = uiStyle.bgMain;
-  document.getElementById('st-grid-col').value = uiStyle.gridColor;
-  document.getElementById('st-bull-body').value = uiStyle.bullBody;
-  document.getElementById('st-bear-body').value = uiStyle.bearBody;
-  document.getElementById('st-wick-col').value = uiStyle.wickColor;
-  document.getElementById('st-text-col').value = uiStyle.textMain;
-  document.getElementById('st-show-grid').checked = uiStyle.showGrid;
+  document.getElementById('st-chart-bg').value = chartStyle.chartBg;
+  document.getElementById('st-grid-col').value = chartStyle.gridColor;
+  document.getElementById('st-bull-body').value = chartStyle.bullBody;
+  document.getElementById('st-bear-body').value = chartStyle.bearBody;
+  document.getElementById('st-wick-col').value = chartStyle.wickColor;
+  document.getElementById('st-text-col').value = chartStyle.textColor;
+  document.getElementById('st-show-grid').checked = chartStyle.showGrid;
 }
 
 function applyPresetTheme(key) {
-  if (!themePresets[key]) return;
-  uiStyle = { ...themePresets[key] };
-  localStorage.setItem('gozi_metals_style_v1', JSON.stringify(uiStyle));
+  if (!chartThemePresets[key]) return;
+  chartStyle = { ...chartThemePresets[key] };
+  localStorage.setItem('gozi_metals_chart_style_v1', JSON.stringify(chartStyle));
   syncStyleInputs();
   refreshChartStyles();
 }
 
 function applyCustomStyle() {
-  uiStyle.bgMain = document.getElementById('st-bg-main').value;
-  uiStyle.bgPanel = uiStyle.bgMain;
-  uiStyle.bgSub = uiStyle.bgMain;
-  uiStyle.gridColor = document.getElementById('st-grid-col').value;
-  uiStyle.bullBody = document.getElementById('st-bull-body').value;
-  uiStyle.bearBody = document.getElementById('st-bear-body').value;
-  uiStyle.wickColor = document.getElementById('st-wick-col').value;
-  uiStyle.borderColor = uiStyle.wickColor;
-  uiStyle.textMain = document.getElementById('st-text-col').value;
-  uiStyle.showGrid = document.getElementById('st-show-grid').checked;
+  chartStyle.chartBg = document.getElementById('st-chart-bg').value;
+  chartStyle.gridColor = document.getElementById('st-grid-col').value;
+  chartStyle.bullBody = document.getElementById('st-bull-body').value;
+  chartStyle.bearBody = document.getElementById('st-bear-body').value;
+  chartStyle.wickColor = document.getElementById('st-wick-col').value;
+  chartStyle.borderColor = chartStyle.wickColor;
+  chartStyle.textColor = document.getElementById('st-text-col').value;
+  chartStyle.showGrid = document.getElementById('st-show-grid').checked;
 
-  localStorage.setItem('gozi_metals_style_v1', JSON.stringify(uiStyle));
+  localStorage.setItem('gozi_metals_chart_style_v1', JSON.stringify(chartStyle));
   refreshChartStyles();
 }
 
 function refreshChartStyles() {
-  applyCssVars();
+  applyChartBgVar();
   const opts = getChartOptions();
   const cOpts = getCandleStyleOptions();
   for (let i = 0; i < 3; i++) {
@@ -1769,7 +1726,7 @@ async function initMetalsApp() {
     const res = await fetch('data/metals_divergence.json?t=' + Date.now());
     if (res.ok) metalsFeed = await res.json();
   } catch (err) {
-    console.warn('Using local fallback candles until feed loads:', err);
+    console.warn('Feed not available yet, using price action generator:', err);
   }
   renderAllPanes();
   zoomChart(90);
