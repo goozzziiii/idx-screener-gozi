@@ -469,9 +469,6 @@ def run_screener():
     print(f"\nSELESAI TOTAL! Berhasil memindai {len(results['1d']['all_data'])} emiten aktif IDX.")
     generate_macro_and_rrg(results["breadth"])
 
-
-def generate_macro_and_rrg(breadth_data):
-
 def generate_macro_and_rrg(breadth_data):
     """Menghasilkan data Makro, Komoditas, & Relative Rotation Graph (RRG) 11 Sektor IDX"""
     print("\nMengunduh data Makro, Komoditas & Sektor IDX untuk RRG...")
@@ -608,5 +605,7 @@ def generate_macro_and_rrg(breadth_data):
     with open(os.path.join(OUTPUT_DIR, "market_macro.json"), "w") as f:
         json.dump(payload, f)
     print(f"Sukses menyimpan data/market_macro.json ({len(rrg_out)} sektor RRG).")
+
+
 if __name__ == "__main__":
     run_screener()
