@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GOZI TERMINAL | XAUUSD & Metals Divergence</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-main: #000000;
+    --bg-panel: #090b0f;
+    --bg-sub: #10141c;
+    --border-main: #1f2633;
+    --text-main: #f0f4f8;
+    --text-muted: #8892a0;
+    --accent: #fb8b1e;
+    --blue: #0068ff;
+    --bull: #4af6c3;
+    --bear: #ff433d;
+  }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    height: 100dvh;
+    overflow-x: hidden;
+  }
+  .t-bg-main { background-color: var(--bg-main); }
+  .t-bg-panel { background-color: var(--bg-panel); }
+  .t-bg-sub { background-color: var(--bg-sub); }
+  .t-border { border-color: var(--border-main); }
+  .t-accent-text { color: var(--accent); }
+  .t-accent-bg { background-color: var(--accent); color: #000; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body class="flex flex-col">
+
+<!-- TOP HEADER -->
+<header class="h-10 t-bg-panel border-b t-border px-3 flex items-center justify-between shrink-0 gap-2 overflow-x-auto">
+  <div class="flex items-center space-x-2 shrink-0">
+    <a href="terminal.html" class="px-2 py-0.5 text-[10px] font-bold rounded-xs t-bg-sub border t-border hover:border-[#fb8b1e]">← IDX</a>
+    <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider t-accent-bg rounded-xs">SPOT CFD</span>
+    <span class="font-bold text-xs tracking-widest uppercase">GOZI METALS DESK</span>
+  </div>
+
+  <div class="flex items-center space-x-2 shrink-0 text-[11px]">
+    <!-- Timeframe Selector -->
+    <div class="flex items-center t-bg-main p-0.5 rounded-xs border t-border">
+      <button onclick="setTF('15m')" id="btn-15m" class="px-2 py-0.5 font-bold rounded-xs t-accent-bg">15M</button>
+      <button onclick="setTF('1h')" id="btn-1h" class="px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]">1H</button>
+    </div>
+
+    <!-- Mode Chart: Dukascopy Feed vs Live Tick OANDA -->
+    <div class="flex items-center t-bg-main p-0.5 rounded-xs border t-border">
+      <button onclick="setChartMode('feed')" id="mode-feed" class="px-2 py-0.5 font-bold rounded-xs bg-[#0068ff] text-white">Dukascopy 15m</button>
+      <button onclick="setChartMode('live')" id="mode-live" class="px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]">Live Tick (OANDA)</button>
+    </div>
+
+    <button onclick="fetchMetalsData()" class="px-2 py-0.5 rounded-xs t-bg-sub border t-border hover:border-[#fb8b1e] font-bold" title="Refresh JSON">↻</button>
+  </div>
+</header>
+
+<!-- RADAR BAR: SESSION, GSR & DIVERGENCE STATUS -->
+<div class="t-bg-sub border-b t-border px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[10.5px] shrink-0">
+  <div class="flex items-center flex-wrap gap-3 tabular-nums">
+    <span>SESSION: <b id="lbl-session" class="t-accent-text">-</b></span>
+    <span class="opacity-30">|</span>
+    <span>GSR (XAU/XAG): <b id="lbl-gsr" class="text-white">-</b></span>
+    <span class="opacity-30">|</span>
+    <span>DIV vs XAGUSD: <b id="lbl-div-xag" class="px-1.5 py-0.5 rounded-xs">-</b></span>
+    <span>DIV vs XAUEUR: <b id="lbl-div-eur" class="px-1.5 py-0.5 rounded-xs">-</b></span>
+  </div>
+  <div id="lbl-updated" class="text-[10px] text-[#8892a0] tabular-nums">Update: -</div>
+</div>
+
+<!-- PAIR SUMMARY CARDS (XAUUSD, XAUEUR, XAGUSD) -->
+<div class="grid grid-cols-1 md:grid-cols-3 border-b t-border t-bg-panel shrink-0 divide-y md:divide-y-0 md:divide-x divide-[#1f2633]">
+  <!-- XAUUSD -->
+  <div class="p-2.5 flex items-center justify-between">
+    <div>
+      <div class="flex items-center space-x-2">
+        <span class="font-bold text-xs t-accent-text">XAU/USD</span>
+        <span id="xau-sweep" class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs bg-[#10141c] text-[#8892a0]">NONE</span>
+      </div>
+      <div class="text-[10px] text-[#8892a0] mt-0.5 tabular-nums">H: <span id="xau-h">-</span> | L: <span id="xau-l">-</span></div>
+    </div>
+    <div class="text-right tabular-nums">
+      <div id="xau-price" class="font-bold text-sm">-</div>
+      <div id="xau-chg" class="text-[10.5px] font-semibold">-</div>
+    </div>
+  </div>
+
+  <!-- XAUEUR -->
+  <div class="p-2.5 flex items-center justify-between">
+    <div>
+      <div class="flex items-center space-x-2">
+        <span class="font-bold text-xs text-[#0068ff]">XAU/EUR</span>
+        <span id="eur-sweep" class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs bg-[#10141c] text-[#8892a0]">NONE</span>
+      </div>
+      <div class="text-[10px] text-[#8892a0] mt-0.5 tabular-nums">H: <span id="eur-h">-</span> | L: <span id="eur-l">-</span></div>
+    </div>
+    <div class="text-right tabular-nums">
+      <div id="eur-price" class="font-bold text-sm">-</div>
+      <div id="eur-chg" class="text-[10.5px] font-semibold">-</div>
+    </div>
+  </div>
+
+  <!-- XAGUSD -->
+  <div class="p-2.5 flex items-center justify-between">
+    <div>
+      <div class="flex items-center space-x-2">
+        <span class="font-bold text-xs text-[#4af6c3]">XAG/USD</span>
+        <span id="xag-sweep" class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs bg-[#10141c] text-[#8892a0]">NONE</span>
+      </div>
+      <div class="text-[10px] text-[#8892a0] mt-0.5 tabular-nums">H: <span id="xag-h">-</span> | L: <span id="xag-l">-</span></div>
+    </div>
+    <div class="text-right tabular-nums">
+      <div id="xag-price" class="font-bold text-sm">-</div>
+      <div id="xag-chg" class="text-[10.5px] font-semibold">-</div>
+    </div>
+  </div>
+</div>
+
+<!-- TRIPLE-MIRROR WORKSPACE -->
+<main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+  <!-- LEFT 60%: PRIMARY XAUUSD CHART -->
+  <div class="w-full lg:w-[58%] h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r t-border relative flex flex-col">
+    <div class="px-2.5 py-1 t-bg-sub border-b t-border flex items-center justify-between text-[10px] font-bold shrink-0">
+      <span class="t-accent-text">PRIMARY: XAU/USD (GOLD SPOT)</span>
+      <span id="xau-src" class="text-[#8892a0]">-</span>
+    </div>
+    <div id="wrap-xau" class="flex-1 w-full relative"></div>
+  </div>
+
+  <!-- RIGHT 42%: STACKED XAUEUR & XAGUSD -->
+  <div class="w-full lg:w-[42%] h-1/2 lg:h-full flex flex-col">
+    <!-- TOP: XAUEUR -->
+    <div class="h-1/2 w-full border-b t-border relative flex flex-col">
+      <div class="px-2.5 py-1 t-bg-sub border-b t-border flex items-center justify-between text-[10px] font-bold shrink-0">
+        <span class="text-[#0068ff]">CORRELATION 1: XAU/EUR</span>
+        <span id="eur-src" class="text-[#8892a0]">-</span>
+      </div>
+      <div id="wrap-eur" class="flex-1 w-full relative"></div>
+    </div>
+
+    <!-- BOTTOM: XAGUSD -->
+    <div class="h-1/2 w-full relative flex flex-col">
+      <div class="px-2.5 py-1 t-bg-sub border-b t-border flex items-center justify-between text-[10px] font-bold shrink-0">
+        <span class="text-[#4af6c3]">CORRELATION 2: XAG/USD (SILVER)</span>
+        <span id="xag-src" class="text-[#8892a0]">-</span>
+      </div>
+      <div id="wrap-xag" class="flex-1 w-full relative"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Ganti URL di bawah jika file JSON berada di path lokal 'data/metals_divergence.json'
+const FEED_URL = 'https://raw.githubusercontent.com/goozzziiii/idx-screener-gozi/main/data/metals_divergence.json';
+
+let metalsData = null;
+let activeTF = '15m';
+let chartMode = 'feed'; // 'feed' (Dukascopy Lightweight Charts) atau 'live' (TradingView OANDA Tick)
+let charts = {};
+
+function createLWChart(containerId) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  const chart = LightweightCharts.createChart(el, {
+    layout: {
+      background: { type: 'solid', color: '#000000' },
+      textColor: '#8892a0',
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 10
+    },
+    grid: {
+      vertLines: { color: '#0f131a' },
+      horzLines: { color: '#0f131a' }
+    },
+    rightPriceScale: { borderColor: '#1f2633', scaleMargins: { top: 0.1, bottom: 0.1 } },
+    timeScale: { borderColor: '#1f2633', timeVisible: true, rightOffset: 8 },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+  });
+  const series = chart.addCandlestickSeries({
+    upColor: '#4af6c3',
+    downColor: '#ff433d',
+    wickUpColor: '#4af6c3',
+    wickDownColor: '#ff433d',
+    borderVisible: false
+  });
+  return { chart, series, el };
+}
+
+function createTVLiveWidget(containerId, symbol) {
+  const el = document.getElementById(containerId);
+  const interval = activeTF === '15m' ? '15' : '60';
+  el.innerHTML = `
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(symbol)}&interval=${interval}&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=090b0f&studies=[]&theme=dark&style=1&timezone=Asia%2FJakarta"
+      style="width:100%; height:100%; border:0;"
+      loading="lazy">
+    </iframe>
+  `;
+}
+
+function styleDivBadge(el, text) {
+  el.textContent = text;
+  if (text.includes('BULLISH')) {
+    el.style.backgroundColor = 'rgba(74, 246, 195, 0.18)';
+    el.style.color = '#4af6c3';
+  } else if (text.includes('BEARISH')) {
+    el.style.backgroundColor = 'rgba(255, 67, 61, 0.18)';
+    el.style.color = '#ff433d';
+  } else {
+    el.style.backgroundColor = '#19202c';
+    el.style.color = '#8892a0';
+  }
+}
+
+function styleSweepBadge(el, sweep) {
+  el.textContent = sweep;
+  if (sweep === 'SSL SWEEP') {
+    el.style.backgroundColor = 'rgba(74, 246, 195, 0.2)';
+    el.style.color = '#4af6c3';
+  } else if (sweep === 'BSL SWEEP') {
+    el.style.backgroundColor = 'rgba(255, 67, 61, 0.2)';
+    el.style.color = '#ff433d';
+  } else {
+    el.style.backgroundColor = '#10141c';
+    el.style.color = '#8892a0';
+  }
+}
+
+function renderPairCard(prefix, pairObj) {
+  const m = pairObj.metrics;
+  document.getElementById(`${prefix}-price`).textContent = m.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  document.getElementById(`${prefix}-h`).textContent = m.day_high;
+  document.getElementById(`${prefix}-l`).textContent = m.day_low;
+  document.getElementById(`${prefix}-src`).textContent = pairObj.source;
+
+  const chgEl = document.getElementById(`${prefix}-chg`);
+  const sign = m.day_chg_pct > 0 ? '+' : '';
+  chgEl.textContent = `${sign}${m.day_chg_pct}% (Today)`;
+  chgEl.style.color = m.day_chg_pct >= 0 ? '#4af6c3' : '#ff433d';
+
+  styleSweepBadge(document.getElementById(`${prefix}-sweep`), m.sweep);
+}
+
+function renderCharts() {
+  if (!metalsData) return;
+
+  if (chartMode === 'live') {
+    createTVLiveWidget('wrap-xau', 'OANDA:XAUUSD');
+    createTVLiveWidget('wrap-eur', 'OANDA:XAUEUR');
+    createTVLiveWidget('wrap-xag', 'OANDA:XAGUSD');
+    return;
+  }
+
+  charts.xau = createLWChart('wrap-xau');
+  charts.eur = createLWChart('wrap-eur');
+  charts.xag = createLWChart('wrap-xag');
+
+  charts.xau.series.setData(metalsData.pairs.XAUUSD[activeTF]);
+  charts.eur.series.setData(metalsData.pairs.XAUEUR[activeTF]);
+  charts.xag.series.setData(metalsData.pairs.XAGUSD[activeTF]);
+
+  [charts.xau, charts.eur, charts.xag].forEach(c => {
+    c.chart.timeScale().fitContent();
+  });
+
+  // Sinkronisasi crosshair antar 3 chart
+  const all = [charts.xau, charts.eur, charts.xag];
+  all.forEach((srcObj, idx) => {
+    srcObj.chart.subscribeCrosshairMove(param => {
+      if (!param.time) return;
+      all.forEach((targetObj, tIdx) => {
+        if (idx !== tIdx) {
+          targetObj.chart.setCrosshairPosition(0, param.time, targetObj.series);
+        }
+      });
+    });
+  });
+}
+
+function updateUI() {
+  if (!metalsData) return;
+  document.getElementById('lbl-session').textContent = metalsData.session;
+  document.getElementById('lbl-gsr').textContent = metalsData.gold_silver_ratio;
+  document.getElementById('lbl-updated').textContent = `Update: ${metalsData.last_updated}`;
+
+  const divObj = metalsData.divergence[activeTF];
+  styleDivBadge(document.getElementById('lbl-div-xag'), divObj.vs_xagusd);
+  styleDivBadge(document.getElementById('lbl-div-eur'), divObj.vs_xaueur);
+
+  renderPairCard('xau', metalsData.pairs.XAUUSD);
+  renderPairCard('eur', metalsData.pairs.XAUEUR);
+  renderPairCard('xag', metalsData.pairs.XAGUSD);
+
+  renderCharts();
+}
+
+function setTF(tf) {
+  activeTF = tf;
+  document.getElementById('btn-15m').className = tf === '15m' ? 'px-2 py-0.5 font-bold rounded-xs t-accent-bg' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
+  document.getElementById('btn-1h').className = tf === '1h' ? 'px-2 py-0.5 font-bold rounded-xs t-accent-bg' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
+  updateUI();
+}
+
+function setChartMode(mode) {
+  chartMode = mode;
+  document.getElementById('mode-feed').className = mode === 'feed' ? 'px-2 py-0.5 font-bold rounded-xs bg-[#0068ff] text-white' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
+  document.getElementById('mode-live').className = mode === 'live' ? 'px-2 py-0.5 font-bold rounded-xs bg-[#0068ff] text-white' : 'px-2 py-0.5 font-semibold rounded-xs text-[#8892a0]';
+  renderCharts();
+}
+
+async function fetchMetalsData() {
+  try {
+    const res = await fetch(`${FEED_URL}?t=${Date.now()}`);
+    metalsData = await res.json();
+    updateUI();
+  } catch (err) {
+    console.error('Gagal memuat metals_divergence.json:', err);
+  }
+}
+
+window.addEventListener('resize', () => {
+  if (chartMode === 'feed' && charts.xau) {
+    ['xau', 'eur', 'xag'].forEach(k => {
+      const el = charts[k].el;
+      charts[k].chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+    });
+  }
+});
+
+fetchMetalsData();
+// Auto-refresh JSON tiap 5 menit di latar belakang
+setInterval(fetchMetalsData, 300000);
+</script>
+</body>
+</html>
