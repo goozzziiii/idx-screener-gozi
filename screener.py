@@ -467,7 +467,146 @@ def run_screener():
         json.dump(results, f)
 
     print(f"\nSELESAI TOTAL! Berhasil memindai {len(results['1d']['all_data'])} emiten aktif IDX.")
+    generate_macro_and_rrg(results["breadth"])
 
 
+def generate_macro_and_rrg(breadth_data):
+
+def generate_macro_and_rrg(breadth_data):
+    """Menghasilkan data Makro, Komoditas, & Relative Rotation Graph (RRG) 11 Sektor IDX"""
+    print("\nMengunduh data Makro, Komoditas & Sektor IDX untuk RRG...")
+
+    macro_tickers = {
+        "IHSG": "^JKSE",
+        "USDIDR": "USDIDR=X",
+        "GOLD": "GC=F",
+        "SILVER": "SI=F",
+        "OIL": "CL=F",
+        "BTC": "BTC-USD",
+    }
+
+    idx_sectors = {
+        "IDXFINANCE": "^JKFINA",
+        "IDXENERGY": "^JKENER",
+        "IDXBASIC": "^JKBASIC",
+        "IDXINDUST": "^JKINDU",
+        "IDXNONCYC": "^JKCONS",
+        "IDXCYCLIC": "^JKCYCL",
+        "IDXHEALTH": "^JKHLTH",
+        "IDXPROPERT": "^JKPROP",
+        "IDXTECHNO": "^JKTECH",
+        "IDXINFRA": "^JKINFRA",
+        "IDXTRANS": "^JKTRAN",
+    }
+
+    all_symbols = list(macro_tickers.values()) + list(idx_sectors.values())
+    try:
+        raw = yf.download(all_symbols, period="1y", interval="1d", group_by="ticker", threads=True, progress=False)
+    except Exception as e:
+        print(f"Gagal mengunduh data makro/sektor: {e}")
+        return
+
+    macro_out = {}
+    for label, sym in macro_tickers.items():
+        try:
+            df_s = raw[sym].dropna()
+            if len(df_s) < 2:
+                continue
+            close_now = round(float(df_s["Close"].iloc[-1]), 2)
+            close_prev = round(float(df_s["Close"].iloc[-2]), 2)
+            chg_pct = round(((close_now - close_prev) / close_prev) * 100, 2) if close_prev else 0
+            spark = [round(float(x), 2) for x in df_s["Close"].tail(20).tolist()]
+            macro_out[label] = {
+                "symbol": sym,
+                "close": close_now,
+                "change_pct": chg_pct,
+                "sparkline": spark,
+            }
+        except Exception:
+            continue
+
+    # Hitung RRG (RS-Ratio & RS-Momentum) mingguan 11 Sektor terhadap IHSG (^JKSE)
+    rrg_out = []
+    try:
+        ihsg_close = raw["^JKSE"]["Close"].dropna().resample("W-FRI").last()
+        for sec_name, sym in idx_sectors.items():
+            try:
+                sec_close = raw[sym]["Close"].dropna().resample("W-FRI").last()
+                df_rel = pd.concat([sec_close, ihsg_close], axis=1, join="inner").dropna()
+                df_rel.columns = ["sec", "ihsg"]
+                if len(df_rel) < 20:
+                    continue
+
+                # Relative Strength (RS) & Normalisasi JdK Style (berpusat di 100)
+                rs = (df_rel["sec"] / df_rel["ihsg"]) * 100
+                rs_mean = rs.rolling(window=14).mean()
+                rs_std = rs.rolling(window=14).std().replace(0, np.nan)
+                rs_ratio = 100 + ((rs - rs_mean) / rs_std)
+
+                rs_mom_raw = rs_ratio.pct_change(periods=1) * 100
+                mom_mean = rs_mom_raw.rolling(window=10).mean()
+                mom_std = rs_mom_raw.rolling(window=10).std().replace(0, np.nan)
+                rs_momentum = 100 + ((rs_mom_raw - mom_mean) / mom_std)
+
+                valid = pd.DataFrame({
+                    "rs_ratio": rs_ratio,
+                    "rs_momentum": rs_momentum,
+                    "close": df_rel["sec"]
+                }).dropna().tail(8)
+
+                if valid.empty:
+                    continue
+
+                latest = valid.iloc[-1]
+                r_val = round(float(latest["rs_ratio"]), 2)
+                m_val = round(float(latest["rs_momentum"]), 2)
+
+                if r_val >= 100 and m_val >= 100:
+                    quadrant = "LEADING"
+                elif r_val >= 100 and m_val < 100:
+                    quadrant = "WEAKENING"
+                elif r_val < 100 and m_val < 100:
+                    quadrant = "LAGGING"
+                else:
+                    quadrant = "IMPROVING"
+
+                # Perubahan harian sektor
+                sec_daily = raw[sym]["Close"].dropna()
+                d_chg = round(((float(sec_daily.iloc[-1]) - float(sec_daily.iloc[-2])) / float(sec_daily.iloc[-2])) * 100, 2) if len(sec_daily) >= 2 else 0
+
+                tail_points = [
+                    {
+                        "date": idx.strftime("%Y-%m-%d"),
+                        "x": round(float(row["rs_ratio"]), 2),
+                        "y": round(float(row["rs_momentum"]), 2),
+                    }
+                    for idx, row in valid.iterrows()
+                ]
+
+                rrg_out.append({
+                    "sector": sec_name,
+                    "symbol": sym,
+                    "close": round(float(sec_daily.iloc[-1]), 2),
+                    "change_pct": d_chg,
+                    "rs_ratio": r_val,
+                    "rs_momentum": m_val,
+                    "quadrant": quadrant,
+                    "tail": tail_points,
+                })
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"Error kalkulasi RRG: {e}")
+
+    payload = {
+        "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "breadth": breadth_data,
+        "macro": macro_out,
+        "rrg": rrg_out,
+    }
+
+    with open(os.path.join(OUTPUT_DIR, "market_macro.json"), "w") as f:
+        json.dump(payload, f)
+    print(f"Sukses menyimpan data/market_macro.json ({len(rrg_out)} sektor RRG).")
 if __name__ == "__main__":
     run_screener()
