@@ -469,9 +469,10 @@ def run_screener():
     print(f"\nSELESAI TOTAL! Berhasil memindai {len(results['1d']['all_data'])} emiten aktif IDX.")
     generate_macro_and_rrg(results["breadth"])
 
+
 def generate_macro_and_rrg(breadth_data):
-    """Menghasilkan data Makro, Komoditas, & Relative Rotation Graph (RRG) 11 Sektor IDX"""
-    print("\nMengunduh data Makro, Komoditas & Sektor IDX untuk RRG...")
+    """Menghasilkan data Makro, Komoditas, & Relative Rotation Graph (RRG) 11 Sektor IDX berbasis Proxy Saham Utama"""
+    print("\nMengunduh data Makro, Komoditas & Proxy 11 Sektor IDX untuk RRG...")
 
     macro_tickers = {
         "IHSG": "^JKSE",
@@ -482,21 +483,24 @@ def generate_macro_and_rrg(breadth_data):
         "BTC": "BTC-USD",
     }
 
-    idx_sectors = {
-        "IDXFINANCE": "^JKFINA",
-        "IDXENERGY": "^JKENER",
-        "IDXBASIC": "^JKBASIC",
-        "IDXINDUST": "^JKINDU",
-        "IDXNONCYC": "^JKCONS",
-        "IDXCYCLIC": "^JKCYCL",
-        "IDXHEALTH": "^JKHLTH",
-        "IDXPROPERT": "^JKPROP",
-        "IDXTECHNO": "^JKTECH",
-        "IDXINFRA": "^JKINFRA",
-        "IDXTRANS": "^JKTRAN",
+    # Keranjang saham proxy likuid untuk masing-masing 11 Sektor IDX
+    sector_baskets = {
+        "IDXFINANCE": ["BBCA.JK", "BBRI.JK", "BMRI.JK", "BBNI.JK"],
+        "IDXENERGY": ["ADRO.JK", "PTBA.JK", "ITMG.JK", "PGAS.JK"],
+        "IDXBASIC": ["BRPT.JK", "TPIA.JK", "MDKA.JK", "ANTM.JK"],
+        "IDXINDUST": ["ASII.JK", "UNTR.JK", "HEXA.JK"],
+        "IDXNONCYC": ["ICBP.JK", "INDF.JK", "UNVR.JK", "MYOR.JK"],
+        "IDXCYCLIC": ["MAPI.JK", "ACES.JK", "ERAA.JK"],
+        "IDXHEALTH": ["KLBF.JK", "MIKA.JK", "HEAL.JK"],
+        "IDXPROPERT": ["BSDE.JK", "PWON.JK", "CTRA.JK", "SMRA.JK"],
+        "IDXTECHNO": ["GOTO.JK", "EMTK.JK", "BUKA.JK"],
+        "IDXINFRA": ["TLKM.JK", "ISAT.JK", "EXCL.JK", "JSMR.JK"],
+        "IDXTRANS": ["BIRD.JK", "ASSA.JK", "SMDR.JK"],
     }
 
-    all_symbols = list(macro_tickers.values()) + list(idx_sectors.values())
+    all_proxy_tickers = sorted(list({t for basket in sector_baskets.values() for t in basket}))
+    all_symbols = list(macro_tickers.values()) + all_proxy_tickers
+
     try:
         raw = yf.download(all_symbols, period="1y", interval="1d", group_by="ticker", threads=True, progress=False)
     except Exception as e:
@@ -525,11 +529,26 @@ def generate_macro_and_rrg(breadth_data):
     # Hitung RRG (RS-Ratio & RS-Momentum) mingguan 11 Sektor terhadap IHSG (^JKSE)
     rrg_out = []
     try:
-        ihsg_close = raw["^JKSE"]["Close"].dropna().resample("W-FRI").last()
-        for sec_name, sym in idx_sectors.items():
+        ihsg_daily = raw["^JKSE"]["Close"].dropna()
+        ihsg_weekly = ihsg_daily.resample("W-FRI").last()
+
+        for sec_name, tickers in sector_baskets.items():
             try:
-                sec_close = raw[sym]["Close"].dropna().resample("W-FRI").last()
-                df_rel = pd.concat([sec_close, ihsg_close], axis=1, join="inner").dropna()
+                # Buat indeks sektor sintetis (equal-weighted index basis 1000) dari keranjang saham sektor
+                sec_closes = []
+                for t in tickers:
+                    if t in raw.columns.levels[0]:
+                        s = raw[t]["Close"].dropna()
+                        if len(s) > 60:
+                            sec_closes.append(s / float(s.iloc[0]) * 1000.0)
+
+                if not sec_closes:
+                    continue
+
+                sec_daily_idx = pd.concat(sec_closes, axis=1).mean(axis=1).dropna()
+                sec_weekly = sec_daily_idx.resample("W-FRI").last()
+
+                df_rel = pd.concat([sec_weekly, ihsg_weekly], axis=1, join="inner").dropna()
                 df_rel.columns = ["sec", "ihsg"]
                 if len(df_rel) < 20:
                     continue
@@ -548,7 +567,6 @@ def generate_macro_and_rrg(breadth_data):
                 valid = pd.DataFrame({
                     "rs_ratio": rs_ratio,
                     "rs_momentum": rs_momentum,
-                    "close": df_rel["sec"]
                 }).dropna().tail(8)
 
                 if valid.empty:
@@ -567,9 +585,7 @@ def generate_macro_and_rrg(breadth_data):
                 else:
                     quadrant = "IMPROVING"
 
-                # Perubahan harian sektor
-                sec_daily = raw[sym]["Close"].dropna()
-                d_chg = round(((float(sec_daily.iloc[-1]) - float(sec_daily.iloc[-2])) / float(sec_daily.iloc[-2])) * 100, 2) if len(sec_daily) >= 2 else 0
+                d_chg = round(((float(sec_daily_idx.iloc[-1]) - float(sec_daily_idx.iloc[-2])) / float(sec_daily_idx.iloc[-2])) * 100, 2) if len(sec_daily_idx) >= 2 else 0
 
                 tail_points = [
                     {
@@ -582,8 +598,8 @@ def generate_macro_and_rrg(breadth_data):
 
                 rrg_out.append({
                     "sector": sec_name,
-                    "symbol": sym,
-                    "close": round(float(sec_daily.iloc[-1]), 2),
+                    "symbol": f"{len(sec_closes)} Proxy Stocks",
+                    "close": round(float(sec_daily_idx.iloc[-1]), 2),
                     "change_pct": d_chg,
                     "rs_ratio": r_val,
                     "rs_momentum": m_val,
