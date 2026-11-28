@@ -1,4 +1,3 @@
-import calendar
 import json
 import os
 import time
@@ -7,6 +6,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
+from indicators import compute_all_indicators
 
 OUTPUT_DIR = "data"
 CHARTS_DIR = os.path.join(OUTPUT_DIR, "charts")
@@ -166,8 +167,8 @@ def calculate_beta(df_daily, ihsg_ret):
         return None
 
 
-def process_timeframe(df_raw, clean_ticker, tf_name, min_bars=12, beta_val=None):
-    """Memproses data OHLCV & metrik dasar harga/likuiditas (indikator dipisah ke indicators.py)."""
+def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=12, beta_val=None):
+    """Memproses data OHLCV, metrik likuiditas, serta indikator dari indicators.py."""
     df = df_raw.dropna(subset=["Open", "High", "Low", "Close"]).copy()
     if len(df) < min_bars or len(df) < 2:
         return None, None
@@ -196,10 +197,15 @@ def process_timeframe(df_raw, clean_ticker, tf_name, min_bars=12, beta_val=None)
             "isUp": close_p >= open_p,
         })
 
+    ind_summary, ind_overlays = compute_all_indicators(
+        df, tf_name=tf_name, last_daily_date=last_daily_date
+    )
+
     chart_data = {
         "tf": tf_name,
         "candles": candles,
         "volume": volumes,
+        **ind_overlays,
     }
 
     today = df.iloc[-1]
@@ -232,6 +238,7 @@ def process_timeframe(df_raw, clean_ticker, tf_name, min_bars=12, beta_val=None)
         "avg_tx_miliar": avg_tx_miliar,
         "vol_ratio": vol_ratio,
         "beta": beta_val,
+        **ind_summary,
     }
 
     return chart_data, summary
@@ -247,6 +254,9 @@ def run_screener():
             "up": 0,
             "down": 0,
             "flat": 0,
+            "above_ma20_pct": 0,
+            "above_ma50_pct": 0,
+            "bear_crt_count": 0,
         },
         "1d": {"all_data": {}},
         "1w": {"all_data": {}},
@@ -285,11 +295,17 @@ def run_screener():
                     continue
 
                 clean_ticker = ticker.replace(".JK", "")
+                last_daily_date = df_daily.index[-1]
                 beta_val = calculate_beta(df_daily, ihsg_ret)
 
                 # 1. Daily (1D - 320 bar terakhir)
                 chart_1d, sum_1d = process_timeframe(
-                    df_daily.tail(320), clean_ticker, "1d", min_bars=30, beta_val=beta_val
+                    df_daily.tail(320),
+                    clean_ticker,
+                    "1d",
+                    last_daily_date,
+                    min_bars=30,
+                    beta_val=beta_val,
                 )
 
                 # 2. Weekly (1W - tutup Jumat)
@@ -305,7 +321,12 @@ def run_screener():
                     .dropna(subset=["Open", "High", "Low", "Close"])
                 )
                 chart_1w, sum_1w = process_timeframe(
-                    df_weekly, clean_ticker, "1w", min_bars=20, beta_val=beta_val
+                    df_weekly,
+                    clean_ticker,
+                    "1w",
+                    last_daily_date,
+                    min_bars=20,
+                    beta_val=beta_val,
                 )
 
                 # 3. Monthly (1M - tutup akhir bulan)
@@ -321,7 +342,12 @@ def run_screener():
                     .dropna(subset=["Open", "High", "Low", "Close"])
                 )
                 chart_1m, sum_1m = process_timeframe(
-                    df_monthly, clean_ticker, "1m", min_bars=12, beta_val=beta_val
+                    df_monthly,
+                    clean_ticker,
+                    "1m",
+                    last_daily_date,
+                    min_bars=12,
+                    beta_val=beta_val,
                 )
 
                 if not chart_1d or not sum_1d:
@@ -349,17 +375,23 @@ def run_screener():
     for tf in ["1d", "1w", "1m"]:
         results[tf]["all_data"] = dict(sorted(results[tf]["all_data"].items()))
 
-    # Hitung Market Breadth dasar dari data 1D
+    # Hitung Market Breadth lengkap dari data 1D
     daily_items = list(results["1d"]["all_data"].values())
     total_d = len(daily_items)
     if total_d > 0:
         up_cnt = sum(1 for x in daily_items if x["change_pct"] > 0)
         down_cnt = sum(1 for x in daily_items if x["change_pct"] < 0)
         flat_cnt = total_d - up_cnt - down_cnt
+        abv_20 = round((sum(1 for x in daily_items if x.get("above_ma20")) / total_d) * 100, 1)
+        abv_50 = round((sum(1 for x in daily_items if x.get("above_ma50")) / total_d) * 100, 1)
+        bear_crt_cnt = sum(1 for x in daily_items if x.get("crt_bear"))
         results["breadth"] = {
             "up": up_cnt,
             "down": down_cnt,
             "flat": flat_cnt,
+            "above_ma20_pct": abv_20,
+            "above_ma50_pct": abv_50,
+            "bear_crt_count": bear_crt_cnt,
         }
 
     with open(os.path.join(OUTPUT_DIR, "screener_idx.json"), "w") as f:
