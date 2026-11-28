@@ -244,6 +244,100 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
     return chart_data, summary
 
 
+def _compute_rrg_from_baskets(raw_panel, ihsg_weekly, baskets_dict):
+    """Menghitung JdK RS-Ratio & RS-Momentum mingguan untuk kamus basket saham terhadap IHSG."""
+    rrg_list = []
+    for group_name, tickers in baskets_dict.items():
+        try:
+            closes = []
+            valid_members = []
+            for t in tickers:
+                s = _extract_close_series(raw_panel, t)
+                if len(s) > 60 and float(s.iloc[0]) != 0:
+                    closes.append(s / float(s.iloc[0]) * 1000.0)
+                    valid_members.append(t.replace(".JK", ""))
+
+            if not closes:
+                continue
+
+            daily_idx = pd.concat(closes, axis=1).mean(axis=1).dropna()
+            if len(daily_idx) < 2:
+                continue
+
+            weekly_idx = daily_idx.resample("W-FRI").last().dropna()
+            df_rel = pd.concat([weekly_idx, ihsg_weekly], axis=1, join="inner").dropna()
+            df_rel.columns = ["grp", "ihsg"]
+            if len(df_rel) < 20:
+                continue
+
+            rs = (df_rel["grp"] / df_rel["ihsg"]) * 100
+            rs_mean = rs.rolling(window=14).mean()
+            rs_std = rs.rolling(window=14).std().replace(0, np.nan)
+            rs_ratio = 100 + ((rs - rs_mean) / rs_std)
+
+            rs_mom_raw = rs_ratio.pct_change(periods=1) * 100
+            mom_mean = rs_mom_raw.rolling(window=10).mean()
+            mom_std = rs_mom_raw.rolling(window=10).std().replace(0, np.nan)
+            rs_momentum = 100 + ((rs_mom_raw - mom_mean) / mom_std)
+
+            valid = (
+                pd.DataFrame({"rs_ratio": rs_ratio, "rs_momentum": rs_momentum})
+                .dropna()
+                .tail(20)
+            )
+            if valid.empty:
+                continue
+
+            latest = valid.iloc[-1]
+            r_val = round(float(latest["rs_ratio"]), 2)
+            m_val = round(float(latest["rs_momentum"]), 2)
+
+            if r_val >= 100 and m_val >= 100:
+                quadrant = "LEADING"
+            elif r_val >= 100 and m_val < 100:
+                quadrant = "WEAKENING"
+            elif r_val < 100 and m_val < 100:
+                quadrant = "LAGGING"
+            else:
+                quadrant = "IMPROVING"
+
+            d_chg = (
+                round(
+                    ((float(daily_idx.iloc[-1]) - float(daily_idx.iloc[-2]))
+                     / float(daily_idx.iloc[-2]))
+                    * 100,
+                    2,
+                )
+                if float(daily_idx.iloc[-2]) != 0
+                else 0.0
+            )
+
+            tail_points = [
+                {
+                    "date": idx.strftime("%Y-%m-%d"),
+                    "x": round(float(row["rs_ratio"]), 2),
+                    "y": round(float(row["rs_momentum"]), 2),
+                }
+                for idx, row in valid.iterrows()
+            ]
+
+            rrg_list.append({
+                "sector": group_name,
+                "symbol": f"{len(valid_members)} Proxy Stocks",
+                "members": valid_members,
+                "close": round(float(daily_idx.iloc[-1]), 2),
+                "change_pct": d_chg,
+                "rs_ratio": r_val,
+                "rs_momentum": m_val,
+                "quadrant": quadrant,
+                "tail": tail_points,
+            })
+        except Exception as e:
+            print(f"[RRG ERR] {group_name}: {e}")
+            continue
+    return rrg_list
+
+
 def run_screener():
     all_tickers = get_all_idx_tickers()
     ihsg_ret = get_ihsg_returns()
@@ -402,8 +496,8 @@ def run_screener():
 
 
 def generate_macro_and_rrg(breadth_data):
-    """Menghasilkan data Makro (termasuk DXY, BTC, GOLD, OIL), & RRG 11 Sektor IDX."""
-    print("\nMengunduh data Makro (IHSG, DXY, USDIDR, GOLD, OIL, BTC) & Proxy 11 Sektor IDX...")
+    """Menghasilkan data Makro (IHSG, DXY, USDIDR, GOLD, OIL, BTC) serta RRG Sektor, Konglomerasi & Tema."""
+    print("\nMengunduh data Makro & Basket RRG (Sektor, Konglomerasi, Tema IDX)...")
 
     macro_tickers = {
         "IHSG": "^JKSE",
@@ -428,8 +522,37 @@ def generate_macro_and_rrg(breadth_data):
         "IDXTRANS": ["BIRD.JK", "ASSA.JK", "SMDR.JK"],
     }
 
-    all_proxy_tickers = sorted(list({t for basket in sector_baskets.values() for t in basket}))
-    all_symbols = list(dict.fromkeys(list(macro_tickers.values()) + all_proxy_tickers))
+    konglo_baskets = {
+        "PRAJOGO (PP)": ["BREN.JK", "TPIA.JK", "BRPT.JK", "CUAN.JK", "PTRO.JK"],
+        "SALIM GROUP": ["ICBP.JK", "INDF.JK", "AMMN.JK", "DNET.JK", "IMAS.JK"],
+        "BAKRIE GROUP": ["BUMI.JK", "BRMS.JK", "DEWA.JK", "ENRG.JK", "VKTR.JK"],
+        "SINAR MAS": ["DSSA.JK", "SMMA.JK", "BSDE.JK", "INKP.JK", "TKIM.JK"],
+        "DJARUM GROUP": ["BBCA.JK", "TOWR.JK", "SUPR.JK", "BELI.JK"],
+        "ASTRA GROUP": ["ASII.JK", "UNTR.JK", "AALI.JK", "AUTO.JK"],
+        "BOY THOHIR": ["ADRO.JK", "ADMR.JK", "ESSA.JK", "MBMA.JK", "MDKA.JK"],
+        "LIPPO GROUP": ["SILO.JK", "MLPL.JK", "LPKR.JK", "MPPA.JK"],
+        "HAPSORO": ["RAJA.JK", "RATU.JK", "BUVA.JK", "MINA.JK", "SINI.JK"],
+        "MNC GROUP": ["BHIT.JK", "BMTR.JK", "MNCN.JK", "KPIG.JK", "BCAP.JK"],
+    }
+
+    theme_baskets = {
+        "BIG CAPS / BLUE CHIP": ["BBCA.JK", "BBRI.JK", "BMRI.JK", "TLKM.JK", "ASII.JK", "ICBP.JK"],
+        "COAL & ENERGY": ["ADRO.JK", "PTBA.JK", "ITMG.JK", "INDY.JK", "PGAS.JK", "BUMI.JK"],
+        "GOLD & COPPER": ["AMMN.JK", "MDKA.JK", "ANTM.JK", "BRMS.JK", "PSAB.JK"],
+        "NICKEL & EV": ["NCKL.JK", "MBMA.JK", "INCO.JK", "HRUM.JK"],
+    }
+
+    all_basket_tickers = sorted(
+        list(
+            {
+                t
+                for b_dict in (sector_baskets, konglo_baskets, theme_baskets)
+                for basket in b_dict.values()
+                for t in basket
+            }
+        )
+    )
+    all_symbols = list(dict.fromkeys(list(macro_tickers.values()) + all_basket_tickers))
 
     try:
         raw = yf.download(
@@ -487,99 +610,17 @@ def generate_macro_and_rrg(breadth_data):
             print(f"[MACRO ERR] {label} ({sym}): {e}")
             continue
 
-    # Hitung RRG (RS-Ratio & RS-Momentum) mingguan 11 Sektor terhadap IHSG (^JKSE)
     rrg_out = []
+    rrg_konglo_out = []
+    rrg_theme_out = []
+
     try:
         ihsg_daily = _extract_close_series(raw, "^JKSE")
         ihsg_weekly = ihsg_daily.resample("W-FRI").last().dropna()
 
-        for sec_name, tickers in sector_baskets.items():
-            try:
-                sec_closes = []
-                for t in tickers:
-                    s = _extract_close_series(raw, t)
-                    if len(s) > 60 and float(s.iloc[0]) != 0:
-                        sec_closes.append(s / float(s.iloc[0]) * 1000.0)
-
-                if not sec_closes:
-                    continue
-
-                sec_daily_idx = pd.concat(sec_closes, axis=1).mean(axis=1).dropna()
-                if len(sec_daily_idx) < 2:
-                    continue
-
-                sec_weekly = sec_daily_idx.resample("W-FRI").last().dropna()
-
-                df_rel = pd.concat([sec_weekly, ihsg_weekly], axis=1, join="inner").dropna()
-                df_rel.columns = ["sec", "ihsg"]
-                if len(df_rel) < 20:
-                    continue
-
-                rs = (df_rel["sec"] / df_rel["ihsg"]) * 100
-                rs_mean = rs.rolling(window=14).mean()
-                rs_std = rs.rolling(window=14).std().replace(0, np.nan)
-                rs_ratio = 100 + ((rs - rs_mean) / rs_std)
-
-                rs_mom_raw = rs_ratio.pct_change(periods=1) * 100
-                mom_mean = rs_mom_raw.rolling(window=10).mean()
-                mom_std = rs_mom_raw.rolling(window=10).std().replace(0, np.nan)
-                rs_momentum = 100 + ((rs_mom_raw - mom_mean) / mom_std)
-
-                valid = (
-                    pd.DataFrame({"rs_ratio": rs_ratio, "rs_momentum": rs_momentum})
-                    .dropna()
-                    .tail(20)
-                )
-
-                if valid.empty:
-                    continue
-
-                latest = valid.iloc[-1]
-                r_val = round(float(latest["rs_ratio"]), 2)
-                m_val = round(float(latest["rs_momentum"]), 2)
-
-                if r_val >= 100 and m_val >= 100:
-                    quadrant = "LEADING"
-                elif r_val >= 100 and m_val < 100:
-                    quadrant = "WEAKENING"
-                elif r_val < 100 and m_val < 100:
-                    quadrant = "LAGGING"
-                else:
-                    quadrant = "IMPROVING"
-
-                d_chg = (
-                    round(
-                        ((float(sec_daily_idx.iloc[-1]) - float(sec_daily_idx.iloc[-2]))
-                         / float(sec_daily_idx.iloc[-2]))
-                        * 100,
-                        2,
-                    )
-                    if float(sec_daily_idx.iloc[-2]) != 0
-                    else 0.0
-                )
-
-                tail_points = [
-                    {
-                        "date": idx.strftime("%Y-%m-%d"),
-                        "x": round(float(row["rs_ratio"]), 2),
-                        "y": round(float(row["rs_momentum"]), 2),
-                    }
-                    for idx, row in valid.iterrows()
-                ]
-
-                rrg_out.append({
-                    "sector": sec_name,
-                    "symbol": f"{len(sec_closes)} Proxy Stocks",
-                    "close": round(float(sec_daily_idx.iloc[-1]), 2),
-                    "change_pct": d_chg,
-                    "rs_ratio": r_val,
-                    "rs_momentum": m_val,
-                    "quadrant": quadrant,
-                    "tail": tail_points,
-                })
-            except Exception as e:
-                print(f"[RRG ERR] {sec_name}: {e}")
-                continue
+        rrg_out = _compute_rrg_from_baskets(raw, ihsg_weekly, sector_baskets)
+        rrg_konglo_out = _compute_rrg_from_baskets(raw, ihsg_weekly, konglo_baskets)
+        rrg_theme_out = _compute_rrg_from_baskets(raw, ihsg_weekly, theme_baskets)
     except Exception as e:
         print(f"Error kalkulasi RRG: {e}")
 
@@ -588,11 +629,16 @@ def generate_macro_and_rrg(breadth_data):
         "breadth": breadth_data,
         "macro": macro_out,
         "rrg": rrg_out,
+        "rrg_konglo": rrg_konglo_out,
+        "rrg_theme": rrg_theme_out,
     }
 
     with open(os.path.join(OUTPUT_DIR, "market_macro.json"), "w") as f:
         json.dump(payload, f)
-    print(f"Sukses menyimpan data/market_macro.json ({len(rrg_out)} sektor RRG).")
+    print(
+        f"Sukses menyimpan data/market_macro.json "
+        f"(Sektor={len(rrg_out)}, Konglo={len(rrg_konglo_out)}, Tema={len(rrg_theme_out)})."
+    )
 
 
 if __name__ == "__main__":
