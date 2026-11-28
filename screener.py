@@ -133,18 +133,21 @@ def _extract_ohlcv_df(data_panel, ticker):
     return df
 
 
-def get_ihsg_returns():
-    """Mengunduh data IHSG (^JKSE) 1 tahun untuk kalkulasi Beta masing-masing emiten."""
+def get_ihsg_benchmark():
+    """Mengunduh data IHSG (^JKSE) 1 tahun untuk kalkulasi Beta & return harian IHSG."""
     try:
         ihsg = yf.download("^JKSE", period="1y", interval="1d", progress=False, auto_adjust=False)
         close_s = _extract_close_series(ihsg, "^JKSE")
         if len(close_s) >= 2:
             ret = close_s.pct_change().dropna()
-            print(f"Data IHSG (^JKSE) berhasil dimuat ({len(ret)} return harian).")
-            return ret
+            c_now = float(close_s.iloc[-1])
+            c_prev = float(close_s.iloc[-2])
+            ihsg_chg = round(((c_now - c_prev) / c_prev) * 100, 2) if c_prev != 0 else 0.0
+            print(f"Data IHSG (^JKSE) berhasil dimuat ({len(ret)} return harian, last={ihsg_chg:+}%).")
+            return ret, ihsg_chg
     except Exception as e:
         print(f"Gagal memuat data IHSG untuk Beta: {e}")
-    return None
+    return None, 0.0
 
 
 def calculate_beta(df_daily, ihsg_ret):
@@ -167,7 +170,7 @@ def calculate_beta(df_daily, ihsg_ret):
         return None
 
 
-def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=12, beta_val=None):
+def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=12, beta_val=None, ihsg_chg=0.0):
     """Memproses data OHLCV, metrik likuiditas, serta indikator dari indicators.py."""
     df = df_raw.dropna(subset=["Open", "High", "Low", "Close"]).copy()
     if len(df) < min_bars or len(df) < 2:
@@ -228,12 +231,17 @@ def process_timeframe(df_raw, clean_ticker, tf_name, last_daily_date, min_bars=1
     vol_ma20 = float(today["VOL_MA20"]) if pd.notna(today["VOL_MA20"]) else 0.0
     vol_ratio = round(vol_now / vol_ma20, 2) if vol_ma20 > 0 else 1.0
 
+    rel_ihsg = round(change_pct - ihsg_chg, 2)
+    outperforming_ihsg = bool(change_pct > ihsg_chg)
+
     summary = {
         "ticker": clean_ticker,
         "last_date": last_date,
         "close": close_price,
         "prev_close": prev_close,
         "change_pct": change_pct,
+        "rel_ihsg": rel_ihsg,
+        "outperforming_ihsg": outperforming_ihsg,
         "tx_miliar": tx_val_miliar,
         "avg_tx_miliar": avg_tx_miliar,
         "vol_ratio": vol_ratio,
@@ -340,10 +348,11 @@ def _compute_rrg_from_baskets(raw_panel, ihsg_weekly, baskets_dict):
 
 def run_screener():
     all_tickers = get_all_idx_tickers()
-    ihsg_ret = get_ihsg_returns()
+    ihsg_ret, ihsg_chg = get_ihsg_benchmark()
 
     results = {
         "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "ihsg_change_pct": ihsg_chg,
         "breadth": {
             "up": 0,
             "down": 0,
@@ -400,6 +409,7 @@ def run_screener():
                     last_daily_date,
                     min_bars=30,
                     beta_val=beta_val,
+                    ihsg_chg=ihsg_chg,
                 )
 
                 # 2. Weekly (1W - tutup Jumat)
@@ -421,6 +431,7 @@ def run_screener():
                     last_daily_date,
                     min_bars=20,
                     beta_val=beta_val,
+                    ihsg_chg=ihsg_chg,
                 )
 
                 # 3. Monthly (1M - tutup akhir bulan)
@@ -442,6 +453,7 @@ def run_screener():
                     last_daily_date,
                     min_bars=12,
                     beta_val=beta_val,
+                    ihsg_chg=ihsg_chg,
                 )
 
                 if not chart_1d or not sum_1d:
@@ -469,7 +481,6 @@ def run_screener():
     for tf in ["1d", "1w", "1m"]:
         results[tf]["all_data"] = dict(sorted(results[tf]["all_data"].items()))
 
-    # Hitung Market Breadth lengkap dari data 1D
     daily_items = list(results["1d"]["all_data"].values())
     total_d = len(daily_items)
     if total_d > 0:
@@ -591,11 +602,6 @@ def generate_macro_and_rrg(breadth_data):
                 for idx, val in hist_tail.items()
             ]
             spark = [item["close"] for item in history[-20:]]
-
-            print(
-                f"[MACRO OK] {label} ({sym}) | tgl={last_dt} | "
-                f"prev={close_prev} -> now={close_now} ({chg_pct:+}%)"
-            )
 
             macro_out[label] = {
                 "symbol": sym,
