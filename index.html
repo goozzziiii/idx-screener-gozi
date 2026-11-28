@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GOZI TERMINAL | IDX Institutional Workspace</title>
+<title>GOZI TERMINAL | IDX Workspace</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -85,7 +85,6 @@
     <div class="flex items-center space-x-1.5 pr-1">
       <span class="px-1.5 py-0.5 text-[10px] font-bold tracking-wider t-accent-bg rounded-xs">IDX</span>
       <span class="font-bold text-xs tracking-widest t-text-main uppercase">GOZI TERMINAL</span>
-      <a href="metals.html" class="px-2 py-0.5 text-[10px] font-bold rounded-xs bg-[#0068ff] text-white hover:opacity-90 shrink-0">XAU / METALS</a>
     </div>
     <span class="t-text-muted opacity-30">|</span>
 
@@ -156,17 +155,17 @@
     <span class="t-text-muted opacity-30">|</span>
     <span>&gt;MA20: <b id="brd-ma20" class="t-text-main">0%</b></span>
     <span>&gt;MA50: <b id="brd-ma50" class="t-text-main">0%</b></span>
+    <span class="t-text-muted opacity-30">|</span>
+    <span>IHSG: <b id="brd-ihsg" class="t-text-main">-</b></span>
   </div>
   <div class="flex items-center space-x-2 shrink-0">
-    <button onclick="quickOpenFilter('BEAR_CRT')" class="px-1.5 py-0.2 rounded-xs font-bold text-[9.5px] flex items-center space-x-1 hover:opacity-80" style="background:rgba(255,67,61,0.18); color:var(--bear)" title="Klik untuk melihat daftar saham Bearish CRT yang sebaiknya dihindari">
+    <button onclick="quickOpenPreset('crt', 'BEAR_CRT')" class="px-1.5 py-0.2 rounded-xs font-bold text-[9.5px] flex items-center space-x-1 hover:opacity-80" style="background:rgba(255,67,61,0.18); color:var(--bear)" title="Klik untuk melihat daftar saham Bearish CRT yang sebaiknya dihindari">
       <span>⚠️ Bearish CRT (Hindari):</span>
       <b id="brd-bear-crt" class="tabular-nums">0</b>
     </button>
-    <a href="metals.html" id="xau-mini-link" class="px-2 py-0.5 rounded-xs font-bold text-[9.5px] flex items-center space-x-1.5 hover:opacity-80" style="background:rgba(0,104,255,0.18); color:#60a5fa" title="Buka GOZI Metals Desk">
-      <span>XAU: <b id="mini-xau-price">-</b></span>
-      <span>|</span>
-      <span id="mini-xau-div">DIV: -</span>
-    </a>
+    <button onclick="quickOpenPreset('vol', 'DIP_ABSORP')" class="px-1.5 py-0.2 rounded-xs font-bold text-[9.5px] flex items-center space-x-1 hover:opacity-80" style="background:rgba(74,246,195,0.14); color:var(--bull)" title="Saham turun dengan penyerapan volume proxy">
+      <span>🎯 Dip Absorption</span>
+    </button>
   </div>
 </div>
 
@@ -235,6 +234,11 @@
           <span class="font-medium t-text-main">CRT</span>
           <button onclick="toggleInd('crt')" class="ml-1 t-text-muted"><svg id="eye-crt" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
+        <div class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border" title="Garis Akumulasi/Aliran Proxy OHLCV Harian (bukan broker summary asli)">
+          <span class="w-2 h-2 rounded-full" style="background-color:#a855f7"></span>
+          <span class="font-medium t-text-main">Flow Proxy</span>
+          <button onclick="toggleInd('flow')" class="ml-1 t-text-muted"><svg id="eye-flow" class="w-3 h-3 opacity-35" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
         <div ondblclick="openIndModal('rsi')" class="flex items-center space-x-1 px-2 py-0.5 rounded-xs t-bg-panel border t-border cursor-pointer" title="Double-click to configure">
           <span id="lbl-rsi" class="font-medium t-text-muted">RSI 14</span>
           <button onclick="event.stopPropagation(); toggleSubPane('rsi')" class="ml-1 t-text-muted"><svg id="eye-rsi" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -285,6 +289,10 @@
       </div>
 
       <div id="chart-wrapper" class="flex-1 h-full relative overflow-hidden">
+        <!-- Transparent Disclaimer Badge when Flow Proxy Overlay is active -->
+        <div id="flow-proxy-badge" class="hidden absolute top-2 left-2.5 z-10 px-2 py-0.5 rounded-xs t-bg-panel/90 border border-purple-500/40 text-[9.5px] text-purple-300 pointer-events-none">
+          ● FLOW PROXY (Ungu): Kumulatif CLV × Volume OHLCV Harian — Bukan Broker Summary Asli
+        </div>
         <div id="htf-chart-container" class="w-full h-full"></div>
         <svg id="drawing-svg" class="absolute inset-0 w-full h-full z-10"></svg>
       </div>
@@ -303,12 +311,12 @@
     </div>
   </div>
 
-  <!-- RIGHT SCREENER DRAWER -->
-  <aside id="screener-drawer" class="hidden w-full sm:w-[510px] t-bg-panel border-l t-border flex flex-col h-full z-30 shadow-2xl">
+  <!-- RIGHT SCREENER DRAWER (6 SECTION WORKSPACE) -->
+  <aside id="screener-drawer" class="w-full sm:w-[540px] t-bg-panel border-l t-border flex flex-col h-full z-30 shadow-2xl">
     <div class="px-3.5 py-2 border-b t-border flex items-center justify-between shrink-0">
       <div>
         <div class="flex items-center space-x-2">
-          <h2 class="text-xs font-bold t-accent-text uppercase tracking-wider">Screener</h2>
+          <h2 class="text-xs font-bold t-accent-text uppercase tracking-wider">IDX Screener</h2>
           <span class="text-[9px] t-text-muted hidden sm:inline">[↑/↓ Nav]</span>
         </div>
         <p id="last-updated" class="text-[10px] t-text-muted tabular-nums">Update: -</p>
@@ -320,27 +328,29 @@
         <span class="t-text-muted opacity-30">|</span>
         <button onclick="toggleScreenerFullscreen()" class="px-2 py-0.5 text-[10px] font-semibold rounded-xs border t-border t-bg-sub t-text-main t-row flex items-center space-x-1" title="Full Screen Tabel">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-          <span id="lbl-scr-full">Full Screen</span>
+          <span id="lbl-scr-full">Full</span>
         </button>
         <button onclick="toggleScreenerDrawer()" class="p-1 t-text-muted hover:opacity-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
     </div>
 
+    <!-- TOP LEVEL TABS: SEMUA SAHAM vs 6 SECTION SCREENER -->
     <div class="flex border-b t-border text-[11px] font-bold t-bg-sub shrink-0">
-      <button onclick="switchScreenerTab('all')" id="tab-all" class="flex-1 py-2 text-center border-b-2" style="border-color:var(--accent); color:var(--accent)">
+      <button onclick="switchScreenerTab('all')" id="tab-all" class="flex-1 py-2 text-center border-b-2 border-transparent t-text-muted">
         Semua Saham (<span id="count-all" class="tabular-nums">0</span>)
       </button>
-      <button onclick="switchScreenerTab('screener')" id="tab-screener" class="flex-1 py-2 text-center t-text-muted border-b-2 border-transparent">
-        Screener (<span id="count-filtered" class="tabular-nums">0</span>)
+      <button onclick="switchScreenerTab('screener')" id="tab-screener" class="flex-1 py-2 text-center border-b-2" style="border-color:var(--accent); color:var(--accent)">
+        6-Section Screener (<span id="count-filtered" class="tabular-nums">0</span>)
       </button>
     </div>
 
-    <div id="panel-all-search" class="p-2 border-b t-border t-bg-panel flex items-center justify-between gap-2 text-[11px] shrink-0">
+    <!-- PANEL 1: SEMUA SAHAM -->
+    <div id="panel-all-search" class="hidden p-2 border-b t-border t-bg-panel flex items-center justify-between gap-2 text-[11px] shrink-0">
       <input type="text" id="all-quick-search" oninput="renderStockList()" placeholder="Cari kode saham..." class="flex-1 px-2.5 py-1 rounded-xs text-xs uppercase">
       <select id="all-sort" onchange="renderStockList()" class="px-2 py-1 rounded-xs text-[11px]">
         <option value="TICKER_ASC">Kode A-Z</option>
         <option value="TX_DESC">Tx Value Desc</option>
-        <option value="VOL_DESC">Vol Spike Desc</option>
+        <option value="VOL_DESC">RVOL Desc</option>
         <option value="CHG_DESC">% Change Desc</option>
         <option value="BETA_ASC">Beta Terendah</option>
         <option value="PRICE_ASC">Harga Termurah</option>
@@ -348,111 +358,51 @@
       </select>
     </div>
 
-    <div id="panel-screener-filters" class="hidden p-2.5 border-b t-border t-bg-panel space-y-2 text-[11px] shrink-0">
-      <div class="grid grid-cols-12 gap-1.5">
-        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Ticker</label><input type="text" id="flt-ticker" oninput="renderStockList()" placeholder="ALL" class="w-full px-2 py-1 rounded-xs uppercase"></div>
-        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Min Price</label><input type="number" id="flt-min-price" oninput="renderStockList()" placeholder="50" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
-        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Max Price</label><input type="number" id="flt-max-price" oninput="renderStockList()" placeholder="Any" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
-        <div class="col-span-3"><label class="block text-[9px] t-text-muted uppercase mb-0.5">Min Tx (M)</label><input type="number" id="flt-min-tx" oninput="renderStockList()" placeholder="0" class="w-full px-2 py-1 rounded-xs tabular-nums"></div>
+    <!-- PANEL 2: 6 SECTION SCREENER WORKSPACE -->
+    <div id="panel-screener-filters" class="p-2.5 border-b t-border t-bg-panel space-y-2 text-[11px] shrink-0">
+      <!-- 6 Section Buttons -->
+      <div class="grid grid-cols-3 gap-1">
+        <button onclick="selectSection('crt')" id="sec-btn-crt" class="sec-btn px-2 py-1.5 text-[10px] font-bold rounded-xs t-accent-bg text-left truncate">1. CRT &amp; PA</button>
+        <button onclick="selectSection('div')" id="sec-btn-div" class="sec-btn px-2 py-1.5 text-[10px] font-semibold rounded-xs t-bg-sub t-text-muted text-left truncate">2. DIVERGENCE</button>
+        <button onclick="selectSection('smc')" id="sec-btn-smc" class="sec-btn px-2 py-1.5 text-[10px] font-semibold rounded-xs t-bg-sub t-text-muted text-left truncate">3. SMC / ICT</button>
+        <button onclick="selectSection('vol')" id="sec-btn-vol" class="sec-btn px-2 py-1.5 text-[10px] font-semibold rounded-xs t-bg-sub t-text-muted text-left truncate">4. VOL &amp; BANDAR</button>
+        <button onclick="selectSection('trend')" id="sec-btn-trend" class="sec-btn px-2 py-1.5 text-[10px] font-semibold rounded-xs t-bg-sub t-text-muted text-left truncate">5. TREND &amp; MA</button>
+        <button onclick="selectSection('hedge')" id="sec-btn-hedge" class="sec-btn px-2 py-1.5 text-[10px] font-semibold rounded-xs t-bg-sub t-text-muted text-left truncate">6. HEDGE / BETA</button>
       </div>
 
-      <div class="grid grid-cols-4 gap-1.5">
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">CRT Setup</label>
-          <select id="flt-crt" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="BULL_ALL">Bullish (All)</option>
-            <option value="CONFIRMED">Bull Confirmed</option>
-            <option value="POTENTIAL">Bull Potential</option>
-            <option value="BEAR_CRT">⚠️ Bearish (Avoid)</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">Moving Avg</label>
-          <select id="flt-ma" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="ABOVE_20">&gt; MA20</option>
-            <option value="ABOVE_50">&gt; MA50</option>
-            <option value="ABOVE_BOTH">&gt; MA20 &amp; 50</option>
-            <option value="NEAR_MA20">Near MA20</option>
-            <option value="BELOW_20">&lt; MA20</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">StochRSI</label>
-          <select id="flt-stoch" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="OS_CROSS">OS Cross</option>
-            <option value="OS_ZONE">K &le; 20</option>
-            <option value="OB_ZONE">K &ge; 80</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">RSI (14)</label>
-          <select id="flt-rsi" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="OS">&le; 30 (OS)</option>
-            <option value="MID">40 - 60</option>
-            <option value="OB">&ge; 70 (OB)</option>
-          </select>
-        </div>
+      <!-- Dynamic Sub-Filter Quick Buttons -->
+      <div id="section-sub-pills" class="flex flex-wrap gap-1 pt-0.5"></div>
+
+      <!-- Transparent OHLCV Proxy Note (Shown in Vol & Bandar Section) -->
+      <div id="vol-proxy-note" class="hidden px-2 py-1 rounded-xs t-bg-sub border t-border text-[9.5px] t-text-muted leading-snug">
+        ℹ️ <strong class="t-text-main">Catatan Data Harian:</strong> Metrik FLOW / ABSORP dihitung dari <em>proxy OHLCV harian</em> (CLV × RVOL &amp; lower wick), bukan broker summary / done detail asli.
       </div>
 
-      <div class="grid grid-cols-3 gap-1.5">
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">Vol Spike</label>
-          <select id="flt-vol" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="2X">&ge; 2.0x MA20</option>
-            <option value="3X">&ge; 3.0x MA20</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">Beta IHSG</label>
-          <select id="flt-beta" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="NEG">Negatif (&lt; 0)</option>
-            <option value="LOW">Defensif (&lt; 0.5)</option>
-            <option value="HIGH">Agresif (&gt; 1.2)</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[9px] t-text-muted uppercase mb-0.5">SMC / ICT</label>
-          <select id="flt-smc" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs">
-            <option value="ALL">All</option>
-            <option value="BULL_FVG">Bullish FVG</option>
-            <option value="BEAR_FVG">Bearish FVG</option>
-            <option value="SSL_SWEEP">SSL Sweep (Low)</option>
-            <option value="BSL_SWEEP">BSL Sweep (High)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between pt-0.5">
-        <div class="flex items-center space-x-1.5">
-          <span class="text-[10px] t-text-muted">Sort:</span>
-          <select id="flt-sort" onchange="renderStockList()" class="text-[10px] px-1.5 py-0.5 rounded-xs">
+      <!-- Global Quick Constraints (Ticker, Min Price, Min Tx, Sort) -->
+      <div class="grid grid-cols-12 gap-1.5 pt-0.5">
+        <div class="col-span-3"><input type="text" id="flt-ticker" oninput="renderStockList()" placeholder="Ticker..." class="w-full px-2 py-1 rounded-xs text-[10px] uppercase"></div>
+        <div class="col-span-3"><input type="number" id="flt-min-price" oninput="renderStockList()" placeholder="Min Rp" class="w-full px-2 py-1 rounded-xs text-[10px] tabular-nums"></div>
+        <div class="col-span-3"><input type="number" id="flt-min-tx" oninput="renderStockList()" placeholder="Min Tx (M)" class="w-full px-2 py-1 rounded-xs text-[10px] tabular-nums"></div>
+        <div class="col-span-3">
+          <select id="flt-sort" onchange="renderStockList()" class="w-full px-1.5 py-1 rounded-xs text-[10px]">
+            <option value="DEFAULT">Auto Sort</option>
+            <option value="TX_DESC">Tx Value ↓</option>
+            <option value="VOL_DESC">RVOL ↓</option>
+            <option value="FLOW_DESC">Flow Score ↓</option>
+            <option value="CHG_DESC">% Chg ↓</option>
+            <option value="BETA_ASC">Beta ↑</option>
             <option value="TICKER_ASC">Kode A-Z</option>
-            <option value="TX_DESC">Tx Value Desc</option>
-            <option value="VOL_DESC">Vol Spike Desc</option>
-            <option value="BETA_ASC">Beta Terendah</option>
-            <option value="PRICE_ASC">Price Asc</option>
-            <option value="PRICE_DESC">Price Desc</option>
-            <option value="CHG_DESC">% Change Desc</option>
-            <option value="STOCH_ASC">StochRSI Asc</option>
           </select>
-          <label class="flex items-center space-x-1 text-[10px] t-text-muted cursor-pointer ml-1" title="Sembunyikan otomatis saham yang sedang Bearish CRT">
-            <input type="checkbox" id="chk-hide-bear-crt" onchange="renderStockList()">
-            <span>Hide Bear CRT</span>
-          </label>
         </div>
-        <button onclick="resetFilters()" class="text-[10px] t-accent-text hover:underline font-bold">Reset Filter</button>
       </div>
     </div>
 
+    <!-- DYNAMIC SECTION TABLE HEADER -->
     <div id="table-header-row" class="grid grid-cols-12 px-3 py-1.5 text-[10px] font-bold t-text-muted border-b t-border t-bg-sub shrink-0 uppercase"></div>
+
+    <!-- STOCK LIST BODY -->
     <div id="stock-list" class="flex-1 overflow-y-auto divide-y" style="border-color:var(--border-main)">
-      <div class="p-8 text-center text-xs t-text-muted">Loading market feed...</div>
+      <div class="p-8 text-center text-xs t-text-muted">Memuat data pasar IDX...</div>
     </div>
   </aside>
 </div>
@@ -505,13 +455,89 @@
 // ==========================================
 let screenerData = null, fullTickerJson = null, currentChartData = null;
 let currentTicker = 'BBCA', activeChartTF = '1d', screenerTF = '1d';
-let activeScreenerTab = 'all', isScreenerFullscreen = false, isSplitView = false, isDarkMode = true;
+let activeScreenerTab = 'screener', activeSection = 'crt', activeSubFilter = 'ALL';
+let isScreenerFullscreen = false, isSplitView = false, isDarkMode = true;
 let renderedTickersList = [];
 
-let mainChart, candleSeries, volumeSeries, ma1Series, ma2Series;
+let mainChart, candleSeries, volumeSeries, ma1Series, ma2Series, flowProxySeries;
 let splitChart, splitCandleSeries, splitMa1Series, splitMa2Series, splitCrtLines = [];
 let rsiChart, rsiSeries, stochChart, stochKSeries, stochDSeries, crtPriceLines = [];
 let isSyncingCrosshair = false;
+
+const SECTION_CONFIG = {
+  crt: {
+    label: '1. CRT & PA',
+    defaultSort: 'TX_DESC',
+    pills: [
+      { id: 'ALL', label: 'All CRT' },
+      { id: 'BULL_CRT', label: 'Bullish CRT' },
+      { id: 'BEAR_CRT', label: '⚠️ Bearish CRT' },
+      { id: 'POTENTIAL', label: 'Potential Setup' },
+      { id: 'CONFIRMED', label: 'Confirmed Only' },
+      { id: 'MID50_RECLAIM', label: 'Mid50 Reclaim' }
+    ]
+  },
+  div: {
+    label: '2. DIVERGENCE',
+    defaultSort: 'TX_DESC',
+    pills: [
+      { id: 'ALL', label: 'All Div' },
+      { id: 'RSI_DIV', label: 'RSI Div' },
+      { id: 'MACD_DIV', label: 'MACD Div' },
+      { id: 'STOCH_DIV', label: 'StochRSI Div' },
+      { id: 'OBV_DIV', label: 'OBV / Vol Div' },
+      { id: 'BULL_DIV', label: 'Bullish Only' },
+      { id: 'BEAR_DIV', label: 'Bearish Only' }
+    ]
+  },
+  smc: {
+    label: '3. SMC / ICT',
+    defaultSort: 'TX_DESC',
+    pills: [
+      { id: 'ALL', label: 'All SMC' },
+      { id: 'SWEEP', label: 'Liq Sweep (BSL/SSL)' },
+      { id: 'FVG', label: 'FVG Unmitigated' },
+      { id: 'IFVG', label: 'iFVG' },
+      { id: 'MSS', label: 'MSS / CHoCH' },
+      { id: 'OB_TAP', label: 'Order Block Tap' },
+      { id: 'CISD', label: 'CISD' }
+    ]
+  },
+  vol: {
+    label: '4. VOL & BANDAR',
+    defaultSort: 'FLOW_DESC',
+    pills: [
+      { id: 'ALL', label: 'All Flow' },
+      { id: 'VOL_SPIKE', label: 'Vol Spike (>2x)' },
+      { id: 'HIGH_TX', label: 'High Tx (>10B)' },
+      { id: 'LOW_VOL_PB', label: 'Low Vol Pullback' },
+      { id: 'BO_RVOL', label: 'Breakout + RVOL' },
+      { id: 'DIP_ABSORP', label: 'Dip Absorption' },
+      { id: 'ACC_DIV', label: 'Accum Divergence' }
+    ]
+  },
+  trend: {
+    label: '5. TREND & MA',
+    defaultSort: 'TX_DESC',
+    pills: [
+      { id: 'ALL', label: 'All Trend' },
+      { id: 'PERFECT', label: 'Perfect Alignment' },
+      { id: 'GOLDEN', label: 'Golden Cross' },
+      { id: 'PB_MA20', label: 'Pullback MA20/EMA21' },
+      { id: 'OS_UP', label: 'Oversold in Uptrend' }
+    ]
+  },
+  hedge: {
+    label: '6. HEDGE / BETA',
+    defaultSort: 'BETA_ASC',
+    pills: [
+      { id: 'ALL', label: 'All Hedge' },
+      { id: 'NEG_BETA', label: 'Negative Beta (<0)' },
+      { id: 'LOW_BETA', label: 'Low Beta (0 - 0.5)' },
+      { id: 'OUT_IHSG', label: 'Outperforming IHSG' }
+    ]
+  }
+};
 
 const bloombergPalette = {
   bodyUp: '#4af6c3',
@@ -526,10 +552,11 @@ const bloombergPalette = {
 };
 
 let appearance = JSON.parse(localStorage.getItem('gozi_bbg_appearance_v1')) || { ...bloombergPalette };
-let indConfig = JSON.parse(localStorage.getItem('gozi_bbg_ind_v1')) || {
+let indConfig = JSON.parse(localStorage.getItem('gozi_bbg_ind_v2')) || {
   ma1: { visible: true, type: 'SMA', period: 20, color: '#fb8b1e', width: 1.5 },
   ma2: { visible: true, type: 'SMA', period: 50, color: '#0068ff', width: 1.5 },
   crt: { visible: true },
+  flow: { visible: false },
   rsi: { visible: false, period: 14, color: '#0068ff' },
   stoch: { visible: false, rsiLen: 10, stochLen: 10, smoothK: 5, smoothD: 5, colorK: '#fb8b1e', colorD: '#0068ff' }
 };
@@ -649,6 +676,7 @@ function getChartThemeOptions() {
       horzLines: { color: isDarkMode ? '#0f131a' : '#e2e8f0' }
     },
     rightPriceScale: { borderColor: isDarkMode ? '#1f2633' : '#cbd5e1' },
+    leftPriceScale: { visible: false, borderColor: isDarkMode ? '#1f2633' : '#cbd5e1' },
     timeScale: { borderColor: isDarkMode ? '#1f2633' : '#cbd5e1' }
   };
 }
@@ -660,6 +688,7 @@ function initCharts() {
     ...opts,
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     rightPriceScale: { ...opts.rightPriceScale, autoScale: true, scaleMargins: { top: 0.08, bottom: 0.18 } },
+    leftPriceScale: { visible: indConfig.flow?.visible || false, autoScale: true, scaleMargins: { top: 0.14, bottom: 0.22 } },
     timeScale: { ...opts.timeScale, timeVisible: true, rightOffset: 35 }
   });
   candleSeries = mainChart.addCandlestickSeries({
@@ -671,6 +700,14 @@ function initCharts() {
   volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
   ma1Series = mainChart.addLineSeries({ color: indConfig.ma1.color, lineWidth: indConfig.ma1.width, visible: indConfig.ma1.visible, priceLineVisible: false });
   ma2Series = mainChart.addLineSeries({ color: indConfig.ma2.color, lineWidth: indConfig.ma2.width, visible: indConfig.ma2.visible, priceLineVisible: false });
+  flowProxySeries = mainChart.addLineSeries({
+    color: '#a855f7',
+    lineWidth: 2,
+    priceScaleId: 'left',
+    visible: indConfig.flow?.visible || false,
+    priceLineVisible: false,
+    lastValueVisible: false
+  });
 
   splitChart = LightweightCharts.createChart(document.getElementById('split-left-container'), {
     ...opts,
@@ -794,8 +831,23 @@ function fitAllChart() {
 }
 
 // ==========================================
-// 4. LOAD DATA & RENDER INDICATORS
+// 4. LOAD DATA WITH FALLBACK & RENDER INDICATORS
 // ==========================================
+async function fetchJsonWithFallback(relPath) {
+  const urls = [
+    `${relPath}?t=${Date.now()}`,
+    `https://goozzziiii.github.io/idx-screener-gozi/${relPath}?t=${Date.now()}`,
+    `https://raw.githubusercontent.com/goozzziiii/idx-screener-gozi/main/${relPath}?t=${Date.now()}`
+  ];
+  for (const u of urls) {
+    try {
+      const res = await fetch(u);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+  }
+  return null;
+}
+
 async function loadHTFChart(ticker, tf) {
   currentTicker = ticker.toUpperCase();
   deselectDrawing();
@@ -815,24 +867,30 @@ async function loadHTFChart(ticker, tf) {
     chgEl.textContent = `${summary.change_pct > 0 ? '+' : ''}${summary.change_pct}%`;
     chgEl.style.color = summary.change_pct >= 0 ? 'var(--bull)' : 'var(--bear)';
 
-    const tags = [];
-    if (summary.fvg) tags.push(summary.fvg);
-    if (summary.sweep) tags.push(summary.sweep);
-    if (summary.vol_ratio >= 2.0) tags.push(`VOL ${summary.vol_ratio}x`);
+    const tags = [summary.fvg, summary.ifvg, summary.sweep, summary.mss_choch, summary.ob_tap, summary.cisd].filter(Boolean);
+    if (summary.vol_ratio >= 2.0) tags.push(`RVOL ${summary.vol_ratio}x`);
     if (tags.length) {
-      smcBadge.textContent = tags.join(' | ');
+      smcBadge.textContent = tags.slice(0, 3).join(' | ');
       smcBadge.classList.remove('hidden');
     }
   }
 
   try {
-    const res = await fetch(`data/charts/${currentTicker}.json`);
-    fullTickerJson = await res.json();
+    const json = await fetchJsonWithFallback(`data/charts/${currentTicker}.json`);
+    if (!json) return;
+    fullTickerJson = json;
     const data = fullTickerJson[tf];
     if (!data?.candles) return;
     currentChartData = data;
     candleSeries.setData(data.candles);
     volumeSeries.setData(data.volume.map(v => ({ time: v.time, value: v.value, color: v.isUp ? appearance.bodyUp + '55' : appearance.bodyDown + '55' })));
+
+    if (Array.isArray(data.flow_proxy)) {
+      flowProxySeries.setData(data.flow_proxy);
+    } else {
+      flowProxySeries.setData([]);
+    }
+
     recomputeIndicators();
     if (isSplitView) renderSplitChart();
     zoomChart(tf === '1m' ? 48 : (tf === '1w' ? 75 : 85));
@@ -861,6 +919,7 @@ function renderSplitChart() {
     if (s && !s.is_broken) {
       const col = s.status === 'POTENTIAL' ? appearance.crtPot : (s.dir === 1 ? appearance.crtConf : '#ff433d');
       splitCrtLines.push(splitCandleSeries.createPriceLine({ price: s.crth, color: col, lineWidth: 1.5, lineStyle: s.status === 'POTENTIAL' ? 2 : 0, axisLabelVisible: true, title: 'CRTH' }));
+      splitCrtLines.push(splitCandleSeries.createPriceLine({ price: s.mid50, color: col, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '50%' }));
       splitCrtLines.push(splitCandleSeries.createPriceLine({ price: s.crtl, color: col, lineWidth: 1.5, lineStyle: s.status === 'POTENTIAL' ? 2 : 0, axisLabelVisible: true, title: 'CRTL' }));
     }
   }
@@ -929,6 +988,13 @@ function syncIndicatorPills() {
   document.getElementById('dot-ma2').style.backgroundColor = indConfig.ma2.color;
   document.getElementById('eye-ma2').style.opacity = indConfig.ma2.visible ? '1' : '0.35';
   document.getElementById('eye-crt').style.opacity = indConfig.crt.visible ? '1' : '0.35';
+
+  const flowOn = Boolean(indConfig.flow?.visible);
+  document.getElementById('eye-flow').style.opacity = flowOn ? '1' : '0.35';
+  document.getElementById('flow-proxy-badge').classList.toggle('hidden', !flowOn);
+  if (flowProxySeries) flowProxySeries.applyOptions({ visible: flowOn });
+  if (mainChart) mainChart.applyOptions({ leftPriceScale: { visible: flowOn } });
+
   document.getElementById('lbl-rsi').textContent = `RSI ${indConfig.rsi.period}`;
   document.getElementById('pane-rsi-len').textContent = indConfig.rsi.period;
   document.getElementById('eye-rsi').style.opacity = indConfig.rsi.visible ? '1' : '0.35';
@@ -940,8 +1006,9 @@ function syncIndicatorPills() {
   document.getElementById('pane-stoch-wrap').classList.toggle('hidden', !indConfig.stoch.visible);
 }
 function toggleInd(key) {
+  if (!indConfig[key]) indConfig[key] = { visible: false };
   indConfig[key].visible = !indConfig[key].visible;
-  localStorage.setItem('gozi_bbg_ind_v1', JSON.stringify(indConfig));
+  localStorage.setItem('gozi_bbg_ind_v2', JSON.stringify(indConfig));
   if (key === 'ma1') { ma1Series.applyOptions({ visible: indConfig.ma1.visible }); splitMa1Series.applyOptions({ visible: indConfig.ma1.visible }); }
   if (key === 'ma2') { ma2Series.applyOptions({ visible: indConfig.ma2.visible }); splitMa2Series.applyOptions({ visible: indConfig.ma2.visible }); }
   if (key === 'crt') { recomputeIndicators(); if (isSplitView) renderSplitChart(); }
@@ -949,7 +1016,7 @@ function toggleInd(key) {
 }
 function toggleSubPane(key) {
   indConfig[key].visible = !indConfig[key].visible;
-  localStorage.setItem('gozi_bbg_ind_v1', JSON.stringify(indConfig));
+  localStorage.setItem('gozi_bbg_ind_v2', JSON.stringify(indConfig));
   syncIndicatorPills();
   setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 30);
 }
@@ -988,7 +1055,7 @@ function saveIndModal() {
     indConfig.stoch.colorD = document.getElementById('inp-st-cold').value;
     stochKSeries.applyOptions({ color: indConfig.stoch.colorK }); stochDSeries.applyOptions({ color: indConfig.stoch.colorD });
   }
-  localStorage.setItem('gozi_bbg_ind_v1', JSON.stringify(indConfig));
+  localStorage.setItem('gozi_bbg_ind_v2', JSON.stringify(indConfig));
   syncIndicatorPills(); recomputeIndicators(); if (isSplitView) renderSplitChart(); closeIndModal();
 }
 
@@ -1054,7 +1121,7 @@ function setDrawTool(t) {
     if (t === 'measure') document.getElementById('draw-hint-text').textContent = 'Penggaris Ukur: Klik titik awal, lalu arahkan ke titik tujuan.';
     else if (t === 'rr') document.getElementById('draw-hint-text').textContent = 'Long R:R: Klik titik Entry, lalu klik lebar kotak (setelah jadi, geser garis TP/Entry/SL bebas).';
     else if (['hline', 'vline', 'text'].includes(t)) document.getElementById('draw-hint-text').textContent = 'Klik di mana saja (termasuk area kosong kanan).';
-    else document.getElementById('draw-hint-text').textContent = 'Klik titik pertama, lalu klik titik kedua.';
+    else document.getElementById('draw-hint-text').textContent = 'Klik titik pertama, lalu klik titik kedua (tahan Shift untuk garis horizontal).';
   }
   renderDrawings();
 }
@@ -1251,10 +1318,16 @@ window.addEventListener('pointermove', (e) => {
 
   if (dragState.mode === 'p1') {
     const pt = pixelToChartCoord(curX, curY, useTickSnap);
-    if (pt) item.p1 = pt;
+    if (pt) {
+      if (e.shiftKey && ['trendline', 'extline'].includes(item.type) && item.p2) pt.price = item.p2.price;
+      item.p1 = pt;
+    }
   } else if (dragState.mode === 'p2') {
     const pt = pixelToChartCoord(curX, curY, useTickSnap);
-    if (pt) item.p2 = pt;
+    if (pt) {
+      if (e.shiftKey && ['trendline', 'extline'].includes(item.type) && item.p1) pt.price = item.p1.price;
+      item.p2 = pt;
+    }
   } else if (dragState.mode === 'move') {
     const startPt = pixelToChartCoord(dragState.startX, dragState.startY, false);
     const curPt = pixelToChartCoord(curX, curY, false);
@@ -1351,9 +1424,12 @@ svgCanvas.addEventListener('click', (e) => {
     if (activeDrawTool === 'rr') {
       document.getElementById('draw-hint-text').textContent = 'Klik titik kedua untuk lebar area R:R (lalu geser TP/Entry/SL bebas)...';
     } else {
-      document.getElementById('draw-hint-text').textContent = 'Klik titik kedua pada chart...';
+      document.getElementById('draw-hint-text').textContent = 'Klik titik kedua pada chart (tahan Shift untuk horizontal)...';
     }
   } else {
+    if (e.shiftKey && ['trendline', 'extline'].includes(activeDrawTool)) {
+      pt.price = pendingPoint.price;
+    }
     if (activeDrawTool === 'rr') {
       const entryP = snapToIDXTick(pendingPoint.price);
       const tick = getIDXTickSize(entryP);
@@ -1599,7 +1675,7 @@ async function captureChartScreenshot() {
 }
 
 // ==========================================
-// 8. SCREENER
+// 8. 6-SECTION SCREENER ENGINE
 // ==========================================
 function toggleScreenerDrawer() {
   const drawer = document.getElementById('screener-drawer');
@@ -1611,16 +1687,11 @@ function toggleScreenerDrawer() {
   setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40);
 }
 
-function quickOpenFilter(preset) {
+function quickOpenPreset(secKey, subId) {
   const drawer = document.getElementById('screener-drawer');
   if (drawer.classList.contains('hidden')) drawer.classList.remove('hidden');
   switchScreenerTab('screener');
-  resetFilters();
-  if (preset === 'BEAR_CRT') {
-    document.getElementById('flt-crt').value = 'BEAR_CRT';
-    document.getElementById('chk-hide-bear-crt').checked = false;
-  }
-  renderStockList();
+  selectSection(secKey, subId);
 }
 
 function toggleScreenerFullscreen() {
@@ -1635,14 +1706,14 @@ function applyScreenerLayout() {
 
   if (isScreenerFullscreen) {
     chartSec.classList.add('hidden');
-    drawer.classList.remove('sm:w-[510px]', 'border-l');
+    drawer.classList.remove('sm:w-[540px]', 'border-l');
     drawer.classList.add('w-full');
     lbl.textContent = 'Exit Full';
   } else {
     chartSec.classList.remove('hidden');
     drawer.classList.remove('w-full');
-    drawer.classList.add('w-full', 'sm:w-[510px]', 'border-l');
-    lbl.textContent = 'Full Screen';
+    drawer.classList.add('w-full', 'sm:w-[540px]', 'border-l');
+    lbl.textContent = 'Full';
     setTimeout(() => { resizeAllCharts(); zoomChart(85); }, 40);
   }
   renderStockList();
@@ -1665,8 +1736,47 @@ function switchScreenerTab(tab) {
     tabAll.style.borderColor = 'transparent'; tabAll.style.color = 'var(--text-muted)';
     panelScr.classList.remove('hidden');
     panelAll.classList.add('hidden');
+    renderSectionPills();
   }
   renderStockList();
+}
+
+function selectSection(secKey, forcedSub = 'ALL') {
+  if (!SECTION_CONFIG[secKey]) return;
+  activeSection = secKey;
+  activeSubFilter = forcedSub;
+
+  Object.keys(SECTION_CONFIG).forEach(k => {
+    const btn = document.getElementById(`sec-btn-${k}`);
+    if (!btn) return;
+    btn.className = k === secKey
+      ? 'sec-btn px-2 py-1.5 text-[10px] font-bold rounded-xs t-accent-bg text-left truncate'
+      : 'sec-btn px-2 py-1.5 text-[10px] font-semibold rounded-xs t-bg-sub t-text-muted text-left truncate hover:opacity-90';
+  });
+
+  document.getElementById('vol-proxy-note').classList.toggle('hidden', secKey !== 'vol');
+  renderSectionPills();
+  renderStockList();
+}
+
+function setSubFilter(subId) {
+  activeSubFilter = subId;
+  renderSectionPills();
+  renderStockList();
+}
+
+function renderSectionPills() {
+  const cfg = SECTION_CONFIG[activeSection];
+  const wrap = document.getElementById('section-sub-pills');
+  if (!cfg || !wrap) return;
+  wrap.innerHTML = cfg.pills.map(p => {
+    const active = p.id === activeSubFilter;
+    return `<button onclick="setSubFilter('${p.id}')" class="px-2 py-0.5 text-[10px] rounded-xs border transition ${
+      active
+        ? 'border-[#fb8b1e] bg-[#fb8b1e]/20 t-accent-text font-bold'
+        : 't-border t-bg-sub t-text-muted hover:opacity-100'
+    }">${p.label}</button>`;
+  }).join('');
 }
 
 function selectTimeframe(tf) {
@@ -1697,23 +1807,66 @@ function togglePinTicker(e, ticker) {
   renderStockList();
 }
 
-function resetFilters() {
-  ['flt-ticker', 'flt-min-price', 'flt-max-price', 'flt-min-tx'].forEach(id => document.getElementById(id).value = '');
-  ['flt-crt', 'flt-ma', 'flt-stoch', 'flt-rsi', 'flt-vol', 'flt-beta', 'flt-smc'].forEach(id => document.getElementById(id).value = 'ALL');
-  document.getElementById('chk-hide-bear-crt').checked = false;
-  document.getElementById('flt-sort').value = 'TICKER_ASC';
-  renderStockList();
+function sortStockArray(list, sortKey) {
+  const effectiveSort = sortKey === 'DEFAULT' ? (SECTION_CONFIG[activeSection]?.defaultSort || 'TX_DESC') : sortKey;
+  if (effectiveSort === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
+  else if (effectiveSort === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
+  else if (effectiveSort === 'VOL_DESC') list.sort((a, b) => (b.vol_ratio || 0) - (a.vol_ratio || 0));
+  else if (effectiveSort === 'FLOW_DESC') list.sort((a, b) => (b.flow_score ?? -999) - (a.flow_score ?? -999));
+  else if (effectiveSort === 'BETA_ASC') list.sort((a, b) => (a.beta ?? 99) - (b.beta ?? 99));
+  else if (effectiveSort === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
+  else if (effectiveSort === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
+  else if (effectiveSort === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
 }
 
-function sortStockArray(list, sortKey) {
-  if (sortKey === 'TICKER_ASC') list.sort((a, b) => a.ticker.localeCompare(b.ticker));
-  else if (sortKey === 'TX_DESC') list.sort((a, b) => (b.tx_miliar || 0) - (a.tx_miliar || 0));
-  else if (sortKey === 'VOL_DESC') list.sort((a, b) => (b.vol_ratio || 0) - (a.vol_ratio || 0));
-  else if (sortKey === 'BETA_ASC') list.sort((a, b) => (a.beta ?? 99) - (b.beta ?? 99));
-  else if (sortKey === 'PRICE_ASC') list.sort((a, b) => a.close - b.close);
-  else if (sortKey === 'PRICE_DESC') list.sort((a, b) => b.close - a.close);
-  else if (sortKey === 'CHG_DESC') list.sort((a, b) => b.change_pct - a.change_pct);
-  else if (sortKey === 'STOCH_ASC') list.sort((a, b) => a.stoch_k - b.stoch_k);
+function filterByActiveSection(list) {
+  const s = activeSubFilter;
+  if (activeSection === 'crt') {
+    if (s === 'ALL') return list.filter(x => x.crt_bull || x.crt_bear || x.mid50_reclaim);
+    if (s === 'BULL_CRT') return list.filter(x => x.crt_bull);
+    if (s === 'BEAR_CRT') return list.filter(x => x.crt_bear);
+    if (s === 'POTENTIAL') return list.filter(x => x.crt_status === 'POTENTIAL');
+    if (s === 'CONFIRMED') return list.filter(x => x.crt_status === 'CONFIRMED');
+    if (s === 'MID50_RECLAIM') return list.filter(x => x.mid50_reclaim);
+  } else if (activeSection === 'div') {
+    const anyDiv = x => Boolean(x.div_rsi || x.div_macd || x.div_stoch || x.div_obv);
+    if (s === 'ALL') return list.filter(anyDiv);
+    if (s === 'RSI_DIV') return list.filter(x => Boolean(x.div_rsi));
+    if (s === 'MACD_DIV') return list.filter(x => Boolean(x.div_macd));
+    if (s === 'STOCH_DIV') return list.filter(x => Boolean(x.div_stoch));
+    if (s === 'OBV_DIV') return list.filter(x => Boolean(x.div_obv));
+    if (s === 'BULL_DIV') return list.filter(x => [x.div_rsi, x.div_macd, x.div_stoch, x.div_obv].some(v => (v || '').includes('BULL')));
+    if (s === 'BEAR_DIV') return list.filter(x => [x.div_rsi, x.div_macd, x.div_stoch, x.div_obv].some(v => (v || '').includes('BEAR')));
+  } else if (activeSection === 'smc') {
+    const anySmc = x => Boolean(x.sweep || x.fvg || x.ifvg || x.mss_choch || x.ob_tap || x.cisd);
+    if (s === 'ALL') return list.filter(anySmc);
+    if (s === 'SWEEP') return list.filter(x => Boolean(x.sweep));
+    if (s === 'FVG') return list.filter(x => Boolean(x.fvg));
+    if (s === 'IFVG') return list.filter(x => Boolean(x.ifvg));
+    if (s === 'MSS') return list.filter(x => Boolean(x.mss_choch));
+    if (s === 'OB_TAP') return list.filter(x => Boolean(x.ob_tap));
+    if (s === 'CISD') return list.filter(x => Boolean(x.cisd));
+  } else if (activeSection === 'vol') {
+    if (s === 'ALL') return list.filter(x => (x.vol_ratio || 0) >= 1.5 || x.dip_absorption || x.acc_divergence || x.low_vol_pullback || x.breakout_high_rvol);
+    if (s === 'VOL_SPIKE') return list.filter(x => (x.vol_ratio || 0) >= 2.0);
+    if (s === 'HIGH_TX') return list.filter(x => (x.tx_miliar || 0) >= 10.0);
+    if (s === 'LOW_VOL_PB') return list.filter(x => Boolean(x.low_vol_pullback));
+    if (s === 'BO_RVOL') return list.filter(x => Boolean(x.breakout_high_rvol));
+    if (s === 'DIP_ABSORP') return list.filter(x => Boolean(x.dip_absorption));
+    if (s === 'ACC_DIV') return list.filter(x => Boolean(x.acc_divergence));
+  } else if (activeSection === 'trend') {
+    if (s === 'ALL') return list.filter(x => x.perfect_alignment || x.golden_cross || x.pullback_ma20_ema21 || x.oversold_uptrend);
+    if (s === 'PERFECT') return list.filter(x => Boolean(x.perfect_alignment));
+    if (s === 'GOLDEN') return list.filter(x => Boolean(x.golden_cross));
+    if (s === 'PB_MA20') return list.filter(x => Boolean(x.pullback_ma20_ema21));
+    if (s === 'OS_UP') return list.filter(x => Boolean(x.oversold_uptrend));
+  } else if (activeSection === 'hedge') {
+    if (s === 'ALL') return list.filter(x => (x.beta !== null && x.beta !== undefined && x.beta <= 0.5) || x.outperforming_ihsg);
+    if (s === 'NEG_BETA') return list.filter(x => x.beta !== null && x.beta !== undefined && x.beta < 0);
+    if (s === 'LOW_BETA') return list.filter(x => x.beta !== null && x.beta !== undefined && x.beta >= 0 && x.beta <= 0.5);
+    if (s === 'OUT_IHSG') return list.filter(x => Boolean(x.outperforming_ihsg));
+  }
+  return list;
 }
 
 function renderStockList() {
@@ -1728,62 +1881,19 @@ function renderStockList() {
     const s = document.getElementById('all-sort').value;
     if (q) list = list.filter(x => x.ticker.includes(q));
     sortStockArray(list, s);
-    document.getElementById('count-filtered').textContent = rawAll.length;
     document.getElementById('top-scr-count').textContent = list.length;
   } else {
     const q = document.getElementById('flt-ticker').value.trim().toUpperCase();
     const minP = parseFloat(document.getElementById('flt-min-price').value);
-    const maxP = parseFloat(document.getElementById('flt-max-price').value);
     const minTx = parseFloat(document.getElementById('flt-min-tx').value);
-    const fCrt = document.getElementById('flt-crt').value;
-    const fMa = document.getElementById('flt-ma').value;
-    const fSt = document.getElementById('flt-stoch').value;
-    const fRsi = document.getElementById('flt-rsi').value;
-    const fVol = document.getElementById('flt-vol').value;
-    const fBeta = document.getElementById('flt-beta').value;
-    const fSmc = document.getElementById('flt-smc').value;
-    const hideBear = document.getElementById('chk-hide-bear-crt').checked;
     const fSort = document.getElementById('flt-sort').value;
 
+    list = filterByActiveSection(list);
     if (q) list = list.filter(x => x.ticker.includes(q));
     if (!isNaN(minP)) list = list.filter(x => x.close >= minP);
-    if (!isNaN(maxP)) list = list.filter(x => x.close <= maxP);
     if (!isNaN(minTx)) list = list.filter(x => (x.tx_miliar || 0) >= minTx);
-    if (hideBear) list = list.filter(x => !x.crt_bear);
-
-    if (fCrt === 'BULL_ALL') list = list.filter(x => x.crt_bull);
-    else if (fCrt === 'CONFIRMED') list = list.filter(x => x.crt_bull && x.crt_status === 'CONFIRMED');
-    else if (fCrt === 'POTENTIAL') list = list.filter(x => x.crt_bull && x.crt_status === 'POTENTIAL');
-    else if (fCrt === 'BEAR_CRT') list = list.filter(x => x.crt_bear);
-
-    if (fMa === 'ABOVE_20') list = list.filter(x => x.above_ma20);
-    else if (fMa === 'ABOVE_50') list = list.filter(x => x.above_ma50);
-    else if (fMa === 'ABOVE_BOTH') list = list.filter(x => x.above_ma20 && x.above_ma50);
-    else if (fMa === 'NEAR_MA20') list = list.filter(x => Math.abs(x.dist_ma20 || 99) <= 2.0);
-    else if (fMa === 'BELOW_20') list = list.filter(x => x.ma20 > 0 && x.close < x.ma20);
-
-    if (fSt === 'OS_CROSS') list = list.filter(x => x.stoch_os_cross);
-    else if (fSt === 'OS_ZONE') list = list.filter(x => x.stoch_k <= 20);
-    else if (fSt === 'OB_ZONE') list = list.filter(x => x.stoch_k >= 80);
-
-    if (fRsi === 'OS') list = list.filter(x => (x.rsi14 || 50) <= 30);
-    else if (fRsi === 'MID') list = list.filter(x => (x.rsi14 || 50) >= 40 && (x.rsi14 || 50) <= 60);
-    else if (fRsi === 'OB') list = list.filter(x => (x.rsi14 || 50) >= 70);
-
-    if (fVol === '2X') list = list.filter(x => (x.vol_ratio || 0) >= 2.0);
-    else if (fVol === '3X') list = list.filter(x => (x.vol_ratio || 0) >= 3.0);
-
-    if (fBeta === 'NEG') list = list.filter(x => x.beta !== null && x.beta !== undefined && x.beta < 0);
-    else if (fBeta === 'LOW') list = list.filter(x => x.beta !== null && x.beta !== undefined && x.beta < 0.5);
-    else if (fBeta === 'HIGH') list = list.filter(x => x.beta !== null && x.beta !== undefined && x.beta > 1.2);
-
-    if (fSmc === 'BULL_FVG') list = list.filter(x => x.fvg === 'BULL FVG');
-    else if (fSmc === 'BEAR_FVG') list = list.filter(x => x.fvg === 'BEAR FVG');
-    else if (fSmc === 'SSL_SWEEP') list = list.filter(x => x.sweep === 'SSL SWEEP');
-    else if (fSmc === 'BSL_SWEEP') list = list.filter(x => x.sweep === 'BSL SWEEP');
 
     sortStockArray(list, fSort);
-
     document.getElementById('count-filtered').textContent = list.length;
     document.getElementById('top-scr-count').textContent = list.length;
   }
@@ -1791,32 +1901,62 @@ function renderStockList() {
   list.sort((a, b) => (pinnedTickers.includes(b.ticker) ? 1 : 0) - (pinnedTickers.includes(a.ticker) ? 1 : 0));
   renderedTickersList = list.map(x => x.ticker);
 
+  // Dynamic Column Headers per Section
   const hdr = document.getElementById('table-header-row');
-  if (isScreenerFullscreen) {
+  if (activeScreenerTab === 'all') {
     hdr.innerHTML = `
-      <div class="col-span-2">Ticker / Status</div>
-      <div class="col-span-1 text-right">Price</div>
-      <div class="col-span-1 text-right">%Chg</div>
-      <div class="col-span-1 text-right">Tx (M)</div>
-      <div class="col-span-1 text-right">Vol/MA20</div>
-      <div class="col-span-1 text-right">Beta</div>
-      <div class="col-span-1 text-right">MA20</div>
-      <div class="col-span-1 text-right">RSI14</div>
-      <div class="col-span-1 text-right">Stoch</div>
-      <div class="col-span-2 text-right">CRT / SMC</div>
-    `;
-  } else {
-    hdr.innerHTML = `
-      <div class="col-span-5">Ticker / Radar</div>
+      <div class="col-span-5">Ticker / Status</div>
       <div class="col-span-3 text-right">Price / Chg</div>
-      <div class="col-span-2 text-right">Tx / Vol</div>
-      <div class="col-span-2 text-right">Beta / St</div>
+      <div class="col-span-2 text-right">Tx / RVOL</div>
+      <div class="col-span-2 text-right">Beta / RSI</div>
+    `;
+  } else if (activeSection === 'crt') {
+    hdr.innerHTML = `
+      <div class="col-span-4">Ticker / Bias</div>
+      <div class="col-span-3 text-right">Price / Chg</div>
+      <div class="col-span-3 text-right">CRTH / CRTL</div>
+      <div class="col-span-2 text-right">Mid50</div>
+    `;
+  } else if (activeSection === 'div') {
+    hdr.innerHTML = `
+      <div class="col-span-4">Ticker / Signal</div>
+      <div class="col-span-3 text-right">Price / Chg</div>
+      <div class="col-span-3 text-right">RSI / MACD</div>
+      <div class="col-span-2 text-right">Stoch / OBV</div>
+    `;
+  } else if (activeSection === 'smc') {
+    hdr.innerHTML = `
+      <div class="col-span-5">Ticker / Structure</div>
+      <div class="col-span-3 text-right">Price / Chg</div>
+      <div class="col-span-2 text-right">Tx (M)</div>
+      <div class="col-span-2 text-right">RVOL</div>
+    `;
+  } else if (activeSection === 'vol') {
+    hdr.innerHTML = `
+      <div class="col-span-4">Ticker / Proxy</div>
+      <div class="col-span-2 text-right">Chg %</div>
+      <div class="col-span-3 text-right">Tx / Avg20D</div>
+      <div class="col-span-3 text-right">RVOL / Flow</div>
+    `;
+  } else if (activeSection === 'trend') {
+    hdr.innerHTML = `
+      <div class="col-span-4">Ticker / Setup</div>
+      <div class="col-span-3 text-right">Price / Chg</div>
+      <div class="col-span-3 text-right">MA20 / EMA21</div>
+      <div class="col-span-2 text-right">MA50 / RSI</div>
+    `;
+  } else if (activeSection === 'hedge') {
+    hdr.innerHTML = `
+      <div class="col-span-4">Ticker / Hedge</div>
+      <div class="col-span-3 text-right">Price / Chg</div>
+      <div class="col-span-2 text-right">Beta 1Y</div>
+      <div class="col-span-3 text-right">vs IHSG</div>
     `;
   }
 
   const container = document.getElementById('stock-list');
   if (!list.length) {
-    container.innerHTML = `<div class="p-8 text-center text-xs t-text-muted">Tidak ada emiten yang cocok dengan filter.</div>`;
+    container.innerHTML = `<div class="p-8 text-center text-xs t-text-muted">Tidak ada emiten yang memenuhi kriteria section ini.</div>`;
     return;
   }
 
@@ -1825,71 +1965,210 @@ function renderStockList() {
     const isPin = pinnedTickers.includes(item.ticker);
     const chgCol = item.change_pct >= 0 ? 'var(--bull)' : 'var(--bear)';
     const sign = item.change_pct > 0 ? '+' : '';
-
-    let pill = '';
-    if (item.crt_bear) {
-      pill = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(255,67,61,0.22);color:var(--bear)">⚠️ AVOID</span>`;
-    } else if (item.crt_status === 'POTENTIAL') {
-      pill = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(251,139,30,0.2);color:#fb8b1e">POTENTIAL</span>`;
-    } else if (item.crt_status === 'CONFIRMED') {
-      pill = `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-xs" style="background:rgba(74,246,195,0.2);color:var(--bull)">CONFIRMED</span>`;
-    }
-
-    const smcTags = [item.fvg, item.sweep].filter(Boolean).join(' · ');
-    const subInfo = item.crt_sig
-      ? `${item.crt_sig}${smcTags ? ' | ' + smcTags : ''}`
-      : (smcTags || screenerTF.toUpperCase());
-
     const volRatio = item.vol_ratio || 1;
     const volBadge = volRatio >= 2.0 ? `<span style="color:var(--accent)" class="font-bold">${volRatio.toFixed(1)}x</span>` : `${volRatio.toFixed(1)}x`;
     const betaStr = (item.beta !== null && item.beta !== undefined) ? item.beta.toFixed(2) : '-';
 
     const onSelectRow = `currentTicker='${item.ticker}'; if(isScreenerFullscreen){isScreenerFullscreen=false;applyScreenerLayout();} selectTimeframe('${screenerTF}'); renderStockList();`;
-    const pinBtn = `<button onclick="togglePinTicker(event, '${item.ticker}')" class="mr-1.5 t-text-muted hover:opacity-100" title="Pin ke Atas"><svg class="w-3 h-3 ${isPin ? 'fill-[#fb8b1e] text-[#fb8b1e]' : ''}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>`;
+    const pinBtn = `<button onclick="togglePinTicker(event, '${item.ticker}')" class="mr-1.5 t-text-muted hover:opacity-100 shrink-0" title="Pin ke Atas"><svg class="w-3 h-3 ${isPin ? 'fill-[#fb8b1e] text-[#fb8b1e]' : ''}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>`;
 
-    if (isScreenerFullscreen) {
+    if (activeScreenerTab === 'all') {
       return `
-      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row text-xs tabular-nums ${sel ? 't-row-active' : ''}">
-        <div class="col-span-2 font-bold t-accent-text flex items-center">${pinBtn}<span>${item.ticker}</span><span class="ml-1.5">${pill}</span></div>
-        <div class="col-span-1 text-right font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
-        <div class="col-span-1 text-right font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
-        <div class="col-span-1 text-right t-text-muted">${(item.tx_miliar || 0).toFixed(1)}B</div>
-        <div class="col-span-1 text-right t-text-muted">${volBadge}</div>
-        <div class="col-span-1 text-right t-text-main">${betaStr}</div>
-        <div class="col-span-1 text-right t-text-main">${item.ma20 ? item.ma20.toLocaleString('id-ID') : '-'}</div>
-        <div class="col-span-1 text-right t-text-main">${item.rsi14 ?? '-'}</div>
-        <div class="col-span-1 text-right t-text-muted">${item.stoch_k}/${item.stoch_d}</div>
-        <div class="col-span-2 text-right text-[10px] t-text-main truncate">${subInfo}</div>
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+        <div class="col-span-5 flex items-center min-w-0">
+          ${pinBtn}
+          <div class="min-w-0">
+            <div class="font-bold text-xs t-accent-text truncate">${item.ticker}</div>
+            <div class="text-[9.5px] t-text-muted truncate">${item.crt_sig || [item.fvg, item.sweep].filter(Boolean).join(' · ') || screenerTF.toUpperCase()}</div>
+          </div>
+        </div>
+        <div class="col-span-3 text-right tabular-nums">
+          <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+          <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        </div>
+        <div class="col-span-2 text-right text-[10px] t-text-muted tabular-nums">
+          <div>${(item.tx_miliar || 0).toFixed(1)}B</div>
+          <div>${volBadge}</div>
+        </div>
+        <div class="col-span-2 text-right text-[10px] tabular-nums">
+          <div class="t-text-main">β ${betaStr}</div>
+          <div class="t-text-muted">R ${item.rsi14 ?? '-'}</div>
+        </div>
       </div>`;
     }
 
+    if (activeSection === 'crt') {
+      let badge = '';
+      if (item.crt_bear) badge = `<span class="text-[8.5px] font-bold px-1 rounded-xs" style="background:rgba(255,67,61,0.22);color:var(--bear)">BEAR</span>`;
+      else if (item.crt_status === 'POTENTIAL') badge = `<span class="text-[8.5px] font-bold px-1 rounded-xs" style="background:rgba(251,139,30,0.2);color:#fb8b1e">POT</span>`;
+      else if (item.crt_status === 'CONFIRMED') badge = `<span class="text-[8.5px] font-bold px-1 rounded-xs" style="background:rgba(74,246,195,0.2);color:var(--bull)">CONF</span>`;
+      const extraTag = item.mid50_reclaim ? ' · MID50 RECLAIM' : '';
+
+      return `
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+        <div class="col-span-4 flex items-center min-w-0">
+          ${pinBtn}
+          <div class="min-w-0">
+            <div class="font-bold text-xs t-accent-text flex items-center gap-1"><span>${item.ticker}</span>${badge}</div>
+            <div class="text-[9px] t-text-muted truncate">${(item.crt_sig || 'ACTIVE') + extraTag}</div>
+          </div>
+        </div>
+        <div class="col-span-3 text-right tabular-nums">
+          <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+          <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        </div>
+        <div class="col-span-3 text-right text-[9.5px] tabular-nums">
+          <div class="t-text-main">H: ${item.crth ? item.crth.toLocaleString('id-ID') : '-'}</div>
+          <div class="t-text-muted">L: ${item.crtl ? item.crtl.toLocaleString('id-ID') : '-'}</div>
+        </div>
+        <div class="col-span-2 text-right text-[10px] font-bold t-accent-text tabular-nums">
+          ${item.mid50 ? item.mid50.toLocaleString('id-ID') : '-'}
+        </div>
+      </div>`;
+    }
+
+    if (activeSection === 'div') {
+      const divs = [
+        item.div_rsi ? `RSI:${item.div_rsi}` : '',
+        item.div_macd ? `MACD:${item.div_macd}` : '',
+        item.div_stoch ? `ST:${item.div_stoch}` : '',
+        item.div_obv ? `OBV:${item.div_obv}` : ''
+      ].filter(Boolean);
+      const isBullDiv = divs.some(d => d.includes('BULL'));
+      return `
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+        <div class="col-span-4 flex items-center min-w-0">
+          ${pinBtn}
+          <div class="min-w-0">
+            <div class="font-bold text-xs t-accent-text">${item.ticker}</div>
+            <div class="text-[9px] font-semibold truncate" style="color:${isBullDiv ? 'var(--bull)' : 'var(--bear)'}">${divs[0] || '-'}</div>
+          </div>
+        </div>
+        <div class="col-span-3 text-right tabular-nums">
+          <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+          <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        </div>
+        <div class="col-span-3 text-right text-[9px] tabular-nums">
+          <div class="t-text-main truncate">${item.div_rsi || '-'}</div>
+          <div class="t-text-muted truncate">${item.div_macd || '-'}</div>
+        </div>
+        <div class="col-span-2 text-right text-[9px] tabular-nums">
+          <div class="t-text-main truncate">${item.div_stoch || '-'}</div>
+          <div class="t-text-muted truncate">${item.div_obv || '-'}</div>
+        </div>
+      </div>`;
+    }
+
+    if (activeSection === 'smc') {
+      const structs = [item.sweep, item.fvg, item.ifvg, item.mss_choch, item.ob_tap, item.cisd].filter(Boolean);
+      return `
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+        <div class="col-span-5 flex items-center min-w-0">
+          ${pinBtn}
+          <div class="min-w-0">
+            <div class="font-bold text-xs t-accent-text">${item.ticker}</div>
+            <div class="text-[9px] t-blue-text font-semibold truncate">${structs.join(' · ') || '-'}</div>
+          </div>
+        </div>
+        <div class="col-span-3 text-right tabular-nums">
+          <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+          <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        </div>
+        <div class="col-span-2 text-right text-[10px] t-text-main tabular-nums">${(item.tx_miliar || 0).toFixed(1)}B</div>
+        <div class="col-span-2 text-right text-[10px] t-text-muted tabular-nums">${volBadge}</div>
+      </div>`;
+    }
+
+    if (activeSection === 'vol') {
+      const flow = item.flow_score ?? 0;
+      const flowCol = flow >= 20 ? 'var(--bull)' : (flow <= -20 ? 'var(--bear)' : 'var(--text-muted)');
+      const labels = [];
+      if (item.dip_absorption) labels.push('ABSORP');
+      if (item.acc_divergence) labels.push('ACC-DIV');
+      if (item.breakout_high_rvol) labels.push('BO+RVOL');
+      if (item.low_vol_pullback) labels.push('LOW-VOL PB');
+
+      return `
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+        <div class="col-span-4 flex items-center min-w-0">
+          ${pinBtn}
+          <div class="min-w-0">
+            <div class="font-bold text-xs t-accent-text">${item.ticker}</div>
+            <div class="text-[8.5px] font-bold truncate" style="color:${labels.length ? 'var(--bull)' : 'var(--text-muted)'}">${labels.join(' · ') || 'FLOW PROXY'}</div>
+          </div>
+        </div>
+        <div class="col-span-2 text-right tabular-nums">
+          <div class="text-[10px] font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+          <div class="text-[9.5px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        </div>
+        <div class="col-span-3 text-right text-[9.5px] tabular-nums">
+          <div class="t-text-main font-bold">${(item.tx_miliar || 0).toFixed(1)}B</div>
+          <div class="t-text-muted">Avg ${(item.avg_tx_miliar || 0).toFixed(1)}B</div>
+        </div>
+        <div class="col-span-3 text-right text-[9.5px] tabular-nums">
+          <div>${volBadge}</div>
+          <div class="font-bold" style="color:${flowCol}">Flow ${flow > 0 ? '+' : ''}${flow}</div>
+        </div>
+      </div>`;
+    }
+
+    if (activeSection === 'trend') {
+      const tags = [];
+      if (item.perfect_alignment) tags.push('PERFECT MA');
+      if (item.golden_cross) tags.push('GOLDEN X');
+      if (item.pullback_ma20_ema21) tags.push('PB MA20/21');
+      if (item.oversold_uptrend) tags.push('OS UPTREND');
+
+      return `
+      <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
+        <div class="col-span-4 flex items-center min-w-0">
+          ${pinBtn}
+          <div class="min-w-0">
+            <div class="font-bold text-xs t-accent-text">${item.ticker}</div>
+            <div class="text-[8.5px] font-semibold t-text-muted truncate">${tags.join(' · ') || 'TREND'}</div>
+          </div>
+        </div>
+        <div class="col-span-3 text-right tabular-nums">
+          <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
+          <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
+        </div>
+        <div class="col-span-3 text-right text-[9.5px] tabular-nums">
+          <div class="t-text-main">${item.ma20 ? item.ma20.toLocaleString('id-ID') : '-'}</div>
+          <div class="t-text-muted">${item.ema21 ? item.ema21.toLocaleString('id-ID') : '-'}</div>
+        </div>
+        <div class="col-span-2 text-right text-[9.5px] tabular-nums">
+          <div class="t-text-main">${item.ma50 ? item.ma50.toLocaleString('id-ID') : '-'}</div>
+          <div class="t-text-muted">RSI ${item.rsi14 ?? '-'}</div>
+        </div>
+      </div>`;
+    }
+
+    // Section 6: HEDGE / BETA
+    const rel = item.rel_ihsg ?? 0;
+    const relCol = rel >= 0 ? 'var(--bull)' : 'var(--bear)';
     return `
     <div onclick="${onSelectRow}" class="grid grid-cols-12 items-center px-3 py-2 cursor-pointer t-row ${sel ? 't-row-active' : ''}">
-      <div class="col-span-5 flex items-center">
+      <div class="col-span-4 flex items-center min-w-0">
         ${pinBtn}
         <div class="min-w-0">
-          <div class="font-bold text-xs t-accent-text flex items-center space-x-1.5"><span>${item.ticker}</span>${pill}</div>
-          <div class="text-[9.5px] t-text-muted truncate" style="${item.crt_bear ? 'color:var(--bear)' : ''}">${subInfo}</div>
+          <div class="font-bold text-xs t-accent-text">${item.ticker}</div>
+          <div class="text-[9px] t-text-muted truncate">${(item.beta !== null && item.beta < 0) ? 'NEG BETA HEDGE' : 'DEFENSIVE'}</div>
         </div>
       </div>
       <div class="col-span-3 text-right tabular-nums">
         <div class="text-xs font-bold t-text-main">${item.close.toLocaleString('id-ID')}</div>
         <div class="text-[10px] font-semibold" style="color:${chgCol}">${sign}${item.change_pct}%</div>
       </div>
-      <div class="col-span-2 text-right text-[10px] t-text-muted tabular-nums">
-        <div>${(item.tx_miliar || 0).toFixed(1)}B</div>
-        <div>${volBadge}</div>
-      </div>
-      <div class="col-span-2 text-right text-[10px] tabular-nums">
-        <div class="t-text-main">β ${betaStr}</div>
-        <div class="t-text-muted">K ${item.stoch_k}</div>
+      <div class="col-span-2 text-right text-xs font-bold t-text-main tabular-nums">${betaStr}</div>
+      <div class="col-span-3 text-right text-[10px] font-bold tabular-nums" style="color:${relCol}">
+        ${rel > 0 ? '+' : ''}${rel.toFixed(2)}%
       </div>
     </div>`;
   }).join('');
 }
 
 // ==========================================
-// 9. KEYBOARD NAVIGATION & METALS MINI STATUS
+// 9. KEYBOARD NAVIGATION & INIT
 // ==========================================
 document.getElementById('top-ticker-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
@@ -1919,28 +2198,19 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-async function loadXauMiniStatus() {
-  try {
-    const res = await fetch('data/metals_divergence.json?t=' + Date.now());
-    if (!res.ok) return;
-    const d = await res.json();
-    const xauPrice = d?.pairs?.XAUUSD?.metrics?.price;
-    const divXag = d?.divergence?.['15m']?.vs_xagusd || '';
-    if (xauPrice) document.getElementById('mini-xau-price').textContent = xauPrice;
-    if (divXag) {
-      const shortDiv = divXag.includes('BULLISH') ? 'BULL DIV' : (divXag.includes('BEARISH') ? 'BEAR DIV' : 'ALIGNED');
-      document.getElementById('mini-xau-div').textContent = shortDiv;
-    }
-  } catch (_) {}
-}
-
 async function initApp() {
   initCharts();
-  loadXauMiniStatus();
+  renderSectionPills();
   try {
-    const res = await fetch('data/screener_idx.json?t=' + Date.now());
-    screenerData = await res.json();
+    const data = await fetchJsonWithFallback('data/screener_idx.json');
+    if (!data) return;
+    screenerData = data;
     document.getElementById('last-updated').textContent = `Update: ${screenerData.last_updated}`;
+
+    const ihsgChg = screenerData.ihsg_change_pct ?? 0;
+    const ihsgEl = document.getElementById('brd-ihsg');
+    ihsgEl.textContent = `${ihsgChg > 0 ? '+' : ''}${ihsgChg}%`;
+    ihsgEl.style.color = ihsgChg >= 0 ? 'var(--bull)' : 'var(--bear)';
 
     if (screenerData.breadth) {
       document.getElementById('brd-up').textContent = screenerData.breadth.up ?? 0;
