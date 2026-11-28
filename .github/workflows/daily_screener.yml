@@ -37,6 +37,9 @@ jobs:
       - name: Jalankan IDX Screener (839+ Saham)
         run: python screener.py
 
+      - name: Jalankan Economic Calendar Feed
+        run: python calendar_feed.py
+
       - name: Simpan dan Publish hasil JSON terbaru
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
