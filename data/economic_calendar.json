@@ -1,0 +1,221 @@
+{
+  "last_updated": "2026-11-28 03:41:37 WIB",
+  "source": "fallback_structured",
+  "events": [
+    {
+      "id": "us-cpi-yoy",
+      "date": "2026-12-10",
+      "time_wib": "20:30 WIB",
+      "currency": "USD",
+      "impact": "HIGH",
+      "event": "US CPI YoY",
+      "actual": null,
+      "forecast": "2.6%",
+      "previous": "2.7%",
+      "history": [
+        {
+          "period": "2026-06",
+          "actual": 3.0,
+          "forecast": 3.1,
+          "previous": 3.3
+        },
+        {
+          "period": "2026-07",
+          "actual": 2.9,
+          "forecast": 3.0,
+          "previous": 3.0
+        },
+        {
+          "period": "2026-08",
+          "actual": 2.8,
+          "forecast": 2.8,
+          "previous": 2.9
+        },
+        {
+          "period": "2026-09",
+          "actual": 2.7,
+          "forecast": 2.7,
+          "previous": 2.8
+        },
+        {
+          "period": "2026-10",
+          "actual": 2.7,
+          "forecast": 2.6,
+          "previous": 2.7
+        }
+      ]
+    },
+    {
+      "id": "us-nfp",
+      "date": "2026-12-04",
+      "time_wib": "20:30 WIB",
+      "currency": "USD",
+      "impact": "HIGH",
+      "event": "US Non-Farm Payrolls",
+      "actual": null,
+      "forecast": "175K",
+      "previous": "182K",
+      "history": [
+        {
+          "period": "2026-06",
+          "actual": 190,
+          "forecast": 180,
+          "previous": 216
+        },
+        {
+          "period": "2026-07",
+          "actual": 164,
+          "forecast": 175,
+          "previous": 190
+        },
+        {
+          "period": "2026-08",
+          "actual": 152,
+          "forecast": 165,
+          "previous": 164
+        },
+        {
+          "period": "2026-09",
+          "actual": 198,
+          "forecast": 170,
+          "previous": 152
+        },
+        {
+          "period": "2026-10",
+          "actual": 182,
+          "forecast": 175,
+          "previous": 198
+        }
+      ]
+    },
+    {
+      "id": "bi-rate",
+      "date": "2026-12-17",
+      "time_wib": "14:20 WIB",
+      "currency": "IDR",
+      "impact": "HIGH",
+      "event": "BI 7-Day Reverse Repo Rate",
+      "actual": null,
+      "forecast": "5.75%",
+      "previous": "5.75%",
+      "history": [
+        {
+          "period": "2026-06",
+          "actual": 6.0,
+          "forecast": 6.0,
+          "previous": 6.25
+        },
+        {
+          "period": "2026-07",
+          "actual": 6.0,
+          "forecast": 6.0,
+          "previous": 6.0
+        },
+        {
+          "period": "2026-08",
+          "actual": 5.75,
+          "forecast": 6.0,
+          "previous": 6.0
+        },
+        {
+          "period": "2026-09",
+          "actual": 5.75,
+          "forecast": 5.75,
+          "previous": 5.75
+        },
+        {
+          "period": "2026-10",
+          "actual": 5.75,
+          "forecast": 5.75,
+          "previous": 5.75
+        }
+      ]
+    },
+    {
+      "id": "id-cpi-yoy",
+      "date": "2026-12-01",
+      "time_wib": "11:00 WIB",
+      "currency": "IDR",
+      "impact": "MEDIUM",
+      "event": "Indonesia Inflation YoY",
+      "actual": null,
+      "forecast": "2.20%",
+      "previous": "2.15%",
+      "history": [
+        {
+          "period": "2026-06",
+          "actual": 2.51,
+          "forecast": 2.65,
+          "previous": 2.84
+        },
+        {
+          "period": "2026-07",
+          "actual": 2.13,
+          "forecast": 2.3,
+          "previous": 2.51
+        },
+        {
+          "period": "2026-08",
+          "actual": 2.12,
+          "forecast": 2.18,
+          "previous": 2.13
+        },
+        {
+          "period": "2026-09",
+          "actual": 1.98,
+          "forecast": 2.05,
+          "previous": 2.12
+        },
+        {
+          "period": "2026-10",
+          "actual": 2.15,
+          "forecast": 2.1,
+          "previous": 1.98
+        }
+      ]
+    },
+    {
+      "id": "us-fomc-rate",
+      "date": "2026-12-16",
+      "time_wib": "02:00 WIB",
+      "currency": "USD",
+      "impact": "HIGH",
+      "event": "Fed Interest Rate Decision",
+      "actual": null,
+      "forecast": "4.25%",
+      "previous": "4.50%",
+      "history": [
+        {
+          "period": "2026-05",
+          "actual": 5.25,
+          "forecast": 5.25,
+          "previous": 5.25
+        },
+        {
+          "period": "2026-06",
+          "actual": 5.0,
+          "forecast": 5.0,
+          "previous": 5.25
+        },
+        {
+          "period": "2026-07",
+          "actual": 5.0,
+          "forecast": 5.0,
+          "previous": 5.0
+        },
+        {
+          "period": "2026-09",
+          "actual": 4.75,
+          "forecast": 4.75,
+          "previous": 5.0
+        },
+        {
+          "period": "2026-11",
+          "actual": 4.5,
+          "forecast": 4.5,
+          "previous": 4.75
+        }
+      ]
+    }
+  ]
+}
